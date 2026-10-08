@@ -1,0 +1,105 @@
+{% extends "app.njk" %}
+{% set title = "Customer insights" %}
+{% set active = "insights" %}
+{% set bodyClass = "p-deck d-insights" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Customer insights</h1>
+      <p class="lede">Do results differ by age, sex or region? Groups, never individuals: any group under {{ minGroup }} customers is hidden.</p>
+      <p class="head-actions"><span class="badge cov partial">Demo data: {{ total }} synthetic customers</span></p>
+    </header>
+
+    <section class="panel" aria-labelledby="flt">
+      <h2 id="flt">Filter</h2>
+      <form class="insight-form" action="/insights" method="get">
+        {% for key, d in dimensions %}
+        <div><label for="f-{{ key }}">{{ d.label }}</label>
+          <select id="f-{{ key }}" name="{{ key }}">
+            <option value="">All</option>
+            {% for v in d.values %}<option value="{{ v }}"{% if f[key] == v %} selected{% endif %}>{{ v }}</option>{% endfor %}
+          </select></div>
+        {% endfor %}
+        <div><label for="f-metric">Compare</label>
+          <select id="f-metric" name="metric">
+            {% for m in metrics %}<option value="{{ m.key }}"{% if f.metric == m.key %} selected{% endif %}>{{ m.label }}</option>{% endfor %}
+          </select></div>
+        <div class="insight-actions"><button type="submit" class="btn">Apply</button><a class="btn-quiet" href="/insights">Reset</a></div>
+      </form>
+    </section>
+
+    {% if small %}
+    <p class="warning" role="note">Fewer than {{ minGroup }} customers match these filters, so nothing is shown. Widen the filters.</p>
+    {% else %}
+    <section class="stats" aria-label="Summary for the selected customers">
+      <div class="stat"><strong>{{ n }}</strong><span>customers selected</span></div>
+      {% for k in kpis %}
+      <div class="stat{% if k.key == f.metric %} live{% endif %}"><strong>{{ k.value }}<small>{{ k.unit }}</small></strong><span>{{ k.label | lower }}</span></div>
+      {% endfor %}
+    </section>
+
+    <section class="panel" aria-labelledby="pat">
+      <h2 id="pat">What stands out</h2>
+      {% if patterns.length %}
+      <ul class="patterns">
+        {% for p in patterns %}<li class="{{ 'bad' if p.bad else 'good' }}"><span class="badge {{ 'perspective' if p.bad else 'production' }}">{{ 'Worse' if p.bad else 'Better' }}</span> {{ p.text }}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No group differs from the average by more than 12%, with these filters.</p>
+      {% endif %}
+      <p class="muted small">Differences in a demo dataset are built in so the page has something to show. With real data, treat a gap as a question to investigate, not a conclusion about a type of customer.</p>
+    </section>
+
+    <div class="insight-grid">
+      {% for c in charts %}
+      <section class="panel" aria-labelledby="ch-{{ c.key }}">
+        <h2 id="ch-{{ c.key }}">{{ metricLabel }} by {{ c.label | lower }}</h2>
+        <svg class="ibars" viewBox="0 0 380 {{ c.height }}" role="img" aria-label="{{ metricLabel }} by {{ c.label | lower }}">
+          <line class="imark" x1="{{ c.overallX }}" x2="{{ c.overallX }}" y1="0" y2="{{ c.height }}"/>
+          {% for r in c.rows %}
+          <text class="ilabel" text-anchor="end" x="{{ r.labelX }}" y="{{ r.y + 17 }}">{{ r.key }}</text>
+          {% if r.hidden %}
+          <text class="ihidden" x="96" y="{{ r.y + 17 }}">hidden, fewer than {{ minGroup }} customers</text>
+          {% else %}
+          <rect class="ifill {{ r.tone }}" x="96" y="{{ r.y + 3 }}" width="{{ r.width }}" height="18" rx="5"/>
+          <text class="ivalue" x="{{ r.valueX }}" y="{{ r.y + 17 }}">{{ r.value }}{{ metricUnit }} · n={{ r.n }}</text>
+          {% endif %}
+          {% endfor %}
+        </svg>
+      </section>
+      {% endfor %}
+    </div>
+    <p class="muted small insight-legend"><span class="key forecast"></span>Dashed line: average for the selected customers ({{ overall }}{{ metricUnit }}). Red bars are over 10% worse than that average, green over 10% better.</p>
+    {% endif %}
+
+    <section class="panel" aria-labelledby="fair">
+      <h2 id="fair">Model fairness: does the emotion model work equally well for everyone?</h2>
+      <p class="muted">{{ fairness.source }}</p>
+      <div class="insight-grid">
+        <div>
+          <h3>Accuracy by sex</h3>
+          <svg class="ibars" viewBox="0 0 380 68" role="img" aria-label="Emotion model accuracy by sex">
+            {% for g in fairness.bySex %}
+            <text class="ilabel" text-anchor="end" x="88" y="{{ loop.index0 * 30 + 21 }}">{{ g.key }}</text>
+            <rect class="ifill" x="96" y="{{ loop.index0 * 30 + 7 }}" width="{{ g.value * 2.4 }}" height="18" rx="5"/>
+            <text class="ivalue" x="{{ 96 + g.value * 2.4 + 6 }}" y="{{ loop.index0 * 30 + 21 }}">{{ g.value }}%</text>
+            {% endfor %}
+          </svg>
+          <p class="muted small">Age and region are not measured here yet: CREMA-D records age, so an age split is the next check; neither dataset has location.</p>
+        </div>
+        <div>
+          <h3>Recall by emotion: model against human raters</h3>
+          <svg class="ibars" viewBox="0 0 380 {{ fairness.byEmotion.length * 30 + 8 }}" role="img" aria-label="Recall by emotion, model against humans">
+            {% for g in fairness.byEmotion %}
+            <text class="ilabel" text-anchor="end" x="64" y="{{ loop.index0 * 30 + 21 }}">{{ g.key }}</text>
+            <rect class="ifill" x="72" y="{{ loop.index0 * 30 + 4 }}" width="{{ g.model * 2.4 }}" height="9" rx="3"/>
+            <rect class="ifill muted-bar" x="72" y="{{ loop.index0 * 30 + 14 }}" width="{{ g.humans * 2.4 }}" height="9" rx="3"/>
+            <text class="ivalue" x="{{ 72 + g.model * 2.4 + 6 }}" y="{{ loop.index0 * 30 + 13 }}">{{ g.model }}%</text>
+            {% endfor %}
+          </svg>
+          <p class="muted small">Top bar: model. Bottom bar: humans listening to the voice only.</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="warning" role="note"><strong>Privacy.</strong> Real customer age, sex and location are personal data: use them only with a legal basis and consent (Tunisian data-protection law, GDPR for EU clients), show only aggregates, and use the findings to improve service for a group, never to treat customers differently because of who they are.</p>
+{% endblock %}

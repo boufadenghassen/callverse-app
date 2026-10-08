@@ -128,7 +128,7 @@ test('presentation mode steps with the keys and shows speaker notes', async () =
 
 test('no page scrolls sideways on a phone', async () => {
   const { ctx, page } = await signIn('admin', { width: 390, height: 844 });
-  for (const path of ['/', '/client', '/advisor', '/workforce', '/quality', '/complaints', '/training', '/sales', '/personas', '/ideas', '/pipeline']) {
+  for (const path of ['/', '/client', '/advisor', '/workforce', '/quality', '/complaints', '/training', '/sales', '/personas', '/ideas', '/insights', '/pipeline']) {
     await page.goto(`${BASE}${path}`);
     await page.waitForLoadState('networkidle');
     const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
@@ -169,5 +169,23 @@ test('the ideas filter hides the other decisions', async () => {
   await page.click('[data-filter="perspective"]');
   assert.equal(await page.locator('.idea:visible').count(), 4);
   assert.equal(await page.getAttribute('[data-filter="perspective"]', 'aria-pressed'), 'true');
+  await ctx.close();
+});
+
+test('customer insights: filters change the numbers, small groups stay hidden, the sidebar link works', async () => {
+  const { ctx, page } = await signIn('admin');
+  await page.click('.sidebar a[href="/insights"]');
+  await page.waitForURL(`${BASE}/insights`);
+  assert.equal(await page.locator('.ibars').count() >= 4, true);       // 3 charts + the fairness charts
+  const all = (await page.textContent('.stat strong')).trim();
+  assert.equal(all, '720');
+  await page.selectOption('#f-age', '18-25');
+  await page.selectOption('#f-metric', 'wait');
+  await page.click('.insight-form button[type=submit]');
+  await page.waitForURL(/age=18-25/);
+  assert.notEqual((await page.textContent('.stat strong')).trim(), all);
+  assert.match(await page.textContent('h2[id^="ch-"]'), /Average wait/);
+  await page.goto(`${BASE}/insights?age=51%2B&sex=Female&region=Nabeul`);
+  assert.match(await page.textContent('main'), /Fewer than 10 customers/);
   await ctx.close();
 });

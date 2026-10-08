@@ -670,6 +670,7 @@ body.p-training::after { content: "Training scenarios"; background-image: url("d
 body.p-sales::after { content: "Sales opportunities"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01'/%3E%3C/svg%3E"); }
 body.d-personas::after { content: "Personas & journey"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 19v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1M10 11a3 3 0 100-6 3 3 0 000 6zm9 8v-1a3 3 0 00-2-2.8M15 5.2a3 3 0 010 5.6'/%3E%3C/svg%3E"); }
 body.d-ideas::after { content: "Ideas & feasibility"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6m-5 3h4M12 3a6 6 0 00-3.5 10.9V16h7v-2.1A6 6 0 0012 3z'/%3E%3C/svg%3E"); }
+body.d-insights::after { content: "Customer insights"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a9 9 0 109 9h-9V3zm3 .5A9 9 0 0120.5 9H15V3.5z'/%3E%3C/svg%3E"); }
 body.d-pipeline::after { content: "Pipeline"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6a2 2 0 100 .01M6 8v8m0 0a2 2 0 100 .01M18 12a2 2 0 100 .01M6 12h4a4 4 0 004-4V6'/%3E%3C/svg%3E"); }
 body.d-present::after { content: "Presentation mode"; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5h16v11H4zM9 21h6m-3-5v5M10 8.5v4l4-2z'/%3E%3C/svg%3E"); }
 /* outgoing sheet: same icon, same spot, so the two halves line up */
@@ -790,3 +791,20 @@ html[data-theme="dark"] .tour-dots i { background: rgba(14,23,48,.2); } html[dat
   .nav-title { display: none; }
   .logout, html.nav-open .logout { margin: 0 0 0 auto; }
 }
+
+/* ---------- Customer insights (presentation extra) ---------- */
+.insight-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--s4); align-items: end; }
+.insight-actions { display: flex; gap: var(--s3); align-items: center; }
+.insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: var(--s6); margin: 0 7px var(--s6); }
+.insight-grid > .panel { margin: 0; }
+.stat small { font-size: .9rem; font-weight: 650; color: var(--muted); margin-left: .15rem; }
+.ibars { width: 100%; height: auto; display: block; }
+.ibars .ilabel { fill: var(--ink-2); font: 600 12px var(--sans); }
+.ibars .ivalue { fill: var(--muted); font: 600 11px var(--sans); }
+.ibars .ihidden { fill: var(--muted); font: italic 11px var(--sans); }
+.ibars .ifill { fill: var(--accent); transition: width .6s var(--ease); }
+.ibars .ifill.bad { fill: var(--danger); } .ibars .ifill.good { fill: var(--ok); } .ibars .ifill.muted-bar { fill: #aab3c7; }
+.ibars .imark { stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .6; }
+.patterns { list-style: none; margin: var(--s4) 0; padding: 0; display: grid; gap: var(--s3); }
+.patterns li { line-height: 1.5; }
+.insight-legend { margin: 0 7px var(--s6); }

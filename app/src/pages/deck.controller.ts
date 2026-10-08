@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, Get, Query, Render, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { Roles } from '../auth/access.guard';
+import { buildInsights, DIMENSIONS, FAIRNESS, METRICS, MetricKey, MIN_GROUP } from './insights';
 import { BEFORE_AFTER, EMPATHY, JOURNEY, PERSONAS as DECK } from './deck-content';
 import {
   DIFFICULTIES, DifficultyKey, INTENTS, IntentKey, MAX_MOVES, MOVES, MoveKey, PERSONAS, PersonaKey, replay,
@@ -63,6 +64,24 @@ export class DeckController {
   @Get('pipeline') @Render('pipeline')
   pipeline() {
     return { beforeAfter: BEFORE_AFTER };
+  }
+
+  /** Customer statistics by age, sex and region (demo data). Presentation extra: see insights.ts for how to remove it. */
+  @Get('insights') @Render('insights')
+  insights(@Query() q: Record<string, unknown>) {
+    const pick = (v: unknown, allowed: readonly string[]) => {
+      if (v === undefined || v === '') return '';
+      if (typeof v === 'string' && allowed.includes(v)) return v;
+      throw new BadRequestException();
+    };
+    const f = {
+      age: pick(q.age, DIMENSIONS.age.values), sex: pick(q.sex, DIMENSIONS.sex.values), region: pick(q.region, DIMENSIONS.region.values),
+      metric: (pick(q.metric, Object.keys(METRICS)) || 'churn') as MetricKey,
+    };
+    return {
+      f, dimensions: DIMENSIONS, metrics: Object.entries(METRICS).map(([key, m]) => ({ key, label: m.label })),
+      minGroup: MIN_GROUP, fairness: FAIRNESS, ...buildInsights(f),
+    };
   }
 
   // ---- Yasmine: client simulator -------------------------------------------------------------

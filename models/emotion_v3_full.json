@@ -1,0 +1,10 @@
+﻿{
+  "file": "emotion_v3_full.joblib",
+  "task": "speech emotion recognition, 6 classes (anger, disgust, fear, happy, neutral, sad)",
+  "notebook": "emotion_v3_improved.ipynb (full run, QUICK_TEST=False)",
+  "features": "WavLM base+ (microsoft/wavlm-base-plus), concat of layers 5, 7, 6, mean-pooled; logistic regression",
+  "data": "CREMA-D (7,442 clips) + RAVDESS speech (1,056 clips, calm and surprised dropped); split by actor",
+  "metrics": {"crema_d_test_accuracy": 0.765, "crema_d_test_ci95": [0.718, 0.807], "both_datasets_test": {"CREMA-D": 0.772, "RAVDESS": 0.727}, "previous_baseline_accuracy": 0.509},
+  "note": "acted speech only; real calls will score lower. Needs the same feature extraction as the notebook (predict_mood).",
+  "date": "2026-10-08"
+}
