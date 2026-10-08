@@ -1,0 +1,78 @@
+{% extends "app.njk" %}
+{% set title = "Workforce twin" %}
+{% set active = "workforce" %}
+{% set bodyClass = "p-workforce" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Workforce twin <span class="muted">· queue {{ queue }}</span></h1>
+      <p class="lede">Forecast the spike, simulate the fix, then decide.</p>
+    </header>
+    <div class="split wide-left">
+      <section class="panel" aria-labelledby="fc">
+        <h2 id="fc">Forecast vs actual, calls per hour</h2>
+        <svg class="chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+             aria-label="Line chart of forecast and actual call volume by hour">
+          <g class="grid">
+            {% for v in chart.gridValues %}
+              <line x1="40" x2="{{ chart.width - 40 }}" y1="{{ chart.gridY[loop.index0] }}" y2="{{ chart.gridY[loop.index0] }}"/>
+              <text x="32" text-anchor="end" y="{{ chart.gridY[loop.index0] + 4 }}">{{ v }}</text>
+            {% endfor %}
+          </g>
+          <line id="marker" class="marker" y1="12" y2="{{ chart.height - 28 }}" x1="40" x2="40"/>
+          <polyline class="line-forecast" points="{{ chart.forecastPoints }}"/>
+          <polyline class="line-actual" pathLength="1" points="{{ chart.actualPoints }}"/>
+          {% for l in chart.labels %}
+          <text class="axis" text-anchor="middle" x="{{ chart.labelX[loop.index0] }}" y="{{ chart.labelY }}">{{ l }}</text>
+          {% endfor %}
+        </svg>
+        <p class="legend"><span class="key forecast"></span>Forecast <span class="key actual"></span>Actual</p>
+
+        <div class="scrub">
+          <label for="hour">Scrub through the day</label>
+          <input type="range" id="hour" min="0" max="{{ hours.length - 1 }}" value="0">
+          <p class="scrub-read" id="scrub-read" role="status">Drag to see each hour.</p>
+        </div>
+        <ol class="heat" aria-label="Expected load by hour">
+          {% for h in hours %}
+          <li class="{{ 'hot' if h.forecast >= 60 else ('busy' if h.forecast >= 40 else 'calm') }}"
+              data-hour="{{ h.hour }}" data-forecast="{{ h.forecast }}"{% if h.actual !== null %} data-actual="{{ h.actual }}"{% endif %} data-x="{{ chart.labelX[loop.index0] }}">
+            <span class="heat-h">{{ h.hour }}</span>
+            <span class="heat-v">{{ h.forecast }}</span>
+          </li>
+          {% endfor %}
+        </ol>
+        <p class="muted small heat-key">Load against a 60 calls/hour capacity: calm, busy, overloaded. Wait and SLA are estimates from the mock model.</p>
+      </section>
+      <section class="panel" aria-labelledby="wi">
+        <h2 id="wi">What-if simulation</h2>
+        <form action="/workforce/simulate" method="post" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <label for="queue">Queue</label>
+          <select id="queue" name="queue">
+            {% for qq in ['A', 'B', 'C', 'D', 'E'] %}<option value="{{ qq }}"{% if qq == form.queue %} selected{% endif %}>{{ qq }}</option>{% endfor %}
+          </select>
+          {% if errors.queue %}<p class="field-error">{{ errors.queue }}</p>{% endif %}
+          <label for="extraAdvisors">Extra advisors</label>
+          <input id="extraAdvisors" name="extraAdvisors" type="number" min="-5" max="10" value="{{ form.extraAdvisors }}">
+          {% if errors.extraAdvisors %}<p class="field-error">{{ errors.extraAdvisors }}</p>{% endif %}
+          <div class="row">
+            <div><label for="from">From</label><input id="from" name="from" type="time" value="{{ form.from }}"></div>
+            <div><label for="to">To</label><input id="to" name="to" type="time" value="{{ form.to }}"></div>
+          </div>
+          {% if errors.from %}<p class="field-error">{{ errors.from }}</p>{% endif %}
+          {% if errors.to %}<p class="field-error">{{ errors.to }}</p>{% endif %}
+          <button type="submit" class="btn">Run simulation</button>
+        </form>
+        {% if result %}
+        <div class="result" role="status">
+          <p>Average wait <strong>{{ result.baselineWaitSec }} s</strong> becomes
+             <strong>{{ result.simulatedWaitSec }} s</strong>.
+             SLA <strong>{{ result.baselineSla | pct }}</strong> becomes
+             <strong>{{ result.simulatedSla | pct }}</strong>.</p>
+          <h3>Ranked recommendations</h3>
+          <ol>{% for r in result.recommendations %}<li>{{ r }}</li>{% endfor %}</ol>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,38 @@
+# ---- notebooks and datasets stay on each machine: the folders are pushed empty ----
+/notebooks/*
+!/notebooks/.gitkeep
+/datasets/*
+!/datasets/.gitkeep
+
+# ---- big binaries never go in git, wherever they are (trained models live in /models) ----
+*.wav
+*.mp3
+*.flv
+*.npy
+*.npz
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.safetensors
+!/models/*
+
+# ---- build output and dependencies ----
+node_modules/
+dist/
+dist-test/
+app/public/js/app.js
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---- local config and tools ----
+.env
+.env.*
+.vscode/
+.github/modernize/
+.DS_Store
+Thumbs.db

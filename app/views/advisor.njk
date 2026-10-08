@@ -1,0 +1,44 @@
+{% extends "app.njk" %}
+{% set title = "Advisor console" %}
+{% set active = "advisor" %}
+{% set bodyClass = "p-advisor" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Advisor console</h1>
+      <p class="lede">The client's context and the answer, without opening five tabs.</p>
+    </header>
+    <div class="split">
+      <section class="panel tinted" aria-labelledby="c360">
+        <h2 id="c360">Customer 360°</h2>
+        <p class="big">{{ customer.name }}</p>
+        <p class="muted">{{ customer.profile }}</p>
+        <dl class="facts">
+          <dt>Intents</dt><dd>{% for i in customer.intents %}<span class="chip">{{ i }}</span>{% endfor %}</dd>
+          <dt>Contract</dt><dd>{{ customer.contract }}</dd>
+          <dt>Open tickets</dt><dd>{{ customer.openTickets }} · transferred {{ customer.transfers }}×</dd>
+          <dt>Mood</dt><dd>{{ customer.mood }}</dd>
+        </dl>
+      </section>
+      <section class="panel" aria-labelledby="ka">
+        <h2 id="ka">Knowledge assistant</h2>
+        <form class="search" action="/advisor" method="get" role="search">
+          <input type="hidden" name="customer" value="{{ customer.id }}">
+          <label for="q" class="sr-only">Search the knowledge base</label>
+          <input id="q" name="q" value="{{ query }}" minlength="3" maxlength="200" required>
+          <button type="submit" class="btn">Search</button>
+        </form>
+        <article class="answer">
+          <h3>Suggested answer</h3>
+          <p>{{ answer.text }}</p>
+          <p class="muted">Sources: <span>{{ answer.sources | join(', ') }}</span>
+            · confidence <span>{{ answer.confidence | pct }}</span></p>
+        </article>
+        {% if answer.policyWarning %}<p class="warning" role="note">{{ answer.policyWarning }}</p>{% endif %}
+        <div class="actions">
+          <button type="button" class="btn" data-action="use">Use answer</button>
+          <button type="button" class="btn-line" data-action="edit">Edit</button>
+          <button type="button" class="btn-quiet" data-action="escalate">Escalate</button>
+        </div>
+      </section>
+    </div>
+{% endblock %}

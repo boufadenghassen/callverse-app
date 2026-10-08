@@ -1,0 +1,28 @@
+{% extends "base.njk" %}
+{% set title = "Sign in" %}
+{% set bodyClass = "login-page" %}
+{% block body %}
+<aside class="login-hero" aria-hidden="true">
+  <span class="brand">CallVerse</span>
+  <h2>See the whole call center before it happens.</h2>
+  <p>A digital twin for advisors, workforce, quality, complaints, training and sales.</p>
+  <ul class="dots">
+    <li class="p-advisor"></li><li class="p-workforce"></li><li class="p-quality"></li>
+    <li class="p-complaint"></li><li class="p-training"></li><li class="p-sales"></li>
+  </ul>
+</aside>
+<main class="login-card">
+  <h1>Sign in</h1>
+  <p class="lede">Use your CallVerse account to continue.</p>
+  {% if error %}<p class="alert" role="alert">Wrong username or password, or the account is temporarily locked.</p>{% endif %}
+  {% if loggedOut %}<p class="notice" role="status">You have been signed out.</p>{% endif %}
+  <form action="/login" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required maxlength="64" autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+    <button type="submit" class="btn">Sign in</button>
+  </form>
+</main>
+{% endblock %}

@@ -1,0 +1,35 @@
+{
+  "name": "callverse-nest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CallVerse web, rebuilt on NestJS (server-rendered with Nunjucks).",
+  "scripts": {
+    "build": "tsc -p client/tsconfig.json && tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "dev": "tsc -p tsconfig.json && node dist/main.js",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/security-and-pages.spec.js dist-test/test/deck-and-simulator.spec.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-express": "^12.1.2",
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.2",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "nunjucks": "^3.2.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^12.1.2",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.19.0",
+    "@types/node": "^26.6.4",
+    "@types/nunjucks": "^3.2.6",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,57 @@
+{% extends "app.njk" %}
+{% set title = "Personas and journey" %}
+{% set active = "personas" %}
+{% set bodyClass = "p-deck d-personas" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Personas &amp; journey</h1>
+      <p class="lede">Seven personas, one agent each. Every card shows the top pain point and the question we are answering.</p>
+    </header>
+
+    <ul class="persona-grid">
+      {% for p in personas %}
+      <li class="persona {{ p.accent }}">
+        <div class="persona-top">
+          <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
+          <div><h2>{{ p.name }}</h2><p class="muted">{{ p.role }}</p></div>
+        </div>
+        <p class="agent-tag">→ {{ p.agent }}</p>
+        <blockquote>{{ p.quote }}</blockquote>
+        <dl class="facts">
+          <dt>Top pain</dt><dd>{{ p.topPain }}</dd>
+          <dt>Question</dt><dd>{{ p.hmw }}</dd>
+          <dt>Ideas</dt><dd>{{ p.decisionSummary }}</dd>
+        </dl>
+        <p class="chips">{% for t in p.techniques %}<span class="chip">{{ t }}</span>{% endfor %}</p>
+        {% if canOpen[p.key] %}<a class="btn-line" href="{{ p.url }}">Open workspace</a>
+        {% else %}<span class="muted small">Workspace for the matching role</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <section class="panel" aria-labelledby="jr">
+      <h2 id="jr">Client journey: from issue to resolution</h2>
+      {% set label = "Emotion curve across six journey steps; it dips sharply when explaining the issue" %}
+      {% include "journey.njk" %}
+      <ol class="steps">
+        {% for s in journey %}
+        <li><span class="num">{{ loop.index }}</span>
+          <strong>{{ s.title }}</strong><span class="muted">{{ s.text }}</span></li>
+        {% endfor %}
+      </ol>
+      <p class="coach">Emotion dips sharply between <strong>waiting in queue</strong> and <strong>explaining the issue</strong>,
+        exactly where the Advisor and Workforce agents are designed to step in.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="em">
+      <h2 id="em">Empathy map: the client</h2>
+      <div class="empathy">
+        {% for q in empathy %}
+        <article class="quad">
+          <h3>{{ q.title }}</h3>
+          <ul>{% for l in q.lines %}<li>{{ l }}</li>{% endfor %}</ul>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{# Three-pip rating (High 3, Medium 2, Low 1) #}
+{% macro pips(label, level) %}
+{% set n = 3 if level == 'High' else (2 if level == 'Medium' else 1) %}
+<div class="pip-row">
+  <span class="pip-label">{{ label }}</span>
+  <span class="pips" aria-label="{{ label }} {{ level }}">
+    {% for k in [1, 2, 3] %}<i{% if k <= n %} class="on"{% endif %}></i>{% endfor %}
+  </span>
+  <span class="pip-val">{{ level }}</span>
+</div>
+{% endmacro %}
+
+{# Circular gauge: value 0..100, drawn with SVG attributes only (no inline style, CSP-safe) #}
+{% macro ring(value) %}
+<svg class="ring" viewBox="0 0 44 44" role="img" aria-label="{{ value }} percent">
+  <circle class="bg" cx="22" cy="22" r="18" pathLength="100"/>
+  <circle class="fg" cx="22" cy="22" r="18" pathLength="100" stroke-dasharray="{{ value }} 100"/>
+  <text x="22" y="26" text-anchor="middle">{{ value }}</text>
+</svg>
+{% endmacro %}
+
+{# One sidebar link: icon path, label and colour class #}
+{% macro navlink(href, key, cls, icon, label, active) %}
+<li><a href="{{ href }}" class="nav {{ cls }}"{% if active == key %} aria-current="page"{% endif %}><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="{{ icon }}"/></svg></span><span class="nav-label">{{ label }}</span></a></li>
+{% endmacro %}

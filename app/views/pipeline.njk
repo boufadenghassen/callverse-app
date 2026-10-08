@@ -1,0 +1,53 @@
+{% extends "app.njk" %}
+{% set title = "Pipeline" %}
+{% set active = "pipeline" %}
+{% set bodyClass = "p-deck d-pipeline" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Pipeline</h1>
+      <p class="lede">Seven agents, one loop: simulate the client, help the advisor, score the call, train from the gaps.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="loop">
+      <h2 id="loop">The agent loop</h2>
+      <ol class="loop">
+        <li class="p-client"><span class="node-n">1</span><strong>Client Simulator</strong><span>Creates realistic, demanding clients.</span></li>
+        <li class="p-advisor"><span class="node-n">2</span><strong>Customer Advisor</strong><span>Finds the answer in one search.</span></li>
+        <li class="p-quality"><span class="node-n">3</span><strong>Quality Analyst</strong><span>Scores every call with evidence.</span></li>
+        <li class="p-training"><span class="node-n">4</span><strong>Training Agent</strong><span>Builds scenarios from QA weaknesses.</span></li>
+      </ol>
+      <p class="loop-back muted">↺ New scenarios feed the Client Simulator, so training targets what QA keeps finding.</p>
+      <div class="side-agents">
+        <div class="p-workforce"><strong>Workforce Manager (RL)</strong><span>Forecasts demand and tests staffing before it goes live.</span></div>
+        <div class="p-complaint"><strong>Complaint Manager</strong><span>Triages escalations and clusters root causes.</span></div>
+        <div class="p-sales"><strong>Sales Agent</strong><span>Turns relevant contacts into fitting offers.</span></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="tech">
+      <h2 id="tech">Technical pipeline</h2>
+      <ol class="layers">
+        <li><strong>Data</strong><span>CRM, ticketing, knowledge base, call transcripts, queue logs.</span></li>
+        <li><strong>Agents</strong><span>RAG, intent classification, reinforcement learning, LLM as judge, NLP, recommenders.</span></li>
+        <li><strong>Agent gateway</strong><span>One interface from the web app to every agent. Mock data now; the Python services plug in by setting AGENTS_MODE=http.</span></li>
+        <li><strong>CallVerse web</strong><span>This app: one workspace per role, role-based access, strict security headers.</span></li>
+      </ol>
+    </section>
+
+    <section class="panel" aria-labelledby="ba">
+      <h2 id="ba">Before and after</h2>
+      <table class="ba">
+        <thead><tr><th scope="col">Who</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">How</th></tr></thead>
+        <tbody>
+          {% for r in beforeAfter %}
+          <tr>
+            <th scope="row">{{ r.who }}</th>
+            <td>{{ r.before }}</td>
+            <td>{{ r.after }}</td>
+            <td><span class="chip">{{ r.how }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+{% endblock %}

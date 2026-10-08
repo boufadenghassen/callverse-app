@@ -1,0 +1,9 @@
+{# The client emotion curve, shared by the personas page and the presentation. Needs: journey, journeyCurve #}
+<svg class="journey" viewBox="0 -14 600 184" role="img" aria-label="{{ label }}">
+  <line class="mid" x1="20" y1="80" x2="580" y2="80"/>
+  <polyline class="curve" pathLength="1" points="{{ journeyCurve }}"/>
+  {% for s in journey %}
+  <circle class="dot{% if s.level == 0 %} low{% endif %}" r="7" cx="{{ 50 + loop.index0 * 100 }}" cy="{{ 140 - s.level * 30 }}"/>
+  <text class="emo" text-anchor="middle" x="{{ 50 + loop.index0 * 100 }}" y="{{ 140 - s.level * 30 - 14 }}">{{ s.emotion }}</text>
+  {% endfor %}
+</svg>

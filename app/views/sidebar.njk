@@ -1,0 +1,32 @@
+{% import "macros.njk" as m %}
+<nav class="sidebar" aria-label="Workspaces">
+  <a class="skip" href="#main">Skip to content</a>
+  <a class="brand" href="/" aria-label="CallVerse home"><span class="orb" aria-hidden="true"></span><span class="nav-label">CallVerse</span></a>
+  <button type="button" class="nav nav-toggle" aria-expanded="false" aria-label="Show names"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="nav-label">Show names</span></button>
+  <button type="button" class="nav palette-open" aria-label="Jump to a page"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zm9 16l-4-4"/></svg></span><span class="nav-label">Jump to <kbd>Ctrl K</kbd></span></button>
+  <button type="button" class="nav theme-toggle" aria-label="Switch to dark mode"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></span><span class="nav-label">Dark mode</span></button>
+  <div class="nav-scroll">
+    <p class="nav-title">Workspaces</p>
+    <ul>
+      {% if can('CLIENT') %}{{ m.navlink('/client', 'client', 'p-client', 'M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z', 'Client simulator', active) }}{% endif %}
+      {% if can('ADVISOR') %}{{ m.navlink('/advisor', 'advisor', 'p-advisor', 'M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1v-4zm16 0h-3v5h2a1 1 0 001-1v-4zM17 19c0 1.7-2 2.5-5 2.5', 'Advisor console', active) }}{% endif %}
+      {% if can('WORKFORCE') %}{{ m.navlink('/workforce', 'workforce', 'p-workforce', 'M4 20v-7m5 7V4m5 16v-9m5 9v-5', 'Workforce twin', active) }}{% endif %}
+      {% if can('QUALITY') %}{{ m.navlink('/quality', 'quality', 'p-quality', 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.3 6.8 19.1l1-5.8L3.5 9.2l5.9-.9L12 3z', 'Quality reviews', active) }}{% endif %}
+      {% if can('COMPLAINT') %}{{ m.navlink('/complaints', 'complaints', 'p-complaint', 'M12 4l9 16H3L12 4zm0 6v4m0 3v.01', 'Complaints', active) }}{% endif %}
+      {% if can('TRAINER') %}{{ m.navlink('/training', 'training', 'p-training', 'M3 9l9-5 9 5-9 5-9-5zm4 3v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4', 'Training scenarios', active) }}{% endif %}
+      {% if can('SALES') %}{{ m.navlink('/sales', 'sales', 'p-sales', 'M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01', 'Sales opportunities', active) }}{% endif %}
+    </ul>
+    <p class="nav-title">Presentation</p>
+    <ul>
+      {{ m.navlink('/personas', 'personas', 'p-deck', 'M16 19v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1M10 11a3 3 0 100-6 3 3 0 000 6zm9 8v-1a3 3 0 00-2-2.8M15 5.2a3 3 0 010 5.6', 'Personas & journey', active) }}
+      {{ m.navlink('/ideas', 'ideas', 'p-deck', 'M9 18h6m-5 3h4M12 3a6 6 0 00-3.5 10.9V16h7v-2.1A6 6 0 0012 3z', 'Ideas & feasibility', active) }}
+      {{ m.navlink('/pipeline', 'pipeline', 'p-deck', 'M6 6a2 2 0 100 .01M6 8v8m0 0a2 2 0 100 .01M18 12a2 2 0 100 .01M6 12h4a4 4 0 004-4V6', 'Pipeline', active) }}
+      {{ m.navlink('/present', 'present', 'p-deck', 'M4 5h16v11H4zM9 21h6m-3-5v5M10 8.5v4l4-2z', 'Presentation mode', '') }}
+    </ul>
+  </div>
+  <form class="logout" action="/logout" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <span class="who">{{ user }}</span>
+    <button type="submit" class="nav signout" aria-label="Sign out"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/></svg></span><span class="nav-label">Sign out</span></button>
+  </form>
+</nav>

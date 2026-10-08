@@ -1,0 +1,29 @@
+{% extends "app.njk" %}
+{% import "macros.njk" as m %}
+{% set title = "Sales opportunities" %}
+{% set active = "sales" %}
+{% set bodyClass = "p-sales" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Sales opportunities</h1>
+      <p class="lede">Offers that answer what the client just said, not a generic pitch.</p>
+    </header>
+    <ul class="opps">
+      {% for o in opportunities %}
+      <li class="opp">
+        <div class="opp-top">
+          <span class="avatar" aria-hidden="true">{{ o.initials }}</span>
+          <div><h2>{{ o.customer }}</h2><p class="muted small">Live conversation</p></div>
+          <div class="relevance">{{ m.ring(o.relevance) }}<span class="small muted">Relevance</span></div>
+        </div>
+        <p class="offer-label small muted">Suggested offer</p>
+        <p class="offer">{{ o.offer }}</p>
+        <blockquote class="heard">{{ o.reason }}</blockquote>
+        <div class="actions">
+          <button type="button" class="btn" data-toast="Offer {{ o.offer }} queued for {{ o.customer }} (demo)">Offer now</button>
+          <button type="button" class="btn-quiet" data-toast="Reminder set for {{ o.customer }} (demo)">Not now</button>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+{% endblock %}

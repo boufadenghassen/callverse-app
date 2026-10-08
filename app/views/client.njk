@@ -1,0 +1,107 @@
+{% extends "app.njk" %}
+{% import "macros.njk" as m %}
+{% set title = "Client simulator" %}
+{% set active = "client" %}
+{% set bodyClass = "p-client" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Client simulator</h1>
+      <p class="lede">Play the advisor. The simulated client reacts with her own mood, patience and memory.</p>
+    </header>
+    <div class="split">
+      <section class="panel" aria-labelledby="cfg">
+        <h2 id="cfg">Set up the client</h2>
+        <form action="/client" method="get" class="stack">
+          <label for="persona">Persona</label>
+          <select id="persona" name="persona">
+            {% for p in personas %}<option value="{{ p.key }}"{% if p.key == s.persona.key %} selected{% endif %}>{{ p.label }}</option>{% endfor %}
+          </select>
+          <p class="muted hint">{{ s.persona.blurb }}</p>
+          <label for="mix">Mix with a second persona</label>
+          <select id="mix" name="mix">
+            <option value="">None</option>
+            {% for p in personas %}<option value="{{ p.key }}"{% if p.key == s.mix %} selected{% endif %}>{{ p.label }}</option>{% endfor %}
+          </select>
+          <div class="row">
+            <div><label for="difficulty">Difficulty</label>
+              <select id="difficulty" name="difficulty">
+                {% for d in difficulties %}<option value="{{ d.key }}"{% if d.key == s.difficulty.key %} selected{% endif %}>{{ d.label }}</option>{% endfor %}
+              </select></div>
+            <div><label for="intent">Reason for the call</label>
+              <select id="intent" name="intent">
+                {% for i in intents %}<option value="{{ i.key }}"{% if i.key == s.intent %} selected{% endif %}>{{ i.label }}</option>{% endfor %}
+              </select></div>
+          </div>
+          <label class="check"><input type="checkbox" name="memory" value="true"{% if s.memory %} checked{% endif %}>
+            <span>Repeat contact (her history is on file)</span></label>
+          <button type="submit" class="btn">Start a new call</button>
+        </form>
+        <div class="history" id="history" hidden>
+          <h3>Your recent calls</h3>
+          <ol id="history-list"></ol>
+          <button type="button" class="btn-quiet small" id="history-clear">Clear history</button>
+        </div>
+      </section>
+
+      <section class="panel call" aria-labelledby="callh">
+        <div class="call-head">
+          <h2 id="callh">Live call</h2>
+          <div class="gauges">
+            <figure class="gauge">{{ m.ring(s.mood) }}<figcaption>Mood</figcaption></figure>
+            <figure class="gauge patience">{{ m.ring(s.patience) }}<figcaption>Patience</figcaption></figure>
+          </div>
+        </div>
+
+        {% set face = 'happy' if s.mood >= 60 else ('meh' if s.mood >= 30 else 'angry') %}
+        <div class="viz">
+          <svg class="face {{ face }}" viewBox="0 0 64 64" role="img"
+               aria-label="Client looks {{ 'content' if s.mood >= 60 else ('unsure' if s.mood >= 30 else 'angry') }}">
+            <circle class="head" cx="32" cy="32" r="28"/>
+            <circle class="eye" cx="23" cy="26" r="3"/><circle class="eye" cx="41" cy="26" r="3"/>
+            {% if s.mood < 30 %}<path class="brow" d="M17 19 L28 23 M47 19 L36 23"/>{% endif %}
+            {% if s.mood >= 60 %}<path class="mouth" d="M20 39 Q32 53 44 39"/>{% endif %}
+            {% if s.mood >= 30 and s.mood < 60 %}<path class="mouth" d="M22 44 H42"/>{% endif %}
+            {% if s.mood < 30 %}<path class="mouth" d="M21 48 Q32 36 43 48"/>{% endif %}
+          </svg>
+          <figure class="curve-wrap">
+            <svg class="mood-curve" viewBox="0 0 300 80" role="img" aria-label="Mood after each of your replies">
+              <line class="mid" x1="14" y1="40" x2="290" y2="40"/>
+              <polyline class="mc" pathLength="1" points="{{ moodCurve }}"/>
+              {% for p in moodPoints %}<circle class="mp" r="4" cx="{{ p.x }}" cy="{{ p.y }}"/>{% endfor %}
+            </svg>
+            <figcaption>Mood across the call</figcaption>
+          </figure>
+        </div>
+
+        <ol class="chat" aria-live="polite">
+          <li class="bubble them"><span class="who-tag">Client</span><span>{{ s.opening }}</span></li>
+          {% for t in s.turns %}
+          <li class="bubble you"><span class="who-tag">You</span><span>{{ t.label }}</span></li>
+          <li class="bubble them"><span class="who-tag">Client</span><span>{{ t.client }}</span>
+            <small class="deltas">mood {{ t.mood }} · patience {{ t.patience }}</small></li>
+          {% endfor %}
+        </ol>
+
+        {% if not s.ended %}
+        <div class="choices">
+          <h3>Your reply <span class="muted">({{ s.turns.length }} of {{ maxMoves }} moves)</span></h3>
+          {% for c in choices %}<a class="choice" href="{{ c.href }}">{{ c.label }}</a>{% endfor %}
+        </div>
+        {% else %}
+        <div class="outcome {{ 'good' if s.outcome.expectationMet else 'bad' }}" role="status"
+             data-key="{{ outcomeKey }}" data-persona="{{ s.persona.label }}" data-difficulty="{{ s.difficulty.label }}"
+             data-verdict="{{ s.outcome.verdict }}" data-churn="{{ s.outcome.churnRisk }}" data-met="{{ s.outcome.expectationMet }}">
+          <h3>{{ s.outcome.verdict }}</h3>
+          <dl class="facts">
+            <dt>Expectation met</dt><dd>{{ 'Yes' if s.outcome.expectationMet else 'No' }}</dd>
+            <dt>Churn risk</dt><dd><meter min="0" max="100" low="35" high="65" optimum="0" value="{{ s.outcome.churnRisk }}"></meter>
+              <span>{{ s.outcome.churnRisk }}%</span></dd>
+            <dt>Customer effort</dt><dd>{{ s.outcome.effort }}</dd>
+          </dl>
+          {% if s.outcome.notes.length %}<ul class="notes">{% for n in s.outcome.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+          <a class="btn-line" href="{{ replayHref }}">Replay this client</a>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+{% endblock %}

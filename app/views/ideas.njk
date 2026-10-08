@@ -1,0 +1,78 @@
+{% extends "app.njk" %}
+{% import "macros.njk" as m %}
+{% set title = "Ideas and feasibility" %}
+{% set active = "ideas" %}
+{% set bodyClass = "p-deck d-ideas" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Ideas &amp; feasibility</h1>
+      <p class="lede">Four idea groups per persona, rated on tech, data and impact. Each shows whether the app already lets you try it.</p>
+      <p class="head-actions"><button type="button" class="btn-line" data-print>Save as PDF</button></p>
+    </header>
+
+    <section class="stats" aria-label="Summary">
+      <div class="stat"><strong>{{ total }}</strong><span>ideas in total</span></div>
+      <div class="stat prod"><strong>{{ production }}</strong><span>to production</span></div>
+      <div class="stat proto"><strong>{{ prototype }}</strong><span>to prototype</span></div>
+      <div class="stat persp"><strong>{{ perspective }}</strong><span>kept as perspective</span></div>
+      <div class="stat live"><strong>{{ live }}</strong><span>live in this app</span></div>
+      <div class="stat part"><strong>{{ partial }}</strong><span>partly shown</span></div>
+    </section>
+
+    <section class="panel" aria-labelledby="mx">
+      <h2 id="mx">Feasibility map</h2>
+      <p class="muted">Each dot is one idea, placed by technical readiness and expected impact. Hover a dot to see which idea it is.</p>
+      <svg class="matrix" viewBox="0 0 420 310" role="img" aria-label="Scatter of the 28 ideas by technical readiness and impact">
+        <rect class="plot" x="70" y="15" width="330" height="255" rx="14"/>
+        <path class="gl" d="M180 15 V270 M290 15 V270 M70 100 H400 M70 185 H400"/>
+        <text class="ax" x="125" y="290" text-anchor="middle">Low</text><text class="ax" x="235" y="290" text-anchor="middle">Medium</text>
+        <text class="ax" x="345" y="290" text-anchor="middle">High</text>
+        <text class="ax" x="62" y="233" text-anchor="end">Low</text><text class="ax" x="62" y="148" text-anchor="end">Medium</text>
+        <text class="ax" x="62" y="63" text-anchor="end">High</text>
+        <text class="ax title" x="235" y="306" text-anchor="middle">Technical readiness →</text>
+        <text class="ax title" transform="translate(12 142) rotate(-90)" text-anchor="middle">Impact →</text>
+        {% for d in matrix %}
+        <circle class="mdot {{ d.decision }}" r="8" cx="{{ d.x }}" cy="{{ d.y }}">
+          <title>{{ d.text }}</title>
+        </circle>
+        {% endfor %}
+      </svg>
+      <p class="matrix-key"><span class="badge production">Production</span><span class="badge prototype">Prototype</span><span class="badge perspective">Perspective</span></p>
+    </section>
+
+    <div class="filters" role="group" aria-label="Filter ideas by decision">
+      <button type="button" class="chip-btn" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="chip-btn" data-filter="production" aria-pressed="false">Production</button>
+      <button type="button" class="chip-btn" data-filter="prototype" aria-pressed="false">Prototype</button>
+      <button type="button" class="chip-btn" data-filter="perspective" aria-pressed="false">Perspective</button>
+    </div>
+
+    {% for p in personas %}
+    <section class="idea-set {{ p.accent }}">
+      <header class="idea-set-head">
+        <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
+        <div><h2>{{ p.name }} · {{ p.agent }}</h2>
+          <p class="muted">{{ p.topPain }} · {{ p.decisionSummary }}</p></div>
+      </header>
+      <ul class="idea-grid">
+        {% for i in p.ideas %}
+        <li class="idea" data-decision="{{ i.decision | lower }}">
+          <div class="idea-top">
+            <span class="badge {{ i.decision | lower }}">{{ i.decision }}</span>
+            <span class="badge cov {{ i.coverage | lower }}">{{ 'Live in app' if i.coverage == 'LIVE' else ('Partly shown' if i.coverage == 'PARTIAL' else 'Roadmap') }}</span>
+          </div>
+          <h3>{{ i.group }}</h3>
+          <ul class="lines">{% for l in i.lines %}<li>{{ l }}</li>{% endfor %}</ul>
+          <div class="rates">
+            {{ m.pips('Tech', i.tech) }}
+            {{ m.pips('Data', i.data) }}
+            {{ m.pips('Impact', i.impact) }}
+          </div>
+          <p class="note muted">{{ i.demoNote }}</p>
+          {% if i.coverage != 'ROADMAP' and canOpen[p.key] %}<a class="btn-line" href="{{ p.url }}">Try it</a>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+{% endblock %}

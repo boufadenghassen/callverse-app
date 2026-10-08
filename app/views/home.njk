@@ -1,0 +1,42 @@
+{% extends "app.njk" %}
+{% set title = "Home" %}
+{% set active = "home" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Good to see you, <span>{{ user }}</span>.</h1>
+      <p class="lede">Each workspace mirrors one role of the center. You only see the ones your role allows.</p>
+      {% if isAdmin %}
+      <p class="head-actions">
+        <button type="button" class="btn" data-tour="start">Start the demo tour</button>
+        <span class="muted small">A guided walk through one customer story, page by page.</span>
+      </p>
+      {% endif %}
+    </header>
+    <ul class="workspaces">
+      {% if can('CLIENT') %}<li class="ws p-client"><a href="/client">
+        <strong>Client simulator</strong><span>Run a simulated call and watch the client's mood, patience and loyalty move.</span><em class="live">5 personas to mix</em></a></li>{% endif %}
+      {% if can('ADVISOR') %}<li class="ws p-advisor"><a href="/advisor">
+        <strong>Advisor console</strong><span>Customer context and a sourced answer on one screen.</span>{% if live.advisor %}<em class="live">{{ live.advisor }}</em>{% endif %}</a></li>{% endif %}
+      {% if can('WORKFORCE') %}<li class="ws p-workforce"><a href="/workforce">
+        <strong>Workforce twin</strong><span>Forecast the spike, then test the fix before applying it.</span>{% if live.workforce %}<em class="live">{{ live.workforce }}</em>{% endif %}</a></li>{% endif %}
+      {% if can('QUALITY') %}<li class="ws p-quality"><a href="/quality">
+        <strong>Quality reviews</strong><span>Every call scored, with the evidence behind each point.</span>{% if live.quality %}<em class="live">{{ live.quality }}</em>{% endif %}</a></li>{% endif %}
+      {% if can('COMPLAINT') %}<li class="ws p-complaint"><a href="/complaints">
+        <strong>Complaints</strong><span>Critical cases first, grouped by root cause.</span>{% if live.complaints %}<em class="live">{{ live.complaints }}</em>{% endif %}</a></li>{% endif %}
+      {% if can('TRAINER') %}<li class="ws p-training"><a href="/training">
+        <strong>Training scenarios</strong><span>Practice cases generated from real QA weaknesses.</span>{% if live.training %}<em class="live">{{ live.training }}</em>{% endif %}</a></li>{% endif %}
+      {% if can('SALES') %}<li class="ws p-sales"><a href="/sales">
+        <strong>Sales opportunities</strong><span>Relevant offers while the client is still talking.</span>{% if live.sales %}<em class="live">{{ live.sales }}</em>{% endif %}</a></li>{% endif %}
+    </ul>
+    <h2 class="section-title">Presentation</h2>
+    <ul class="workspaces deck">
+      <li class="ws p-deck"><a href="/personas">
+        <strong>Personas &amp; journey</strong><span>The seven personas, the client journey and the empathy map.</span></a></li>
+      <li class="ws p-deck"><a href="/ideas">
+        <strong>Ideas &amp; feasibility</strong><span>Every idea rated on tech, data and impact, with what the app already shows.</span></a></li>
+      <li class="ws p-deck"><a href="/pipeline">
+        <strong>Pipeline</strong><span>How the agents connect, and the before and after for each pain point.</span></a></li>
+      <li class="ws p-deck"><a href="/present">
+        <strong>Presentation mode</strong><span>A full-screen walkthrough with a live-demo button on every persona.</span><em class="live">Arrow keys to step</em></a></li>
+    </ul>
+{% endblock %}

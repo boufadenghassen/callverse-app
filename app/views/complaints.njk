@@ -1,0 +1,53 @@
+{% extends "app.njk" %}
+{% import "macros.njk" as m %}
+{% set title = "Complaints" %}
+{% set active = "complaints" %}
+{% set bodyClass = "p-complaint" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Open complaints</h1>
+      <p class="lede">Sorted into severity lanes, with the escalation risk and the root-cause cluster each case belongs to. Drag a card to another lane, or press Escalate to move it up one.</p>
+    </header>
+
+    {% for c in cases %}{% if c.escalationRisk >= 80 %}
+    <div class="early-warning" role="alert">
+      <span class="pulse" aria-hidden="true"></span>
+      <p><strong>Early warning:</strong> <span>{{ c.id }}</span> may escalate within
+        <span>{{ c.hoursLeft }}</span> h. Alert a supervisor now.</p>
+      <button type="button" class="btn-line" data-toast="Supervisor alerted about {{ c.id }} (demo, nothing was sent)">Alert supervisor</button>
+    </div>
+    {% endif %}{% endfor %}
+
+    <section class="stats" aria-label="Summary">
+      <div class="stat"><strong>{{ cases.length }}</strong><span>open cases</span></div>
+      <div class="stat prod"><strong>{{ critical }}</strong><span>critical</span></div>
+      <div class="stat"><strong>{{ avgRisk }}%</strong><span>average escalation risk</span></div>
+    </section>
+
+    <div class="lanes">
+      {% for severity, laneCases in lanes %}
+      <section class="lane lane-{{ severity | lower }}" data-lane="{{ severity | lower }}">
+        <h2 class="lane-head"><span>{{ severity }}</span><span class="count">{{ laneCases.length }}</span></h2>
+        {% if laneCases.length == 0 %}<p class="lane-empty muted">Nothing here.</p>{% endif %}
+        {% for c in laneCases %}
+        <article class="case" draggable="true" data-id="{{ c.id }}">
+          <div class="case-top"><span class="case-id">{{ c.id }}</span>
+            <span class="muted small">{{ c.cluster }}</span></div>
+          <p class="case-sum">{{ c.summary }}</p>
+          <div class="case-mid">
+            <div class="risk">{{ m.ring(c.escalationRisk) }}<span class="small muted">Escalation risk</span></div>
+            <div class="deadline">
+              <meter min="0" max="48" low="12" high="24" optimum="48" value="{{ c.hoursLeft }}"></meter>
+              <span class="small">{{ c.hoursLeft }} h left</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" data-toast="Case {{ c.id }} assigned (demo)">Take case</button>
+            <button type="button" class="btn-quiet" data-escalate>Escalate</button>
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+      {% endfor %}
+    </div>
+{% endblock %}

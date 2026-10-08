@@ -1,0 +1,8 @@
+{
+  "name": "callverse-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests that click through the running app (start it first with start-demo.bat).",
+  "scripts": { "test": "node --test demo.test.mjs" },
+  "dependencies": { "playwright-core": "^1.49.0" }
+}

@@ -1,0 +1,10 @@
+{% extends "base.njk" %}
+{% set title = "Error" %}
+{% set bodyClass = "login-page" %}
+{% block body %}
+<main class="login-card">
+  <h1>{{ status or 'Error' }}</h1>
+  <p>{{ message or 'Something went wrong. Please go back and try again.' }}</p>
+  <p><a href="/">Back to CallVerse</a></p>
+</main>
+{% endblock %}

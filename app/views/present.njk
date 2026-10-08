@@ -1,0 +1,105 @@
+{% extends "base.njk" %}
+{% set title = "Presentation" %}
+{% set bodyClass = "present p-deck d-present" %}
+{% block body %}
+<header class="pbar">
+  <a class="pexit" href="/">Exit</a>
+  <progress id="pprog" max="1" value="0" aria-label="Progress through the presentation"></progress>
+  <span class="pcount" id="pcount" aria-live="polite"></span>
+  <button type="button" class="btn-quiet" id="pnotes" aria-pressed="false">Notes (N)</button>
+  <button type="button" class="btn-quiet" data-print>Save as PDF</button>
+  <button type="button" class="btn-quiet" id="pfs">Full screen</button>
+</header>
+
+<main class="deck-stage" id="stage">
+
+  <section class="slide cover" data-notes="Introduce the project in one line: a digital twin that lets a contact center test decisions before applying them. Mention it is student work validated against seven personas." aria-label="Title">
+    <p class="kicker">Student project · Digital twin of a contact center</p>
+    <h1>CallVerse</h1>
+    <p class="big-lede">A digital twin to test decisions before applying them.</p>
+    <p class="muted">Ideation validation · personas, ideas, feasibility, implementation decisions</p>
+    <p class="hint-keys">Use <kbd>←</kbd> <kbd>→</kbd> to move, <kbd>F</kbd> for full screen</p>
+  </section>
+
+  <section class="slide" data-notes="Point to the dip in the curve. The pain is not the issue itself, it is repeating the story. That dip is exactly where the Advisor and Workforce agents step in." aria-label="The problem">
+    <p class="kicker">The problem</p>
+    <h2>Contact centers run on information that is slow, scattered or incomplete.</h2>
+    {% set label = "Client emotion across the journey" %}
+    {% include "journey.njk" %}
+    <p class="muted">The emotion dips between waiting in the queue and explaining the issue, exactly where our agents step in.</p>
+  </section>
+
+  <section class="slide" data-notes="Name the seven roles and their agents quickly. Say the next slides give each one a top pain point and the question we asked." aria-label="Seven personas">
+    <p class="kicker">Seven personas, seven agents</p>
+    <h2>One agent for each person in the center.</h2>
+    <ul class="mini-personas">
+      {% for p in personas %}
+      <li class="{{ p.accent }}">
+        <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
+        <strong>{{ p.name }}</strong><span class="muted">{{ p.agent }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% for p in personas %}
+  <section class="slide persona-slide {{ p.accent }}" aria-label="{{ p.name }}"
+           data-notes="Say the quote in her or his own words. Top pain: {{ p.topPain }}. Ask the audience: {{ p.hmw }} Decided: {{ p.decisionSummary }}. Then open the live demo.">
+    <p class="kicker">Persona {{ loop.index }} of {{ personas.length }}</p>
+    <div class="ps-head">
+      <span class="avatar big" aria-hidden="true">{{ p.initials }}</span>
+      <div><h2>{{ p.name }}</h2><p class="muted">{{ p.role }} → {{ p.agent }}</p></div>
+    </div>
+    <blockquote>{{ p.quote }}</blockquote>
+    <dl class="ps-facts">
+      <div><dt>Top pain</dt><dd>{{ p.topPain }}</dd></div>
+      <div><dt>How might we</dt><dd>{{ p.hmw }}</dd></div>
+      <div><dt>Ideas decided</dt><dd>{{ p.decisionSummary }}</dd></div>
+    </dl>
+    <p class="chips">{% for t in p.techniques %}<span class="chip">{{ t }}</span>{% endfor %}</p>
+    {% if canOpen[p.key] %}<a class="btn" href="{{ p.url }}">Live demo</a>{% endif %}
+  </section>
+  {% endfor %}
+
+  <section class="slide" data-notes="Read the three numbers: build now, prototype, keep for later. Open Ideas and feasibility if asked how each idea was rated on tech, data and impact." aria-label="Decisions">
+    <p class="kicker">Implementation decision</p>
+    <h2>What we build now, what we test, what waits.</h2>
+    <div class="stats big-stats">
+      <div class="stat"><strong>{{ total }}</strong><span>ideas rated on tech, data, impact</span></div>
+      <div class="stat prod"><strong>{{ production }}</strong><span>to production</span></div>
+      <div class="stat proto"><strong>{{ prototype }}</strong><span>to prototype</span></div>
+      <div class="stat persp"><strong>{{ perspective }}</strong><span>kept as perspective</span></div>
+    </div>
+    <a class="btn-line" href="/ideas">See every idea</a>
+  </section>
+
+  <section class="slide" data-notes="Walk the loop left to right. Stress that training feeds the simulator, so practice targets what QA keeps finding. Workforce, Complaints and Sales sit around the loop." aria-label="Agent loop">
+    <p class="kicker">Excellence marks</p>
+    <h2>One loop: simulate, assist, score, train.</h2>
+    <ol class="loop">
+      <li class="p-client"><span class="node-n">1</span><strong>Client Simulator</strong><span>Creates realistic, demanding clients.</span></li>
+      <li class="p-advisor"><span class="node-n">2</span><strong>Customer Advisor</strong><span>Finds the answer in one search.</span></li>
+      <li class="p-quality"><span class="node-n">3</span><strong>Quality Analyst</strong><span>Scores every call with evidence.</span></li>
+      <li class="p-training"><span class="node-n">4</span><strong>Training Agent</strong><span>Builds scenarios from QA weaknesses.</span></li>
+    </ol>
+    <p class="muted">↺ Training feeds the simulator, so practice targets what QA keeps finding.</p>
+  </section>
+
+  <section class="slide" data-notes="Pick two rows to read aloud, ideally Client and Workforce manager. End on how each pain point is answered." aria-label="Before and after">
+    <p class="kicker">Before and after</p>
+    <h2>Each pain point, answered.</h2>
+    <table class="ba">
+      <thead><tr><th scope="col">Who</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+      <tbody>{% for r in beforeAfter %}<tr><th scope="row">{{ r.who }}</th><td>{{ r.before }}</td><td>{{ r.after }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+
+  <section class="slide cover" data-notes="Invite questions. Offer to open any workspace live: everything in the deck can be tried in the app." aria-label="Thank you">
+    <p class="kicker">Thank you</p>
+    <h1>Questions?</h1>
+    <p class="big-lede">Everything in this deck can be tried in the app.</p>
+    <p class="actions"><a class="btn" href="/">Open the workspaces</a><a class="btn-line" href="/ideas">Ideas and coverage</a></p>
+  </section>
+</main>
+<aside class="notes" id="notes" hidden aria-live="polite"></aside>
+{% endblock %}

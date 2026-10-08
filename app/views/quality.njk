@@ -1,0 +1,53 @@
+{% extends "app.njk" %}
+{% set title = "Quality reviews" %}
+{% set active = "quality" %}
+{% set bodyClass = "p-quality" %}
+{% block content %}
+    <header class="page-head">
+      <h1>Quality reviews</h1>
+      <p class="lede">Every call is scored. Each lost point shows the moment in the transcript that caused it.</p>
+    </header>
+    {% for v in reviews %}
+    {% set r = v.review %}
+    <article class="panel review">
+      <header class="review-head">
+        <h2><span>{{ r.callId }}</span> · <span>{{ r.advisor }}</span></h2>
+        <p class="score{% if r.overall < 70 %} low{% endif %}">{{ r.overall }}/100</p>
+      </header>
+
+      <div class="timeline-wrap">
+        <svg class="timeline" viewBox="0 0 600 72" role="group" aria-label="Timeline of the call; each pin is a scored moment">
+          <rect class="track" x="24" y="30" width="552" height="8" rx="4"/>
+          {% for p in v.pins %}
+          <g class="pin{% if p.bad %} bad{% endif %}" tabindex="0" role="button"
+             data-index="{{ p.index }}" aria-label="{{ p.criterion }} at {{ p.time }}, {{ p.lost }} points lost">
+            <line x1="{{ p.x }}" x2="{{ p.x }}" y1="38" y2="50"/>
+            <circle cx="{{ p.x }}" cy="34" r="{{ p.radius }}"/>
+            <text text-anchor="middle" y="64" x="{{ p.x }}">{{ p.time }}</text>
+          </g>
+          {% endfor %}
+          <text class="end" x="24" y="14">0:00</text>
+          <text class="end" x="576" y="14" text-anchor="end">{{ v.length }}</text>
+        </svg>
+        <p class="pin-read" role="status" aria-live="polite">Select a pin to see the moment.</p>
+      </div>
+
+      <table class="criteria">
+        <caption class="sr-only">Score by criterion with evidence</caption>
+        <thead><tr><th scope="col">Criterion</th><th scope="col">Score</th><th scope="col">Why (evidence)</th><th scope="col">At</th></tr></thead>
+        <tbody>
+        {% for c in r.criteria %}
+        <tr data-index="{{ loop.index0 }}">
+          <th scope="row">{{ c.name }}</th>
+          <td><meter min="0" max="{{ c.max }}" value="{{ c.score }}" low="{{ c.max * 0.6 }}" high="{{ c.max * 0.85 }}" optimum="{{ c.max }}"></meter>
+              <span>{{ c.score }}/{{ c.max }}</span></td>
+          <td>{{ c.evidence }}</td>
+          <td class="muted">{{ c.timestamp }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="coach"><strong>Coaching hint.</strong> <span>{{ r.counterfactual }}</span></p>
+    </article>
+    {% endfor %}
+{% endblock %}

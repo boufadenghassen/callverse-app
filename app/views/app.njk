@@ -1,0 +1,9 @@
+{% extends "base.njk" %}
+{% block body %}
+<div class="shell">
+  {% include "sidebar.njk" %}
+  <main class="content" id="main" tabindex="-1">
+{% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
