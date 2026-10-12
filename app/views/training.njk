@@ -4,6 +4,7 @@
 {% set bodyClass = "p-training" %}
 {% block content %}
     <header class="page-head">
+      <p class="eyebrow">Rim · Training agent</p>
       <h1>Training scenarios</h1>
       <p class="lede">Advisors practise here first. New cases come from the weaknesses QA keeps finding, or from the generator below.</p>
     </header>
@@ -35,7 +36,7 @@
       {% set n = 3 if s.difficulty == 'Hard' else (2 if s.difficulty == 'Medium' else 1) %}
       <li class="scn" data-id="{{ s.id }}" data-title="{{ s.title }}" data-profile="{{ s.profile }}" data-difficulty="{{ s.difficulty }}">
         <div class="scn-top"><span class="case-id">{{ s.id }}</span>
-          <span class="diff" aria-label="Difficulty {{ s.difficulty }}">{% for k in [1, 2, 3] %}<i{% if k <= n %} class="on"{% endif %}></i>{% endfor %}</span></div>
+          <span class="diff" role="img" aria-label="Difficulty {{ s.difficulty }}">{% for k in [1, 2, 3] %}<i{% if k <= n %} class="on"{% endif %}></i>{% endfor %}</span></div>
         <h3>{{ s.title }}</h3>
         <p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p>
         <p class="origin muted small">{{ s.origin }}</p>

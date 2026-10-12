@@ -4,6 +4,7 @@
 {% set bodyClass = "p-workforce" %}
 {% block content %}
     <header class="page-head">
+      <p class="eyebrow">Sana · Workforce manager agent</p>
       <h1>Workforce twin <span class="muted">· queue {{ queue }}</span></h1>
       <p class="lede">Forecast the spike, simulate the fix, then decide.</p>
     </header>
@@ -26,6 +27,9 @@
           {% endfor %}
         </svg>
         <p class="legend"><span class="key forecast"></span>Forecast <span class="key actual"></span>Actual</p>
+      </section>
+      <section class="panel" aria-labelledby="sc">
+        <h2 id="sc">Load by hour</h2>
 
         <div class="scrub">
           <label for="hour">Scrub through the day</label>
@@ -43,24 +47,23 @@
         </ol>
         <p class="muted small heat-key">Load against a 60 calls/hour capacity: calm, busy, overloaded. Wait and SLA are estimates from the mock model.</p>
       </section>
-      <section class="panel" aria-labelledby="wi">
+    </div>
+    <section class="panel" aria-labelledby="wi">
         <h2 id="wi">What-if simulation</h2>
-        <form action="/workforce/simulate" method="post" class="stack" novalidate>
+        <form action="/workforce/simulate" method="post" class="simform" novalidate>
           <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <label for="queue">Queue</label>
-          <select id="queue" name="queue">
-            {% for qq in ['A', 'B', 'C', 'D', 'E'] %}<option value="{{ qq }}"{% if qq == form.queue %} selected{% endif %}>{{ qq }}</option>{% endfor %}
-          </select>
-          {% if errors.queue %}<p class="field-error">{{ errors.queue }}</p>{% endif %}
-          <label for="extraAdvisors">Extra advisors</label>
-          <input id="extraAdvisors" name="extraAdvisors" type="number" min="-5" max="10" value="{{ form.extraAdvisors }}">
-          {% if errors.extraAdvisors %}<p class="field-error">{{ errors.extraAdvisors }}</p>{% endif %}
-          <div class="row">
-            <div><label for="from">From</label><input id="from" name="from" type="time" value="{{ form.from }}"></div>
-            <div><label for="to">To</label><input id="to" name="to" type="time" value="{{ form.to }}"></div>
-          </div>
-          {% if errors.from %}<p class="field-error">{{ errors.from }}</p>{% endif %}
-          {% if errors.to %}<p class="field-error">{{ errors.to }}</p>{% endif %}
+          <div><label for="queue">Queue</label>
+            <select id="queue" name="queue">
+              {% for qq in ['A', 'B', 'C', 'D', 'E'] %}<option value="{{ qq }}"{% if qq == form.queue %} selected{% endif %}>{{ qq }}</option>{% endfor %}
+            </select>
+            {% if errors.queue %}<p class="field-error">{{ errors.queue }}</p>{% endif %}</div>
+          <div><label for="extraAdvisors">Extra advisors</label>
+            <input id="extraAdvisors" name="extraAdvisors" type="number" min="-5" max="10" value="{{ form.extraAdvisors }}">
+            {% if errors.extraAdvisors %}<p class="field-error">{{ errors.extraAdvisors }}</p>{% endif %}</div>
+          <div><label for="from">From</label><input id="from" name="from" type="time" value="{{ form.from }}">
+            {% if errors.from %}<p class="field-error">{{ errors.from }}</p>{% endif %}</div>
+          <div><label for="to">To</label><input id="to" name="to" type="time" value="{{ form.to }}">
+            {% if errors.to %}<p class="field-error">{{ errors.to }}</p>{% endif %}</div>
           <button type="submit" class="btn">Run simulation</button>
         </form>
         {% if result %}
@@ -73,6 +76,5 @@
           <ol>{% for r in result.recommendations %}<li>{{ r }}</li>{% endfor %}</ol>
         </div>
         {% endif %}
-      </section>
-    </div>
+    </section>
 {% endblock %}

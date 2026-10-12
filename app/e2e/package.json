@@ -3,6 +3,14 @@
   "private": true,
   "type": "module",
   "description": "Browser tests that click through the running app (start it first with start-demo.bat).",
-  "scripts": { "test": "node --test demo.test.mjs" },
-  "dependencies": { "playwright-core": "^1.49.0" }
+  "scripts": {
+    "test": "node --test demo.test.mjs",
+    "audit": "node audit.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0"
+  }
 }

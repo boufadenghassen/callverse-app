@@ -1,3 +1,5 @@
+import { customerLine } from './customer-llm';
+
 /**
  * Client Simulator agent (deck: persona engine, emotional dynamics, memory, outcome signals).
  * Deterministic and stateless: a call is replayed from the moves chosen so far, so the same URL
@@ -36,10 +38,12 @@ export const MOVES = {
   CHECK_POLICY: { label: 'Check the refund policy before promising' },
   PROMISE: { label: 'Promise the refund right away' },
   FOLLOW_UP: { label: 'Confirm the fix in writing and set a follow-up' },
+  OTHER: { label: 'Said something else' }, // only reached by typed replies that match no move; has no button
 } as const;
 export type MoveKey = keyof typeof MOVES;
 
-export interface Turn { move: MoveKey; client: string; mood: number; patience: number }
+/** `said` is what the advisor typed, or null when a button was used. */
+export interface Turn { move: MoveKey; said: string | null; client: string; mood: number; patience: number }
 export interface Outcome { verdict: string; expectationMet: boolean; churnRisk: number; effort: number; notes: string[] }
 export interface Session {
   persona: PersonaKey; mix: PersonaKey | null; difficulty: DifficultyKey; intent: IntentKey; memory: boolean;
@@ -49,7 +53,7 @@ export interface Session {
 const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
 
 export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: DifficultyKey, intent: IntentKey,
-                       memory: boolean, moves: MoveKey[]): Session {
+                       memory: boolean, moves: MoveKey[], said: (string | null)[] = []): Session {
   const p = PERSONAS[persona], d = DIFFICULTIES[difficulty];
   let repeat: number = p.repeat, empathy: number = p.empathy, speed: number = p.speed, mood: number = p.mood, patience: number = p.patience;
   if (mix) { // persona mixing: blend the two profiles
@@ -65,7 +69,7 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
   let effort = 0, checked = false, risky = false, closed = false, hungUp = false;
   const neg = d.penalty;
 
-  for (const m of moves) {
+  for (const [i, m] of moves.entries()) {
     if (turns.length >= MAX_MOVES || closed || hungUp) break;
     let dm: number, dp: number;
     switch (m) {
@@ -74,12 +78,14 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
       case 'TRANSFER': dm = -8 * neg; dp = -(8 + 10 * speed) * neg; effort++; break;
       case 'CHECK_POLICY': dm = 2; dp = -(4 + 6 * speed) * neg; checked = true; break;
       case 'PROMISE': dm = 14; dp = 5; if (!checked) risky = true; break;
+      case 'OTHER': dm = 1; dp = -3; break; // small talk: time passes, nothing is solved
       default: dm = 8 + 6 * empathy; dp = 6; closed = true;
     }
     mood = clamp(mood + dm);
     patience = clamp(patience + dp);
     if (patience <= 0) hungUp = true;
-    turns.push({ move: m, client: reaction(m, memory, mood, hungUp), mood, patience });
+    const advisorSaid = said[i] ?? null;
+    turns.push({ move: m, said: advisorSaid, client: customerLine({ persona, intent, difficulty, move: m, mood, memory, hungUp, turn: i, advisorSaid }), mood, patience });
   }
 
   let outcome: Outcome | null = null;
@@ -97,19 +103,4 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
     outcome = { verdict, expectationMet: met, churnRisk, effort, notes };
   }
   return { persona, mix, difficulty, intent, memory, opening, turns, mood, patience, outcome };
-}
-
-const REACTIONS: Record<MoveKey, (memory: boolean) => [string, string, string]> = {
-  EMPATHY: () => ["Fine, but words don't fix my bill.", 'Okay. At least you seem to know my file.', 'Thank you, that already feels better.'],
-  ASK_REPEAT: (memory) => ['Again?! I already told your colleagues everything!',
-    memory ? 'You have my history right there.' : 'Sure... though I did explain this before.', 'Of course, let me go through it.'],
-  TRANSFER: () => ['Another transfer? Unbelievable.', "Please don't make me start over with someone new.", "Alright, I'll hold."],
-  CHECK_POLICY: () => ['How long is this going to take?', "Okay, I'll wait a moment.", "Good, I'd rather it be right."],
-  PROMISE: () => ["I'll believe it when I see it.", "Good. I hope that's really confirmed.", 'Wonderful, thank you.'],
-  FOLLOW_UP: () => ["Fine. I'll check my email.", 'Okay, that works for me.', "Perfect. That's all I needed."],
-};
-
-function reaction(m: MoveKey, memory: boolean, mood: number, hungUp: boolean): string {
-  if (hungUp) return "That's it. I'm done, goodbye.";
-  return REACTIONS[m](memory)[mood < 30 ? 0 : mood < 60 ? 1 : 2];
 }

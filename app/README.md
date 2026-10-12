@@ -1,6 +1,6 @@
-# CallVerse Web (NestJS)
+# orqestra web (NestJS)
 
-The CallVerse web app rebuilt on **Node.js + NestJS 12**, all in **TypeScript** (server in `src/`, browser script in `client/`). Pages are server-rendered with Nunjucks, so the
+The orqestra web app rebuilt on **Node.js + NestJS 12**, all in **TypeScript** (server in `src/`, browser script in `client/`). Pages are server-rendered with Nunjucks, so the
 strict CSP (no inline scripts or styles) and the existing `public/css/app.css` and `public/js/app.js` work unchanged.
 One workspace per persona, each locked to its role.
 

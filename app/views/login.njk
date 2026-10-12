@@ -1,9 +1,11 @@
 {% extends "base.njk" %}
 {% set title = "Sign in" %}
 {% set bodyClass = "login-page" %}
+{% import "macros.njk" as m %}
 {% block body %}
 <aside class="login-hero" aria-hidden="true">
-  <span class="brand">CallVerse</span>
+  <span class="brand"><span class="orb" aria-hidden="true">{{ m.logo() }}</span><span>{{ m.wordmark() }}</span></span>
+  <p class="tagline">Every voice, in tune</p>
   <h2>See the whole call center before it happens.</h2>
   <p>A digital twin for advisors, workforce, quality, complaints, training and sales.</p>
   <ul class="dots">
@@ -13,7 +15,7 @@
 </aside>
 <main class="login-card">
   <h1>Sign in</h1>
-  <p class="lede">Use your CallVerse account to continue.</p>
+  <p class="lede">Use your orqestra account to continue.</p>
   {% if error %}<p class="alert" role="alert">Wrong username or password, or the account is temporarily locked.</p>{% endif %}
   {% if loggedOut %}<p class="notice" role="status">You have been signed out.</p>{% endif %}
   <form action="/login" method="post">

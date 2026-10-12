@@ -1,4 +1,4 @@
-/* CallVerse browser script (TypeScript, compiled to public/js/app.js by `npm run build`).
+/* orqestra browser script (TypeScript, compiled to public/js/app.js by `npm run build`).
    Progressive enhancement only: every page works without it. No inline styles (CSP). */
 (() => {
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,6 +100,43 @@
     requestAnimationFrame(tick);
   });
 
+  // Scroll reveal: panels and cards below the fold fade up as they come into view, a few milliseconds apart.
+  // Everything stays visible without JavaScript or when the system asks for reduced motion.
+  if (!calm && 'IntersectionObserver' in window) {
+    const SEL = '.panel, .ws, .stat, .persona, .idea, .opp, .scn, .case, .quad, .lane';
+    const below = $$(SEL).filter((el) => !el.parentElement?.closest(SEL) && el.getBoundingClientRect().top > innerHeight * 0.92);
+    below.forEach((el) => el.classList.add('pre'));
+    const seen = new IntersectionObserver((entries) => {
+      entries.filter((e) => e.isIntersecting).forEach((e, i) => {
+        const el = e.target as HTMLElement;
+        el.style.transitionDelay = `${Math.min(i, 5) * 70}ms`;
+        el.classList.add('in');
+        seen.unobserve(el);
+        setTimeout(() => { el.classList.add('seen'); el.classList.remove('pre', 'in'); el.style.transitionDelay = ''; }, 1400 + i * 70);   // back to normal hover behaviour (and no replay of the entrance animation)
+      });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.04 });
+    below.forEach((el) => seen.observe(el));
+  }
+
+  // Numbers in the summary tiles count up once, when they are first seen.
+  if (!calm && 'IntersectionObserver' in window) {
+    const counter = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      counter.unobserve(e.target);
+      const node = e.target.firstChild;
+      const m = node?.nodeType === Node.TEXT_NODE ? /^(\d+(?:\.\d+)?)([^]*)$/.exec(node.nodeValue ?? '') : null;
+      if (!node || !m) return;
+      const end = +m[1], decimals = (m[1].split('.')[1] ?? '').length, t0 = performance.now();
+      const tick = (t: number) => {
+        const k = Math.min((t - t0) / 900, 1);
+        node.nodeValue = `${(end * (1 - Math.pow(1 - k, 3))).toFixed(decimals)}${m[2]}`;
+        if (k < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }), { threshold: 0.6 });
+    $$('.stat strong').forEach((el) => counter.observe(el));
+  }
+
   // Back/forward cache can restore a page mid-spinner
   addEventListener('pageshow', () => $$('.is-loading').forEach((b) => b.classList.remove('is-loading')));
 
@@ -186,7 +223,7 @@
       Object.assign(li.dataset, { id: s.id, title: s.title, profile: s.profile, difficulty: s.difficulty });
       const top = li.appendChild(make('div', { className: 'scn-top' }));
       top.append(make('span', { className: 'case-id', textContent: s.id }));
-      const diff = top.appendChild(make('span', { className: 'diff', ariaLabel: `Difficulty ${s.difficulty}` }));
+      const diff = top.appendChild(make('span', { className: 'diff', role: 'img', ariaLabel: `Difficulty ${s.difficulty}` }));
       for (let k = 0; k < 3; k++) diff.append(make('i', { className: k <= levels.indexOf(s.difficulty) ? 'on' : '' }));
       li.append(make('h3', { textContent: s.title }));
       const chips = li.appendChild(make('p', { className: 'chips' }));
@@ -374,13 +411,113 @@
     });
   }
 
+  // Particles: a calm field of drifting dots joined by faint lines, in the page's accent colour. Behind the content, never
+  // blocks clicks, pauses when the tab is hidden, off by default for people who ask their system for reduced motion, and
+  // the sidebar button turns it off or on (remembered per browser).
+  const fx = (() => {
+    interface Dot { x: number; y: number; vx: number; vy: number; r: number }
+    const canvas = make('canvas', { className: 'fx' });
+    canvas.setAttribute('aria-hidden', 'true');
+    const ctx = canvas.getContext('2d');
+    let dots: Dot[] = [], w = 0, h = 0, frame = 0, rgb = '47,91,234', on = false;
+    const pointer = { x: -9999, y: -9999 };
+    const LINK = 120, PUSH = 140;
+
+    const refresh = () => { // read the accent colour of the current page and theme
+      const m = /^#([0-9a-f]{6})$/i.exec(getComputedStyle(document.body).getPropertyValue('--accent').trim());
+      if (m) rgb = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)).join(',');
+    };
+    const resize = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      w = innerWidth; h = innerHeight;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const want = Math.max(18, Math.min(70, Math.round((w * h) / 22000)));
+      while (dots.length < want) dots.push({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35, r: 1.2 + Math.random() * 1.8 });
+      dots.length = want;
+    };
+    const tick = () => {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, w, h);
+      for (const d of dots) {
+        const dx = d.x - pointer.x, dy = d.y - pointer.y, dist = Math.hypot(dx, dy);
+        if (dist < PUSH && dist > 0) { d.vx += (dx / dist) * 0.02; d.vy += (dy / dist) * 0.02; } // gently pushed away from the pointer
+        d.vx = Math.max(-0.6, Math.min(0.6, d.vx * 0.995)); d.vy = Math.max(-0.6, Math.min(0.6, d.vy * 0.995));
+        d.x += d.vx; d.y += d.vy;
+        if (d.x < -10) d.x = w + 10; else if (d.x > w + 10) d.x = -10;
+        if (d.y < -10) d.y = h + 10; else if (d.y > h + 10) d.y = -10;
+      }
+      ctx.lineWidth = 1;
+      for (let i = 0; i < dots.length; i++) for (let j = i + 1; j < dots.length; j++) {
+        const d = Math.hypot(dots[i].x - dots[j].x, dots[i].y - dots[j].y);
+        if (d < LINK) { ctx.strokeStyle = `rgba(${rgb},${((1 - d / LINK) * 0.22).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(dots[i].x, dots[i].y); ctx.lineTo(dots[j].x, dots[j].y); ctx.stroke(); }
+      }
+      ctx.fillStyle = `rgba(${rgb},0.45)`;
+      for (const d of dots) { ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill(); }
+      frame = requestAnimationFrame(tick);
+    };
+    const run = () => { if (on && !document.hidden && !frame) frame = requestAnimationFrame(tick); };
+    const halt = () => { cancelAnimationFrame(frame); frame = 0; };
+    addEventListener('mousemove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; }, { passive: true });
+    addEventListener('mouseout', () => { pointer.x = pointer.y = -9999; });
+    let resizing = 0;
+    addEventListener('resize', () => { clearTimeout(resizing); resizing = window.setTimeout(() => { if (on) resize(); }, 150); });
+    document.addEventListener('visibilitychange', () => (document.hidden ? halt() : run()));
+    return {
+      set(next: boolean) {
+        on = next;
+        if (on) { refresh(); document.body.append(canvas); resize(); run(); } else { halt(); canvas.remove(); }
+      },
+      refresh,
+    };
+  })();
+  const fxButton = $('.fx-toggle');
+  const fxState = store.get('cv-fx') ?? (calm ? 'off' : 'on');
+  const setFx = (on: boolean) => {
+    fx.set(on);
+    fxButton?.setAttribute('aria-pressed', String(on));
+    fxButton?.setAttribute('aria-label', on ? 'Turn particles off' : 'Turn particles on');
+    const label = fxButton && $('.nav-label', fxButton);
+    if (label) label.textContent = on ? 'Particles on' : 'Particles off';
+  };
+  setFx(fxState === 'on');
+  fxButton?.addEventListener('click', () => { const on = fxButton.getAttribute('aria-pressed') !== 'true'; setFx(on); store.set('cv-fx', on ? 'on' : 'off'); });
+
+  // Keyboard shortcuts window: press ? anywhere (except while typing)
+  const help = make('dialog', { className: 'shortcuts', ariaLabel: 'Keyboard shortcuts' });
+  const keys: [string, string][] = [['Ctrl K', 'Jump to any page'], ['?', 'Show this list'], ['Esc', 'Close a window'],
+    ['← →', 'Previous or next slide (presentation mode)'], ['N', 'Speaker notes (presentation mode)'], ['F', 'Full screen (presentation mode)']];
+  help.append(make('h2', { textContent: 'Keyboard shortcuts' }));
+  const list = help.appendChild(document.createElement('dl'));
+  keys.forEach(([k, what]) => {
+    const dt = document.createElement('dt');
+    k.split(' ').forEach((part, i) => { if (i) dt.append(' '); dt.append(make('kbd', { textContent: part })); });
+    list.append(dt, make('dd', { textContent: what }));
+  });
+  help.append(make('p', { className: 'shortcuts-foot', textContent: 'Everything in orqestra can also be done with the mouse.' }));
+  help.addEventListener('click', (e) => { if (e.target === help) help.close(); });
+  document.body.append(help);
+  addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement | null;
+    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || t?.closest('input, textarea, select, [contenteditable="true"]')) return;
+    e.preventDefault();
+    if (help.open) help.close(); else help.showModal();
+  });
+  // "Try again" on error pages
+  document.addEventListener('click', (e) => { if (hit(e, '[data-reload]')) location.reload(); });
+
   // Save as PDF: the print stylesheet lays slides and pages out for paper
   document.addEventListener('click', (e) => { if (hit(e, '[data-print]')) print(); });
 
   // Dark mode: follows the system until the user picks, then remembers the choice
   const themeBtn = $('.theme-toggle');
   const setTheme = (t: string) => {
+    if (!calm && document.documentElement.dataset.theme) {   // cross-fade the colours instead of snapping
+      document.documentElement.classList.add('theme-fade');
+      setTimeout(() => document.documentElement.classList.remove('theme-fade'), 520);
+    }
     document.documentElement.dataset.theme = t;
+    fx.refresh();
     if (themeBtn) {
       themeBtn.setAttribute('aria-label', t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
       $('.nav-label', themeBtn)!.textContent = t === 'dark' ? 'Light mode' : 'Dark mode';
@@ -474,7 +611,7 @@
 
   // Demo tour: one customer story across the workspaces. The step is kept in sessionStorage.
   const STEPS: [path: string, title: string, text: string][] = [
-    ['/', 'Welcome', 'CallVerse is a digital twin of a contact center: seven personas, seven agents. This tour follows one customer story, page by page.'],
+    ['/', 'Welcome', 'orqestra is a digital twin of a contact center: seven personas, seven agents. This tour follows one customer story, page by page.'],
     ['/client', 'Yasmine calls', 'Play the advisor. Pick replies and watch her mood and patience move. Try asking her to repeat herself and see the call go wrong.'],
     ['/advisor', 'Karim finds the answer', 'One screen: the customer 360° and a sourced answer. No more five open tabs.'],
     ['/workforce', 'Sana sees the spike coming', 'Drag the slider to scrub through the day, then run the what-if to test a fix before applying it.'],

@@ -1,10 +1,11 @@
-/* CallVerse web — "soft structuralism": airy light surfaces, nested-ring cards, floating shell, spring motion.
+/* orqestra web — "soft structuralism": airy light surfaces, nested-ring cards, floating shell, spring motion.
    System fonts only and no inline styles (CSP: font-src/style-src 'self'). Animates transform + opacity only. */
+@font-face { font-family: "Plus Jakarta Sans"; src: url("/fonts/plus-jakarta-sans.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
 :root {
   --ink: #0e1730;
   --ink-2: #384358;
   --muted: #6b7489;
-  --paper: #eceef4;
+  --paper: #eeeadf;
   --surface: #ffffff;
   --line: #e6e9f1;
   --line-strong: #d3d9e6;
@@ -144,7 +145,7 @@ strong { color: var(--ink); font-weight: 700; }
 
 /* Forms and buttons */
 label { display: block; font-weight: 650; font-size: .8125rem; color: var(--ink); margin: var(--s4) 0 var(--s1); }
-input, select { font: inherit; color: var(--ink); width: 100%; padding: .65rem .9rem; border: 0; border-radius: var(--r-ctl); background: #f6f7fb; box-shadow: inset 0 0 0 1px var(--line-strong), inset 0 1px 2px rgba(14,23,48,.04); transition: box-shadow .4s var(--ease), background .4s var(--ease); }
+input, select, textarea { font: inherit; color: var(--ink); width: 100%; padding: .65rem .9rem; border: 0; border-radius: var(--r-ctl); background: #fbf9f2; box-shadow: inset 0 0 0 1px var(--line-strong), inset 0 1px 2px rgba(14,23,48,.04); transition: box-shadow .4s var(--ease), background .4s var(--ease); }
 input:hover, select:hover { background: #f1f3f9; }
 input:focus, select:focus { outline: none; background: #fff; box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent); }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
@@ -564,13 +565,12 @@ html.slides .slide.past { transform: translateX(-5%); }
   --rail: 5.75rem;
   --line: rgba(14,23,48,.08);
 }
-html { background: #f4d3cd; }
+html { background: #f6f2e7; }   /* eggwhite */
 body { background: transparent; }
-/* the gradient lives on a fixed layer, so scrolling never repaints it */
+/* a very faint glow in the page's accent colour on the fixed layer, so scrolling never repaints it */
 body::before { background:
-  radial-gradient(38rem 28rem at 8% 6%, rgba(255,255,255,.38), transparent 70%),
-  radial-gradient(34rem 26rem at 50% 112%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-  linear-gradient(118deg, #f9b79b 0%, #f8cbbd 24%, #ecd3ea 56%, #d5bdf0 80%, #c9b2f2 100%); }
+  radial-gradient(38rem 28rem at 8% 6%, rgba(255,255,255,.55), transparent 70%),
+  radial-gradient(34rem 26rem at 50% 112%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%); }
 dialog.palette, .palette input { background: #fff; }
 
 /* ---------- Rail ---------- */
@@ -631,7 +631,7 @@ html.nav-open .who::first-letter { font: inherit; }
 .login-hero p { color: var(--ink-2); }
 .login-hero .brand .orb { width: 2.2rem; height: 2.2rem; }
 .login-hero::before { background: radial-gradient(circle, rgba(255,255,255,.7), transparent 65%); }
-.login-hero::after { background: radial-gradient(circle, rgba(122,79,214,.35), transparent 65%); }
+.login-hero::after { background: radial-gradient(circle, rgba(227,162,59,.30), transparent 65%); }
 .login-card { background: rgba(255,255,255,.7); border-radius: 28px; margin: auto 3rem auto 0; box-shadow: var(--ring), var(--lift-hi); }
 
 @media (max-width: 60rem) {
@@ -647,7 +647,7 @@ html.nav-open .who::first-letter { font: inherit; }
   .login-card { margin: auto; }
 }
 @media (hover: none) { .nav-label { display: none; } html.nav-open .nav-label { display: block; } }
-@media (max-height: 900px) { .nav-scroll { overflow-y: auto; scrollbar-width: none; } }
+@media (max-height: 620px) { .nav-scroll { overflow-y: auto; scrollbar-width: none; } }   /* only when even the smallest icons do not fit; scrolling would clip the hover names */
 
 html.slides { background: var(--side); }
 /* login hero brand keeps its orb, and the hero no longer clips its glow */
@@ -741,7 +741,7 @@ html[data-theme="dark"] .brand .orb { box-shadow: inset 0 0 0 7px rgba(18,24,44,
 html[data-theme="dark"] .who { background: #f1f4fb; color: #0e1730; }
 html[data-theme="dark"].nav-open .who { background: none; color: var(--ink); }
 html[data-theme="dark"].nav-open .logout { background: rgba(255,255,255,.06); }
-html[data-theme="dark"] input, html[data-theme="dark"] select { background: rgba(255,255,255,.06); color: var(--ink); }
+html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea { background: rgba(255,255,255,.06); color: var(--ink); }
 html[data-theme="dark"] input:hover, html[data-theme="dark"] select:hover { background: rgba(255,255,255,.09); }
 html[data-theme="dark"] input:focus, html[data-theme="dark"] select:focus { background: rgba(255,255,255,.1); }
 html[data-theme="dark"] select option { background: #1b2238; color: var(--ink); }
@@ -808,3 +808,170 @@ html[data-theme="dark"] .tour-dots i { background: rgba(14,23,48,.2); } html[dat
 .patterns { list-style: none; margin: var(--s4) 0; padding: 0; display: grid; gap: var(--s3); }
 .patterns li { line-height: 1.5; }
 .insight-legend { margin: 0 7px var(--s6); }
+
+/* ---------- Typed replies in the client simulator ---------- */
+.say { display: grid; gap: var(--s2); margin-top: var(--s4); }
+.say label { font-weight: 600; font-size: .875rem; color: var(--ink-2); }
+.say textarea { resize: vertical; min-height: 3.5rem; }
+.say .btn-line { justify-self: start; }
+.read-as { display: block; margin-top: .25rem; font-size: .75rem; opacity: .75; font-style: italic; }
+/* ---------- Contrast fixes (WCAG AA): text-safe accent colours ---------- */
+:root { --accent-ink: #2a51d0; --accent-strong: #2f5bea; }
+html[data-theme="dark"] { --accent-ink: #8da5f3; }
+.p-advisor { --accent-ink: #2558bb; --accent-strong: #2b66da; }
+html[data-theme="dark"] .p-advisor { --accent-ink: #88adf5; }
+.p-workforce { --accent-ink: #6a45ba; --accent-strong: #7a4fd6; }
+html[data-theme="dark"] .p-workforce { --accent-ink: #b59ce8; }
+.p-quality { --accent-ink: #974612; --accent-strong: #b05116; }
+html[data-theme="dark"] .p-quality { --accent-ink: #e49c6f; }
+.p-complaint { --accent-ink: #0b6864; --accent-strong: #0d7975; }
+html[data-theme="dark"] .p-complaint { --accent-ink: #6fb9b6; }
+.p-training { --accent-ink: #7b5602; --accent-strong: #8f6502; }
+html[data-theme="dark"] .p-training { --accent-ink: #d0ad5b; }
+.p-sales { --accent-ink: #a52b68; --accent-strong: #c03279; }
+html[data-theme="dark"] .p-sales { --accent-ink: #dd8db5; }
+.p-client { --accent-ink: #086390; --accent-strong: #0972a6; }
+html[data-theme="dark"] .p-client { --accent-ink: #6abbe2; }
+.p-deck { --accent-ink: #414ec9; --accent-strong: #4553d6; }
+html[data-theme="dark"] .p-deck { --accent-ink: #99a0e8; }
+.chip, .btn-line, .agent-tag, .quad h3, .badge.live, .ws .live, .stat.live strong, .steps .num, .whatif .arrow { color: var(--accent-ink); }
+.btn, .bubble.you, .chip-btn[aria-pressed="true"], .avatar { background: var(--accent-strong); }
+.bubble.you .who-tag { opacity: .92; }
+.bubble.them .who-tag { opacity: 1; color: var(--muted); }
+.heat-v { opacity: 1; }
+.lane-high { --lane: #8a5700; }
+html[data-theme="dark"] .lane-critical { --lane: #ff8a7d; } html[data-theme="dark"] .lane-high { --lane: #f2c14e; } html[data-theme="dark"] .lane-medium { --lane: #9fb0cf; }
+html[data-theme="dark"] .lane-head .count { color: #10152a; }
+:root { --muted: #565d6e; }
+
+/* Short screens: smaller rail icons so every workspace stays visible without scrolling the rail */
+@media (min-width: 901px) and (max-height: 920px) {
+  .nav .ico { width: 2rem; height: 2rem; }
+  .nav .ico svg { width: 1rem; height: 1rem; }
+  .sidebar { gap: .5rem; padding-block: .6rem; }
+  .nav-scroll { gap: 3px; }
+  .nav-title { margin-block: .15rem; }
+}
+@media (min-width: 901px) and (max-height: 800px) {
+  .nav .ico { width: 1.7rem; height: 1.7rem; }
+  .nav .ico svg { width: .9rem; height: .9rem; }
+  .nav-scroll { gap: 2px; }
+}
+@media (min-width: 901px) and (max-height: 700px) {
+  .nav .ico { width: 1.5rem; height: 1.5rem; }
+  .nav .ico svg { width: .8rem; height: .8rem; }
+  .sidebar { gap: .3rem; padding-block: .45rem; }
+}
+
+/* ---------- orqestra brand: logo colours, wordmark, tagline ---------- */
+:root { --logo-ring: #a86a0b; --logo-wave: #121418; }
+html[data-theme="dark"], body.present { --logo-ring: #e3a23b; --logo-wave: #f3efe4; }
+.logo { display: block; width: 100%; height: 100%; }
+.logo .ring { stroke: var(--logo-ring); }
+.logo .wave { stroke: var(--logo-wave); }
+.brand::before, .login-hero .brand::before { content: none; display: none; }
+.brand .orb, .login-hero .brand .orb { background: none; box-shadow: none; border-radius: 0; display: block; flex: none; }
+.brand .orb { width: 2.5rem; height: 2.5rem; }
+.login-hero .brand .orb { width: 2.6rem; height: 2.6rem; }
+.login-hero .brand { gap: var(--s3); }
+.brand:hover .orb { transform: none; }
+.q { color: var(--logo-ring); }
+.tagline { margin: var(--s2) 0 var(--s6); font: 500 .75rem ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+.cover-logo { display: block; width: 5.5rem; height: 5.5rem; margin: 0 0 var(--s4); }
+.slide.cover { justify-items: start; }
+html[data-theme="dark"] .brand .orb, html[data-theme="dark"] .login-hero .brand .orb { box-shadow: none; background: none; }
+
+/* ---------- Particles (drawn by client/app.ts) ---------- */
+.fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.nav .ico svg circle { fill: currentColor; stroke: none; }
+@media print { .fx { display: none; } }
+
+/* Expanded sidebar: the hover "tooltip" shift must not apply to the in-line names (they jumped up by half their height) */
+html.nav-open .nav:hover .nav-label, html.nav-open .nav:focus-visible .nav-label,
+html.nav-open .brand:hover .nav-label, html.nav-open .brand:focus-visible .nav-label { transform: translateX(6px); }   /* a small nudge to the right, so the hover is clear */
+/* both modes: the name moves with a little spring (collapsed: slides out from the icon, expanded: nudges right) */
+.nav-label { transition: opacity .25s var(--ease), transform .45s var(--spring); }
+html:not(.nav-open) .nav-label { transform: translate(-12px, -50%); }
+
+/* The sidebar (and its hover names) sit above the page cards, never underneath them */
+.sidebar { z-index: 50; }
+
+/* ---------- Balance: equal cards, equal-height rows, centred charts ---------- */
+.workspaces { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.workspaces.deck { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.workspaces .ws:nth-child(n), .workspaces.deck .ws:nth-child(n), .ws:only-child { grid-column: auto; }
+.ws a { height: 100%; box-sizing: border-box; }
+.workspaces .ws { display: grid; }
+.split { align-items: stretch; }
+.split.wide-left { grid-template-columns: 1.6fr minmax(18rem, 1fr); }
+.split > .panel { display: flex; flex-direction: column; }
+/* the client's set-up panel is a side control: it stays in view while the call grows */
+body.p-client .split > .panel:first-child { align-self: start; position: sticky; top: 1rem; }
+/* the what-if form is one row under the two panels above it */
+.simform { display: grid; grid-template-columns: repeat(4, minmax(8rem, 1fr)) auto; gap: var(--s4); align-items: start; }
+.simform .btn { align-self: end; white-space: nowrap; }
+.content > .panel { margin-top: 0; }
+.insight-grid > .panel { display: flex; flex-direction: column; }
+.insight-grid > .panel .ibars { margin-block: auto; }
+.insight-grid > div { align-self: center; }
+@media (max-width: 60rem) { .simform { grid-template-columns: 1fr 1fr; } .simform .btn { grid-column: 1 / -1; } }
+.ws a { align-content: start; justify-content: flex-start; }   /* card text starts at the same height in every card */
+.split { margin-bottom: var(--s8); }
+.split.wide-left .heat li { padding: .9rem 0; }
+.insight-legend { padding-left: 0; }
+@media (max-width: 60rem) {
+  .split, .split.wide-left { grid-template-columns: 1fr; }
+  body.p-client .split > .panel:first-child { position: static; }
+}
+
+/* ---------- Polish: softer warm shadows, readable numbers, smooth reveal, growing bars ---------- */
+:root {
+  --lift: 0 1px 1px rgba(60,48,20,.03), 0 18px 40px -20px rgba(60,48,20,.16);
+  --lift-hi: 0 1px 1px rgba(60,48,20,.03), 0 28px 56px -22px rgba(60,48,20,.22);
+}
+html[data-theme="dark"] { --lift: 0 1px 1px rgba(0,0,0,.2), 0 18px 40px -20px rgba(0,0,0,.5); --lift-hi: 0 1px 1px rgba(0,0,0,.2), 0 28px 56px -22px rgba(0,0,0,.6); }
+body { text-rendering: optimizeLegibility; }
+.stat strong, .score, .heat-v, .ring text, .count, .ivalue, .deltas { font-variant-numeric: tabular-nums; }
+h1 { letter-spacing: -.035em; }
+.lede { max-width: 62ch; line-height: 1.65; }
+
+/* things below the fold fade up as they come into view (added by client/app.ts; cleaned up afterwards) */
+.pre { animation: none !important; opacity: 0; transform: translateY(22px); }
+.pre.in { opacity: 1; transform: none; transition: opacity .9s var(--ease), transform .9s var(--ease) !important; }
+
+/* chart bars grow from the left when the page opens */
+@keyframes grow-x { from { transform: scaleX(0); } }
+.ibars .ifill { transform-box: fill-box; transform-origin: 0 50%; animation: grow-x .95s var(--ease) both; }
+.ibars .ifill:nth-of-type(2) { animation-delay: .06s; } .ibars .ifill:nth-of-type(3) { animation-delay: .12s; }
+.ibars .ifill:nth-of-type(4) { animation-delay: .18s; } .ibars .ifill:nth-of-type(5) { animation-delay: .24s; } .ibars .ifill:nth-of-type(6) { animation-delay: .3s; }
+@media (prefers-reduced-motion: reduce) { .pre { opacity: 1; transform: none; } }
+.seen { animation: none !important; }
+/* Plus Jakarta Sans sets its word spaces narrow: open them slightly for easier reading */
+body { word-spacing: .06em; }
+h1, h2, h3 { word-spacing: .05em; }
+h1 { letter-spacing: -.03em; }
+.mono, kbd, code { word-spacing: normal; }
+
+/* ---------- Error pages ---------- */
+.error-page { display: grid; place-items: center; min-height: 100dvh; padding: var(--s6); grid-template-columns: 1fr; }
+.error-card { width: min(34rem, 100%); text-align: center; padding: 3rem 2.5rem; background: var(--surface); border-radius: var(--r-card); box-shadow: var(--ring), var(--lift-hi); animation: rise .9s var(--ease) both; }
+.error-card .orb { display: block; width: 3.25rem; height: 3.25rem; margin: 0 auto var(--s4); }
+.error-code { margin: 0; font: 750 clamp(3.5rem, 12vw, 5.5rem)/1 var(--sans); letter-spacing: -.05em; color: var(--accent-ink); opacity: .9; font-variant-numeric: tabular-nums; }
+.error-card h1 { margin: var(--s3) 0 var(--s2); font-size: clamp(1.4rem, 4vw, 1.9rem); }
+.error-text { margin: 0 auto var(--s6); max-width: 38ch; color: var(--muted); }
+.error-actions { display: flex; gap: var(--s3); justify-content: center; flex-wrap: wrap; margin: 0; }
+
+/* ---------- Page eyebrow tag, shortcuts window, smooth theme change ---------- */
+.eyebrow { display: inline-block; margin: 0 0 var(--s3); padding: .28rem .85rem; border-radius: 999px; font: 650 .6875rem var(--sans); letter-spacing: .16em; text-transform: uppercase; word-spacing: 0; background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+dialog.shortcuts { border: 0; border-radius: 24px; padding: 1.75rem 2rem; width: min(30rem, calc(100vw - 2rem)); background: var(--paper); color: var(--ink); box-shadow: var(--lift-hi), 0 0 0 1px var(--line-strong); }
+dialog.shortcuts::backdrop { background: rgba(20,24,36,.4); backdrop-filter: blur(4px); }
+dialog.shortcuts[open] { animation: rise .5s var(--ease) both; }
+dialog.shortcuts h2 { margin: 0 0 var(--s4); font-size: 1.25rem; }
+dialog.shortcuts dl { display: grid; grid-template-columns: auto 1fr; gap: .7rem 1.25rem; margin: 0; align-items: center; }
+dialog.shortcuts dt { white-space: nowrap; } dialog.shortcuts dd { margin: 0; color: var(--ink-2); }
+dialog.shortcuts kbd { display: inline-block; min-width: 1.6rem; padding: .15rem .5rem; border-radius: 8px; font: 650 .8125rem ui-monospace, "Cascadia Mono", Consolas, monospace; text-align: center; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-strong), 0 1px 0 var(--line-strong); }
+dialog.shortcuts .shortcuts-foot { margin: var(--s4) 0 0; color: var(--muted); font-size: .8125rem; }
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after { transition: background-color .45s var(--ease), color .45s var(--ease), border-color .45s var(--ease), box-shadow .45s var(--ease), fill .45s var(--ease), stroke .45s var(--ease) !important; }
+}
+html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #141a2e); }   /* pages without a workspace colour need it too */

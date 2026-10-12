@@ -1,10 +1,17 @@
 {% extends "base.njk" %}
+{% import "macros.njk" as m %}
 {% set title = "Error" %}
-{% set bodyClass = "login-page" %}
+{% set bodyClass = "login-page error-page" %}
 {% block body %}
-<main class="login-card">
-  <h1>{{ status or 'Error' }}</h1>
-  <p>{{ message or 'Something went wrong. Please go back and try again.' }}</p>
-  <p><a href="/">Back to CallVerse</a></p>
+<main class="error-card">
+  <span class="orb" aria-hidden="true">{{ m.logo() }}</span>
+  <p class="error-code">{{ status or 'Error' }}</p>
+  <h1>{{ heading or 'Something went wrong' }}</h1>
+  <p class="error-text">{{ message or 'Something went wrong. Please go back and try again.' }}</p>
+  <p class="error-actions">
+    <a class="btn" href="/">Back to orqestra</a>
+    {% if retry %}<button type="button" class="btn-line" data-reload>Try again</button>{% endif %}
+    {% if not signedIn %}<a class="btn-quiet" href="/login">Sign in</a>{% endif %}
+  </p>
 </main>
 {% endblock %}

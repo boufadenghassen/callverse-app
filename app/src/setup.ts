@@ -1,7 +1,7 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import compression from 'compression';
 import { createHash, randomBytes } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import express from 'express';
 import session from 'express-session';
@@ -18,10 +18,14 @@ export function setup(app: NestExpressApplication) {
 
   // ---- views: Nunjucks, autoescaped. asset() appends a content hash so long-cached files refresh on change.
   const env = nunjucks.configure(join(ROOT, 'views'), { autoescape: true, express: server, noCache: process.env.NODE_ENV !== 'production' });
-  const hashes = new Map<string, string>();
+  const hashes = new Map<string, { mtime: number; hash: string }>();
   env.addGlobal('asset', (path: string) => {
-    if (!hashes.has(path)) hashes.set(path, createHash('md5').update(readFileSync(join(ROOT, 'public', path))).digest('hex').slice(0, 10));
-    return `${path}?v=${hashes.get(path)}`;
+    const file = join(ROOT, 'public', path), mtime = statSync(file).mtimeMs;
+    const known = hashes.get(path);
+    if (known?.mtime === mtime) return `${path}?v=${known.hash}`;          // recomputed only when the file changed, so edits always reach the browser
+    const hash = createHash('md5').update(readFileSync(file)).digest('hex').slice(0, 10);
+    hashes.set(path, { mtime, hash });
+    return `${path}?v=${hash}`;
   });
   env.addFilter('pct', (v: number) => `${Math.round(v * 100)}%`);
   app.setBaseViewsDir(join(ROOT, 'views'));

@@ -1,5 +1,5 @@
 <#
-  Starts CallVerse (NestJS) on http://localhost:8080 and opens it in the browser. For a LOCAL demo only.
+  Starts orqestra (NestJS) on http://localhost:8080 and opens it in the browser. For a LOCAL demo only.
   Needs Node.js 22 or newer. Set CALLVERSE_DEMO_PASSWORD (12+ characters) to choose your own demo password.
 #>
 Set-Location $PSScriptRoot
@@ -17,7 +17,7 @@ if (-not $env:CALLVERSE_DEMO_PASSWORD) { $env:CALLVERSE_DEMO_PASSWORD = "demo-pa
 $env:CALLVERSE_COOKIE_SECURE = "false"   # plain http://localhost
 
 Start-Job { Start-Sleep 3; Start-Process "http://localhost:8080" } | Out-Null
-Write-Host "CallVerse is starting at http://localhost:8080 (Ctrl+C to stop)" -ForegroundColor Green
+Write-Host "orqestra is starting at http://localhost:8080 (Ctrl+C to stop)" -ForegroundColor Green
 Write-Host "Sign in as: admin (everything), yasmine (client), karim (advisor), sana (workforce),"
 Write-Host "            nour (quality), amine (complaints), rim (training), leila (sales)"
 Write-Host "Password: the value of CALLVERSE_DEMO_PASSWORD, or the demo default if you did not set one."

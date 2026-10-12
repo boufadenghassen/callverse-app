@@ -1,5 +1,6 @@
-import { BadRequestException, Controller, Get, Query, Render, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query, Render, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { readAdvisor } from './customer-llm';
 import { Roles } from '../auth/access.guard';
 import { buildInsights, DIMENSIONS, FAIRNESS, METRICS, MetricKey, MIN_GROUP } from './insights';
 import { BEFORE_AFTER, EMPATHY, JOURNEY, PERSONAS as DECK } from './deck-content';
@@ -88,41 +89,80 @@ export class DeckController {
 
   @Roles('CLIENT') @Get('client') @Render('client')
   client(@Query() q: Record<string, unknown>) {
-    const persona = enumParam<PersonaKey>(q.persona, PERSONAS, 'IMPATIENT')!;
-    const mixParam = enumParam<PersonaKey>(q.mix, PERSONAS, null);
-    const mix = mixParam === persona ? null : mixParam;
-    const difficulty = enumParam<DifficultyKey>(q.difficulty, DIFFICULTIES, 'MEDIUM')!;
-    const intent = enumParam<IntentKey>(q.intent, INTENTS, 'BILLING')!;
-    const memory = q.memory === 'true';
-
-    const movesParam = q.moves === undefined ? '' : q.moves;
-    if (typeof movesParam !== 'string' || movesParam.length > 120) throw new BadRequestException();
-    const moves = movesParam === '' ? [] : movesParam.split(',').map((m) => enumParam<MoveKey>(m, MOVES, null)!);
-
-    const s = replay(persona, mix, difficulty, intent, memory, moves);
-    const start = replay(persona, mix, difficulty, intent, memory, []).mood;
+    const call = parseCall(q);
+    const s = replay(call.persona, call.mix, call.difficulty, call.intent, call.memory, call.moves, call.said);
+    const start = replay(call.persona, call.mix, call.difficulty, call.intent, call.memory, []).mood;
     const moods = [start, ...s.turns.map((t) => t.mood)];
     const moodPoints = moods.map((m, i) => ({ x: 20 + i * 43, y: 70 - Math.round(m * 0.6) }));
 
-    const href = (extra: Record<string, string> = {}) => {
-      const p = new URLSearchParams({ persona, ...(mix ? { mix } : {}), difficulty, intent, memory: String(memory), ...extra });
-      return `/client?${p}`;
-    };
-    const played = s.turns.map((t) => t.move).join(',');
+    // only the turns that really happened (the call may have ended before all the moves in the URL)
+    const played = s.turns.map((t) => t.move), playedSaid = s.turns.map((t) => t.said);
+    const next = (move: MoveKey) => callUrl(call, [...played, move], [...playedSaid, null]);
     return {
       s: {
-        ...s, persona: { key: persona, ...PERSONAS[persona] }, mix: mix, difficulty: { key: difficulty, ...DIFFICULTIES[difficulty] },
-        intent, ended: s.outcome !== null,
+        ...s, persona: { key: call.persona, ...PERSONAS[call.persona] }, mix: call.mix, difficulty: { key: call.difficulty, ...DIFFICULTIES[call.difficulty] },
+        intent: call.intent, ended: s.outcome !== null,
         turns: s.turns.map((t) => ({ ...t, label: MOVES[t.move].label })),
       },
       moodPoints, moodCurve: moodPoints.map((p) => `${p.x},${p.y}`).join(' '),
       personas: Object.entries(PERSONAS).map(([key, v]) => ({ key, label: v.label })),
       difficulties: Object.entries(DIFFICULTIES).map(([key, v]) => ({ key, label: v.label })),
       intents: Object.entries(INTENTS).map(([key, v]) => ({ key, label: v.label })),
-      choices: Object.entries(MOVES).map(([key, v]) => ({ label: v.label, href: href({ moves: played ? `${played},${key}` : key }) })),
-      replayHref: href(),
-      outcomeKey: [persona, String(mix), difficulty, intent, memory, played].join('|'),
+      choices: (Object.keys(MOVES) as MoveKey[]).filter((k) => k !== 'OTHER').map((k) => ({ label: MOVES[k].label, href: next(k) })),
+      // the typed-reply form carries the whole call along as hidden fields
+      state: {
+        persona: call.persona, mix: call.mix ?? '', difficulty: call.difficulty, intent: call.intent, memory: String(call.memory),
+        moves: played.join(','), said: playedSaid.some((x) => x !== null) ? JSON.stringify(playedSaid) : '',
+      },
+      replayHref: callUrl(call, [], []),
+      outcomeKey: [call.persona, String(call.mix), call.difficulty, call.intent, call.memory, played.join(',')].join('|'),
       maxMoves: MAX_MOVES,
     };
   }
+
+  /** The advisor typed a reply: read it as a move, add it to the call and show the new state (redirect keeps the URL replayable). */
+  @Roles('CLIENT') @Post('client/say') @HttpCode(302)
+  say(@Body() body: Record<string, unknown>, @Res() res: Response) {
+    const call = parseCall(body);
+    const text = typeof body.reply === 'string' ? body.reply.replace(/\p{Cc}/gu, ' ').trim().slice(0, MAX_SAID) : '';
+    const s = replay(call.persona, call.mix, call.difficulty, call.intent, call.memory, call.moves, call.said);
+    if (!text || s.outcome) return res.redirect(callUrl(call, s.turns.map((t) => t.move), s.turns.map((t) => t.said)));
+    return res.redirect(callUrl(call, [...s.turns.map((t) => t.move), readAdvisor(text)], [...s.turns.map((t) => t.said), text]));
+  }
+}
+
+const MAX_SAID = 200;
+
+interface Call { persona: PersonaKey; mix: PersonaKey | null; difficulty: DifficultyKey; intent: IntentKey; memory: boolean; moves: MoveKey[]; said: (string | null)[] }
+
+/** Reads and validates a call from a query string or a form body. Anything unexpected is a 400. */
+function parseCall(q: Record<string, unknown>): Call {
+  const persona = enumParam<PersonaKey>(q.persona, PERSONAS, 'IMPATIENT')!;
+  const mixParam = enumParam<PersonaKey>(q.mix, PERSONAS, null);
+  const movesParam = q.moves === undefined ? '' : q.moves;
+  if (typeof movesParam !== 'string' || movesParam.length > 120) throw new BadRequestException();
+  const moves = movesParam === '' ? [] : movesParam.split(',').map((m) => enumParam<MoveKey>(m, MOVES, null)!);
+
+  let said: (string | null)[] = [];
+  if (q.said !== undefined && q.said !== '') {
+    try {
+      if (typeof q.said !== 'string' || q.said.length > 1800) throw new Error();
+      const parsed: unknown = JSON.parse(q.said);
+      if (!Array.isArray(parsed) || parsed.length > MAX_MOVES || !parsed.every((x) => x === null || (typeof x === 'string' && x.length <= MAX_SAID))) throw new Error();
+      said = parsed as (string | null)[];
+    } catch { throw new BadRequestException(); }
+  }
+  return {
+    persona, mix: mixParam === persona ? null : mixParam,
+    difficulty: enumParam<DifficultyKey>(q.difficulty, DIFFICULTIES, 'MEDIUM')!, intent: enumParam<IntentKey>(q.intent, INTENTS, 'BILLING')!,
+    memory: q.memory === 'true', moves, said,
+  };
+}
+
+function callUrl(c: Call, moves: MoveKey[], said: (string | null)[]): string {
+  const p = new URLSearchParams({ persona: c.persona, ...(c.mix ? { mix: c.mix } : {}), difficulty: c.difficulty, intent: c.intent, memory: String(c.memory) });
+  if (moves.length) p.set('moves', moves.join(','));
+  const aligned = moves.map((_, i) => said[i] ?? null);
+  if (aligned.some((x) => x !== null)) p.set('said', JSON.stringify(aligned));
+  return `/client?${p}`;
 }

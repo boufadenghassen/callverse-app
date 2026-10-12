@@ -3,7 +3,7 @@
 {% set n = 3 if level == 'High' else (2 if level == 'Medium' else 1) %}
 <div class="pip-row">
   <span class="pip-label">{{ label }}</span>
-  <span class="pips" aria-label="{{ label }} {{ level }}">
+  <span class="pips" role="img" aria-label="{{ label }} {{ level }}">
     {% for k in [1, 2, 3] %}<i{% if k <= n %} class="on"{% endif %}></i>{% endfor %}
   </span>
   <span class="pip-val">{{ level }}</span>
@@ -18,6 +18,20 @@
   <text x="22" y="26" text-anchor="middle">{{ value }}</text>
 </svg>
 {% endmacro %}
+
+{# orqestra logo: a magnifier with a sound wave in it. Colours come from --logo-ring / --logo-wave (light and dark variants). #}
+{% macro logo() %}
+<svg class="logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+  <circle class="ring" cx="22" cy="22" r="16" fill="none" stroke-width="4.2"/>
+  <line class="ring" x1="33.5" y1="33.5" x2="42" y2="42" stroke-width="4.2" stroke-linecap="round"/>
+  <g class="wave" stroke-width="2.2" stroke-linecap="round">
+    {% for b in [[-10.5, 5], [-7, 9.5], [-3.5, 14.5], [0, 19.5], [3.5, 14], [7, 9], [10.5, 5]] %}<line x1="{{ 22 + b[0] }}" x2="{{ 22 + b[0] }}" y1="{{ 22 - b[1] / 2 + 1.1 }}" y2="{{ 22 + b[1] / 2 - 1.1 }}"/>{% endfor %}
+  </g>
+</svg>
+{% endmacro %}
+
+{# The name, with the amber q #}
+{% macro wordmark() %}or<span class="q">q</span>estra{% endmacro %}
 
 {# One sidebar link: icon path, label and colour class #}
 {% macro navlink(href, key, cls, icon, label, active) %}

@@ -5,6 +5,7 @@
 {% set bodyClass = "p-client" %}
 {% block content %}
     <header class="page-head">
+      <p class="eyebrow">Yasmine · Client simulator agent</p>
       <h1>Client simulator</h1>
       <p class="lede">Play the advisor. The simulated client reacts with her own mood, patience and memory.</p>
     </header>
@@ -76,7 +77,7 @@
         <ol class="chat" aria-live="polite">
           <li class="bubble them"><span class="who-tag">Client</span><span>{{ s.opening }}</span></li>
           {% for t in s.turns %}
-          <li class="bubble you"><span class="who-tag">You</span><span>{{ t.label }}</span></li>
+          <li class="bubble you"><span class="who-tag">You</span><span>{{ t.said or t.label }}</span>{% if t.said %}<small class="read-as">read as: {{ t.label | lower }}</small>{% endif %}</li>
           <li class="bubble them"><span class="who-tag">Client</span><span>{{ t.client }}</span>
             <small class="deltas">mood {{ t.mood }} · patience {{ t.patience }}</small></li>
           {% endfor %}
@@ -86,6 +87,13 @@
         <div class="choices">
           <h3>Your reply <span class="muted">({{ s.turns.length }} of {{ maxMoves }} moves)</span></h3>
           {% for c in choices %}<a class="choice" href="{{ c.href }}">{{ c.label }}</a>{% endfor %}
+          <form class="say" action="/client/say" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            {% for key, value in state %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+            <label for="reply">...or type your own reply</label>
+            <textarea id="reply" name="reply" rows="2" maxlength="200" required placeholder="For example: I'm sorry about that, let me check the refund policy first."></textarea>
+            <button type="submit" class="btn-line">Send reply</button>
+          </form>
         </div>
         {% else %}
         <div class="outcome {{ 'good' if s.outcome.expectationMet else 'bad' }}" role="status"

@@ -189,3 +189,167 @@ test('customer insights: filters change the numbers, small groups stay hidden, t
   assert.match(await page.textContent('main'), /Fewer than 10 customers/);
   await ctx.close();
 });
+
+test('the client can be played by typing replies, and the app shows how each was read', async () => {
+  const { ctx, page } = await signIn('yasmine');
+  await page.goto(`${BASE}/client?persona=IMPATIENT&memory=true`);
+  for (const text of ["I'm so sorry, I understand how frustrating this is.", 'Let me check the refund policy first.', "I'll send you a confirmation by email."]) {
+    await page.fill('#reply', text);
+    await page.click('.say button');
+    await page.waitForLoadState();
+  }
+  assert.equal(await page.locator('.read-as').count(), 3);
+  assert.match(await page.textContent('.read-as >> nth=1'), /check the refund policy/);
+  assert.match(await page.textContent('.outcome h3'), /Resolved/);
+  await ctx.close();
+});
+
+test('every sidebar link is visible without scrolling the rail on common laptop heights', async () => {
+  for (const height of [650, 720, 768, 900]) {
+    const { ctx, page } = await signIn('admin', { width: 1280, height });
+    const hidden = await page.evaluate(() => { const s = document.querySelector('.nav-scroll'); return s.scrollHeight - s.clientHeight; });
+    assert.ok(hidden <= 1, `at ${height}px high, the rail hides ${hidden}px of links`);
+    await ctx.close();
+  }
+});
+
+test('the whole app has no accessibility violations (axe-core) and no console errors', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const out = execFileSync('node', ['audit.mjs'], { encoding: 'utf8', cwd: import.meta.dirname, timeout: 240000 });
+  assert.match(out, /NO PROBLEMS FOUND/, out);
+});
+
+test('particles: on by default, the sidebar button turns them off, and the choice is remembered', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); // motion allowed
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'admin'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  assert.equal(await page.locator('canvas.fx').count(), 1);
+  // it really draws something, and never blocks clicks
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('canvas.fx')).pointerEvents), 'none');
+  await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => { const c = document.querySelector('canvas.fx'); return c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v) => v > 0); }), true);
+  await page.click('.fx-toggle');
+  assert.equal(await page.locator('canvas.fx').count(), 0);
+  assert.equal(await page.getAttribute('.fx-toggle', 'aria-pressed'), 'false');
+  await page.reload();
+  assert.equal(await page.locator('canvas.fx').count(), 0);
+  await ctx.close();
+});
+
+test('particles stay off for people who ask for reduced motion', async () => {
+  const { ctx, page } = await signIn('admin'); // signIn() uses reduced motion
+  assert.equal(await page.locator('canvas.fx').count(), 0);
+  await ctx.close();
+});
+
+test('in the expanded sidebar a hovered name stays level with its icon', async () => {
+  const { ctx, page } = await signIn('admin', { width: 1280, height: 900 });
+  await page.click('.nav-toggle');
+  await page.waitForTimeout(700);
+  for (const href of ['/advisor', '/quality', '/ideas']) {
+    const link = page.locator(`.sidebar a.nav[href="${href}"]`);
+    await link.hover();
+    await page.waitForTimeout(450);
+    const off = await link.evaluate((el) => { const l = el.querySelector('.nav-label').getBoundingClientRect(), i = el.querySelector('.ico').getBoundingClientRect(); return (l.top + l.height / 2) - (i.top + i.height / 2); });
+    assert.ok(Math.abs(off) <= 3, `${href}: the name is ${off}px off its icon while hovered`);
+  }
+  await ctx.close();
+});
+
+test('collapsed sidebar on a short window: the hover name is visible, level with its icon and above the page', async () => {
+  const { ctx, page } = await signIn('admin', { width: 1280, height: 720 });
+  const link = page.locator('.sidebar a.nav[href="/advisor"]');
+  await link.hover();
+  await page.waitForTimeout(500);
+  const r = await link.evaluate((el) => {
+    const lab = el.querySelector('.nav-label'), l = lab.getBoundingClientRect(), i = el.querySelector('.ico').getBoundingClientRect();
+    const rail = lab.closest('.nav-scroll');
+    return { opacity: getComputedStyle(lab).opacity, off: (l.top + l.height / 2) - (i.top + i.height / 2), clipped: getComputedStyle(rail).overflowY !== 'visible',
+             z: Number(getComputedStyle(document.querySelector('.sidebar')).zIndex) };
+  });
+  assert.equal(r.opacity, '1');
+  assert.ok(Math.abs(r.off) <= 3, `the name is ${r.off}px off its icon`);
+  assert.equal(r.clipped, false, 'the rail must not clip the hover names');
+  assert.ok(r.z >= 40, 'the sidebar must sit above the page cards');
+  await ctx.close();
+});
+
+test('sidebar names move a little on hover (a nudge when expanded, a slide-out when collapsed) and stay level with the icon', async () => {
+  const { ctx, page } = await signIn('admin', { width: 1280, height: 800 });
+  const link = page.locator('.sidebar a.nav[href="/quality"]');
+  const x = () => link.evaluate((el) => el.querySelector('.nav-label').getBoundingClientRect().left);
+  // collapsed: the name slides out from the icon
+  const hidden = await x();
+  await link.hover(); await page.waitForTimeout(600);
+  assert.ok((await x()) - hidden >= 8, 'the collapsed name should slide out by at least 8px');
+  // expanded: the name nudges to the right
+  await page.click('.nav-toggle'); await page.waitForTimeout(700);
+  await page.mouse.move(700, 400); await page.waitForTimeout(500);
+  const rest = await x();
+  await link.hover(); await page.waitForTimeout(600);
+  const moved = (await x()) - rest;
+  assert.ok(moved >= 4 && moved <= 10, `the expanded name should nudge 4 to 10px, it moved ${moved}px`);
+  await ctx.close();
+});
+
+test('polish: the real font loads, below-fold cards fade up and settle, numbers count up to the right value', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 700 } }); // motion allowed
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'admin'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('600 16px "Plus Jakarta Sans"') && [...document.fonts].some((f) => f.family.includes('Plus Jakarta') && f.status === 'loaded'); }), true, 'the bundled font should be loaded');
+
+  // insights has panels well below the first screen
+  await page.goto(`${BASE}/insights`);
+  await page.waitForTimeout(500);
+  assert.ok(await page.locator('.pre').count() > 0, 'cards below the fold should wait to be revealed');
+  const handle = await page.locator('.pre').first().elementHandle();
+  await handle.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(2200);
+  assert.equal(await handle.evaluate((el) => el.classList.contains('pre') || el.classList.contains('in')), false, 'a revealed card must return to normal (no leftover classes)');
+  assert.equal(await handle.evaluate((el) => getComputedStyle(el).opacity), '1', 'no flicker after the reveal');
+  await page.waitForTimeout(1200);
+  assert.equal(await handle.evaluate((el) => getComputedStyle(el).opacity), '1', 'still fully visible a second later');
+  // count-up ends on the real number
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(1500);
+  assert.equal((await page.textContent('.stat strong')).trim(), '720');
+  await ctx.close();
+});
+
+test('pressing ? opens the keyboard shortcuts window and Esc closes it; typing a ? in a field does not', async () => {
+  const { ctx, page } = await signIn('admin');
+  await page.keyboard.press('?');
+  assert.equal(await page.locator('dialog.shortcuts[open]').count(), 1);
+  assert.match(await page.textContent('dialog.shortcuts'), /Jump to any page/);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('dialog.shortcuts[open]').count(), 0);
+  await page.goto(`${BASE}/advisor`);                       // the search box is a text field
+  await page.fill('#q', 'what');
+  await page.press('#q', '?');
+  assert.equal(await page.locator('dialog.shortcuts[open]').count(), 0);
+  assert.ok((await page.inputValue('#q')).endsWith('?'));
+  await ctx.close();
+});
+
+test('switching the theme cross-fades, and an unknown page shows the friendly error with a way home', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); // motion allowed
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'admin'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  await page.click('.theme-toggle');
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theme-fade')), true, 'the fade class is set during the change');
+  await page.waitForTimeout(800);
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theme-fade')), false, 'and removed afterwards');
+  const res = await page.goto(`${BASE}/definitely-not-here`);
+  assert.equal(res.status(), 404);
+  assert.match(await page.textContent('main'), /find that page/);
+  await page.click('text=Back to orqestra');
+  await page.waitForURL(`${BASE}/`);
+  await ctx.close();
+});
