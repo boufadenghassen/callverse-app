@@ -1,0 +1,79 @@
+{
+  "frozen_C": 0.003,
+  "results": {
+    "frozen": {
+      "clean": {
+        "accuracy": 0.7687813021702838,
+        "macro_f1": 0.7693603401458571
+      },
+      "phone line": {
+        "accuracy": 0.7537562604340567,
+        "macro_f1": 0.7550752067747964
+      },
+      "noisy room (10 dB)": {
+        "accuracy": 0.3046744574290484,
+        "macro_f1": 0.2715615031090277
+      },
+      "phone + noise (20 dB)": {
+        "accuracy": 0.44073455759599334,
+        "macro_f1": 0.4362394290619236
+      }
+    },
+    "ft": {
+      "clean": {
+        "accuracy": 0.7370617696160268,
+        "macro_f1": 0.7356096274954137
+      },
+      "phone line": {
+        "accuracy": 0.7487479131886478,
+        "macro_f1": 0.7476746827983227
+      },
+      "noisy room (10 dB)": {
+        "accuracy": 0.7378964941569283,
+        "macro_f1": 0.7387376044385023
+      },
+      "phone + noise (20 dB)": {
+        "accuracy": 0.6969949916527546,
+        "macro_f1": 0.6919096113800309
+      }
+    },
+    "ft_noaug": {
+      "clean": {
+        "accuracy": 0.7529215358931552,
+        "macro_f1": 0.7536312807665309
+      },
+      "phone line": {
+        "accuracy": 0.7796327212020033,
+        "macro_f1": 0.780032589868468
+      },
+      "noisy room (10 dB)": {
+        "accuracy": 0.41903171953255425,
+        "macro_f1": 0.40358189232448244
+      },
+      "phone + noise (20 dB)": {
+        "accuracy": 0.5459098497495827,
+        "macro_f1": 0.5568810643442468
+      }
+    },
+    "ensemble": {
+      "clean": {
+        "accuracy": 0.7662771285475793,
+        "macro_f1": 0.7654947359488088
+      },
+      "phone line": {
+        "accuracy": 0.7737896494156928,
+        "macro_f1": 0.7743585185164324
+      },
+      "noisy room (10 dB)": {
+        "accuracy": 0.6218697829716193,
+        "macro_f1": 0.6379487974614971
+      },
+      "phone + noise (20 dB)": {
+        "accuracy": 0.6819699499165276,
+        "macro_f1": 0.68570131649652
+      }
+    }
+  },
+  "test_clips": 1198,
+  "degradations": "phone line = moving-average band limit approx. 300 Hz to 3.4 kHz; noise = Gaussian at the stated SNR"
+}

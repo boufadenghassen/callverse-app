@@ -1,0 +1,192 @@
+{
+  "overall": {
+    "clips": 1198,
+    "accuracy": 0.7470784641068448,
+    "macro_f1": 0.7459235308960789
+  },
+  "CREMA-D": {
+    "clips": 1066,
+    "accuracy": 0.7439024390243902,
+    "macro_f1": 0.7424527028052403,
+    "accuracy_ci95": [
+      0.687593808630394,
+      0.8049015009380862
+    ],
+    "test_actors": 13
+  },
+  "RAVDESS": {
+    "clips": 132,
+    "accuracy": 0.7727272727272727,
+    "macro_f1": 0.7717930533545151
+  },
+  "per_emotion_recall": {
+    "anger": 0.941747572815534,
+    "disgust": 0.7572815533980582,
+    "fear": 0.7621359223300971,
+    "happy": 0.6844660194174758,
+    "neutral": 0.7559523809523809,
+    "sad": 0.5825242718446602
+  },
+  "confusion_matrix": {
+    "labels": [
+      "anger",
+      "disgust",
+      "fear",
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "rows_true_cols_pred": [
+      [
+        194,
+        2,
+        4,
+        4,
+        1,
+        1
+      ],
+      [
+        13,
+        156,
+        12,
+        1,
+        8,
+        16
+      ],
+      [
+        5,
+        14,
+        157,
+        9,
+        0,
+        21
+      ],
+      [
+        18,
+        15,
+        24,
+        141,
+        5,
+        3
+      ],
+      [
+        20,
+        2,
+        2,
+        11,
+        127,
+        6
+      ],
+      [
+        2,
+        31,
+        38,
+        4,
+        11,
+        120
+      ]
+    ]
+  },
+  "CREMA-D_by_sex": {
+    "Female": 0.7515243902439024,
+    "Male": 0.7317073170731707
+  },
+  "CREMA-D_by_age_band": {
+    "18-25": {
+      "accuracy": 0.7774390243902439,
+      "clips": 328
+    },
+    "26-35": {
+      "accuracy": 0.7526132404181185,
+      "clips": 574
+    },
+    "36-50": {
+      "accuracy": 0.6463414634146342,
+      "clips": 164
+    }
+  },
+  "run": "full_aug2_s1",
+  "best_validation_macro_f1": 0.7377720449175675,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.4096856568838094,
+      "val_macro_f1": 0.6295950180907304,
+      "val_accuracy": 0.6387195121951219,
+      "seconds": 116.92456245422363
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.0616096836190123,
+      "val_macro_f1": 0.680689222517112,
+      "val_accuracy": 0.6867378048780488,
+      "seconds": 100.85189533233643
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.9266635687010344,
+      "val_macro_f1": 0.6186465171159286,
+      "val_accuracy": 0.6295731707317073,
+      "seconds": 101.42841863632202
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.8526997012986113,
+      "val_macro_f1": 0.5958024818306779,
+      "val_accuracy": 0.604420731707317,
+      "seconds": 102.22839784622192
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.7749221414023973,
+      "val_macro_f1": 0.7205809420504031,
+      "val_accuracy": 0.7225609756097561,
+      "seconds": 95.4729814529419
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.7074629060011864,
+      "val_macro_f1": 0.7371312713460177,
+      "val_accuracy": 0.7355182926829268,
+      "seconds": 103.68808174133301
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.6730094162175746,
+      "val_macro_f1": 0.7346770119746586,
+      "val_accuracy": 0.7347560975609756,
+      "seconds": 105.40769982337952
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.6495776727001635,
+      "val_macro_f1": 0.7377720449175675,
+      "val_accuracy": 0.7378048780487805,
+      "seconds": 104.86819124221802
+    }
+  ],
+  "params": {
+    "quick": false,
+    "epochs": 8,
+    "batch": 16,
+    "lr": 3e-05,
+    "head_lr": 0.001,
+    "dropout": 0.2,
+    "patience": 3,
+    "aug": "v2",
+    "no_aug": false,
+    "model": "microsoft/wavlm-base-plus",
+    "seed": 1,
+    "split_seed": 42,
+    "tag": "full_aug2_s1",
+    "resume": false,
+    "data": "C:\\Users\\Msi Katana\\Desktop\\PI\\callverse\\datasets"
+  },
+  "frozen_baseline_for_comparison": {
+    "CREMA-D test accuracy": 0.772,
+    "CREMA-D test macro F1": 0.773,
+    "RAVDESS test accuracy": 0.727,
+    "note": "frozen WavLM layers 5+7+6 concatenated + logistic regression, trained on both datasets (notebook section 9)"
+  },
+  "finished": "2026-10-10 19:59"
+}

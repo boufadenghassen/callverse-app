@@ -1,0 +1,10 @@
+{
+  "files": ["registry/emotion_wavlm_ft_full_aug2.pt (seed 42)", "registry/emotion_wavlm_ft_full_aug2_s1.pt (seed 1)", "registry/emotion_wavlm_ft_full_aug2_s2.pt (seed 2)"],
+  "how_it_predicts": "average the six class probabilities of the three models",
+  "trained_by": "models/src/finetune.py --epochs 8 --aug v2 --seed N --tag full_aug2[_sN]; evaluated with models/src/eval_robustness.py --skip-frozen",
+  "single_seed_clean_test": {"seed42": {"CREMA-D": 0.738, "RAVDESS": 0.735}, "seed1": {"CREMA-D": 0.744, "RAVDESS": 0.773}, "seed2": {"CREMA-D": 0.750, "RAVDESS": 0.735}},
+  "test_accuracy_1198_clips": {"ensemble_clean": 0.756, "ensemble_mean_of_10_degraded": 0.731, "ensemble_worst": 0.670, "single_seed_mean_degraded": [0.715, 0.723, 0.726], "single_seed_worst": [0.653, 0.667, 0.649], "frozen_mean_degraded": 0.575, "frozen_worst": 0.307},
+  "verdict": "the three seeds agree within about 1 point, so the earlier epoch-to-epoch swings were not hiding a better model. The ensemble adds about 0.5 to 1.5 points but costs three times the compute. Use one seed unless accuracy matters more than speed.",
+  "date": "2026-10-10",
+  "reports": ["reports/robustness_v3.json", "reports/finetune_full_aug2.json", "reports/finetune_full_aug2_s1.json", "reports/finetune_full_aug2_s2.json"]
+}

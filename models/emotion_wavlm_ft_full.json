@@ -1,0 +1,14 @@
+{
+  "file": "registry/emotion_wavlm_ft_full.pt (361 MB, local only: too big for git, share through a Release or DVC)",
+  "task": "speech emotion recognition, 6 classes (anger, disgust, fear, happy, neutral, sad)",
+  "trained_by": "models/src/finetune.py --epochs 8 (RTX 4060, about 11 minutes)",
+  "model": "WavLM base+ fine-tuned (CNN front end frozen, transformer trained, learned weighting of all 13 layers, small head)",
+  "augmentation": "gain, speed/pitch 0.9-1.1x, telephone band limit, white noise 15-35 dB",
+  "data": "CREMA-D + RAVDESS speech, actor-wise split identical to the notebook (seed 42), 5,987 train / 1,312 val / 1,198 test clips",
+  "metrics_clean_test": {"CREMA-D": {"accuracy": 0.735, "ci95": [0.677, 0.795], "macro_f1": 0.734}, "RAVDESS": {"accuracy": 0.758}},
+  "robustness_test_accuracy_all_test_clips": {"clean": 0.737, "phone_line": 0.749, "noisy_room_10dB": 0.738, "phone_plus_noise_20dB": 0.697},
+  "compared_with_frozen_wavlm_plus_logistic_regression": {"clean": 0.769, "phone_line": 0.754, "noisy_room_10dB": 0.305, "phone_plus_noise_20dB": 0.441},
+  "limits": "Acted speech only. The test noise is white noise, the same kind used in training augmentation, so real call noise (babble, hum, codecs) may be harder. Few test actors: clean-accuracy differences of 2-3 points are within noise.",
+  "date": "2026-10-10",
+  "reports": ["reports/finetune_full.json", "reports/finetune_full_noaug.json", "reports/robustness.json"]
+}

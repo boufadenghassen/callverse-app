@@ -1,0 +1,72 @@
+{
+  "frozen_C": 0.003,
+  "test_clips": 1198,
+  "accuracy": {
+    "frozen": {
+      "clean": 0.7687813021702838,
+      "AMR-NB codec": 0.657762938230384,
+      "GSM codec": 0.672787979966611,
+      "G.711 mu-law codec": 0.7161936560934892,
+      "Opus 10 kbps codec": 0.6953255425709516,
+      "babble 10 dB": 0.46494156928213687,
+      "hum 60 Hz 15 dB (unseen)": 0.7604340567612687,
+      "pink noise 10 dB (unseen)": 0.41652754590984975,
+      "reverb 0.5 s": 0.3722871452420701,
+      "packet loss": 0.6894824707846411,
+      "call mix (reverb+AMR+babble)": 0.3071786310517529
+    },
+    "ft": {
+      "clean": 0.7370617696160268,
+      "AMR-NB codec": 0.7328881469115192,
+      "GSM codec": 0.7320534223706177,
+      "G.711 mu-law codec": 0.7537562604340567,
+      "Opus 10 kbps codec": 0.6878130217028381,
+      "babble 10 dB": 0.5918196994991652,
+      "hum 60 Hz 15 dB (unseen)": 0.7378964941569283,
+      "pink noise 10 dB (unseen)": 0.7328881469115192,
+      "reverb 0.5 s": 0.5826377295492488,
+      "packet loss": 0.7262103505843072,
+      "call mix (reverb+AMR+babble)": 0.44657762938230383
+    },
+    "ft_noaug": {
+      "clean": 0.7529215358931552,
+      "AMR-NB codec": 0.7262103505843072,
+      "GSM codec": 0.7203672787979967,
+      "G.711 mu-law codec": 0.7504173622704507,
+      "Opus 10 kbps codec": 0.7003338898163606,
+      "babble 10 dB": 0.510016694490818,
+      "hum 60 Hz 15 dB (unseen)": 0.7345575959933222,
+      "pink noise 10 dB (unseen)": 0.5242070116861436,
+      "reverb 0.5 s": 0.5517529215358932,
+      "packet loss": 0.7328881469115192,
+      "call mix (reverb+AMR+babble)": 0.38647746243739567
+    },
+    "ft_aug2": {
+      "clean": 0.7378964941569283,
+      "AMR-NB codec": 0.7237061769616027,
+      "GSM codec": 0.7228714524207012,
+      "G.711 mu-law codec": 0.7262103505843072,
+      "Opus 10 kbps codec": 0.7270450751252087,
+      "babble 10 dB": 0.7320534223706177,
+      "hum 60 Hz 15 dB (unseen)": 0.7470784641068448,
+      "pink noise 10 dB (unseen)": 0.7120200333889817,
+      "reverb 0.5 s": 0.6844741235392321,
+      "packet loss": 0.7262103505843072,
+      "call mix (reverb+AMR+babble)": 0.6527545909849749
+    }
+  },
+  "conditions": [
+    "clean",
+    "AMR-NB codec",
+    "GSM codec",
+    "G.711 mu-law codec",
+    "Opus 10 kbps codec",
+    "babble 10 dB",
+    "hum 60 Hz 15 dB (unseen)",
+    "pink noise 10 dB (unseen)",
+    "reverb 0.5 s",
+    "packet loss",
+    "call mix (reverb+AMR+babble)"
+  ],
+  "note": "hum 60 Hz and pink noise were never used in any training augmentation; codecs are real (ffmpeg)."
+}

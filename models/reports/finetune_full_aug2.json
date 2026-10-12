@@ -1,0 +1,191 @@
+{
+  "overall": {
+    "clips": 1198,
+    "accuracy": 0.7378964941569283,
+    "macro_f1": 0.7368681462357584
+  },
+  "CREMA-D": {
+    "clips": 1066,
+    "accuracy": 0.7382739212007504,
+    "macro_f1": 0.7377260263974058,
+    "accuracy_ci95": [
+      0.6857410881801126,
+      0.7945590994371482
+    ],
+    "test_actors": 13
+  },
+  "RAVDESS": {
+    "clips": 132,
+    "accuracy": 0.7348484848484849,
+    "macro_f1": 0.7364400097197784
+  },
+  "per_emotion_recall": {
+    "anger": 0.9271844660194175,
+    "disgust": 0.8398058252427184,
+    "fear": 0.6844660194174758,
+    "happy": 0.6990291262135923,
+    "neutral": 0.7261904761904762,
+    "sad": 0.5485436893203883
+  },
+  "confusion_matrix": {
+    "labels": [
+      "anger",
+      "disgust",
+      "fear",
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "rows_true_cols_pred": [
+      [
+        191,
+        3,
+        5,
+        6,
+        1,
+        0
+      ],
+      [
+        7,
+        173,
+        12,
+        2,
+        2,
+        10
+      ],
+      [
+        7,
+        22,
+        141,
+        13,
+        1,
+        22
+      ],
+      [
+        13,
+        24,
+        16,
+        144,
+        7,
+        2
+      ],
+      [
+        15,
+        8,
+        4,
+        9,
+        122,
+        10
+      ],
+      [
+        2,
+        45,
+        30,
+        8,
+        8,
+        113
+      ]
+    ]
+  },
+  "CREMA-D_by_sex": {
+    "Female": 0.7484756097560976,
+    "Male": 0.7219512195121951
+  },
+  "CREMA-D_by_age_band": {
+    "18-25": {
+      "accuracy": 0.7682926829268293,
+      "clips": 328
+    },
+    "26-35": {
+      "accuracy": 0.7543554006968641,
+      "clips": 574
+    },
+    "36-50": {
+      "accuracy": 0.6219512195121951,
+      "clips": 164
+    }
+  },
+  "run": "full_aug2",
+  "best_validation_macro_f1": 0.7233409852564997,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.4160138838514573,
+      "val_macro_f1": 0.40776254291556735,
+      "val_accuracy": 0.4695121951219512,
+      "seconds": 101.72299265861511
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.0650406204212561,
+      "val_macro_f1": 0.6530089641297169,
+      "val_accuracy": 0.6592987804878049,
+      "seconds": 88.65871500968933
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.9300003787183754,
+      "val_macro_f1": 0.6531391929694682,
+      "val_accuracy": 0.6539634146341463,
+      "seconds": 84.31077885627747
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.8416497073787589,
+      "val_macro_f1": 0.6721799916053923,
+      "val_accuracy": 0.6760670731707317,
+      "seconds": 84.76593351364136
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.7700008657473604,
+      "val_macro_f1": 0.67960066722977,
+      "val_accuracy": 0.6814024390243902,
+      "seconds": 85.42570066452026
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.7141398025988657,
+      "val_macro_f1": 0.7093722679023919,
+      "val_accuracy": 0.711890243902439,
+      "seconds": 90.19360852241516
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.6627411363577632,
+      "val_macro_f1": 0.7233409852564997,
+      "val_accuracy": 0.725609756097561,
+      "seconds": 85.45674777030945
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.6567297285061479,
+      "val_macro_f1": 0.7118383443340819,
+      "val_accuracy": 0.7149390243902439,
+      "seconds": 86.06266713142395
+    }
+  ],
+  "params": {
+    "quick": false,
+    "epochs": 8,
+    "batch": 16,
+    "lr": 3e-05,
+    "head_lr": 0.001,
+    "dropout": 0.2,
+    "patience": 3,
+    "aug": "v2",
+    "no_aug": false,
+    "model": "microsoft/wavlm-base-plus",
+    "seed": 42,
+    "tag": null,
+    "resume": false,
+    "data": "C:\\Users\\Msi Katana\\Desktop\\PI\\callverse\\datasets"
+  },
+  "frozen_baseline_for_comparison": {
+    "CREMA-D test accuracy": 0.772,
+    "CREMA-D test macro F1": 0.773,
+    "RAVDESS test accuracy": 0.727,
+    "note": "frozen WavLM layers 5+7+6 concatenated + logistic regression, trained on both datasets (notebook section 9)"
+  },
+  "finished": "2026-10-10 19:12"
+}

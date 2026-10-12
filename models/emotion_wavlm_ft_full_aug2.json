@@ -1,0 +1,15 @@
+{
+  "file": "registry/emotion_wavlm_ft_full_aug2.pt (361 MB, local only: too big for git, share through a Release or DVC)",
+  "status": "recommended for the app: the most robust model so far",
+  "task": "speech emotion recognition, 6 classes (anger, disgust, fear, happy, neutral, sad)",
+  "trained_by": "models/src/finetune.py --epochs 8 --aug v2 (RTX 4060, about 13 minutes plus 4 minutes to make the codec copies)",
+  "model": "WavLM base+ fine-tuned (CNN front end frozen, transformer trained, learned weighting of all 13 layers, small head)",
+  "augmentation_v2": "real telephone codecs through ffmpeg (AMR-NB, GSM, G.711, Opus), synthetic small-room reverb, babble made from other training speakers, mains hum, white noise, packet loss, gain, speed",
+  "data": "CREMA-D + RAVDESS speech, actor-wise split identical to the notebook (seed 42), 5,987 train / 1,312 val / 1,198 test clips",
+  "metrics_clean_test": {"CREMA-D": {"accuracy": 0.738, "ci95": [0.686, 0.795], "macro_f1": 0.738}, "RAVDESS": {"accuracy": 0.735}},
+  "robustness_test_accuracy_1198_clips": {"clean": 0.738, "AMR-NB": 0.724, "GSM": 0.723, "G.711": 0.726, "Opus": 0.727, "babble_10dB": 0.732, "hum_60Hz_unseen": 0.747, "pink_noise_unseen": 0.712, "reverb_0.5s": 0.684, "packet_loss": 0.726, "call_mix": 0.653, "mean_of_the_10_degraded": 0.715, "worst": 0.653},
+  "compared_with_frozen_wavlm_plus_logistic_regression": {"clean": 0.769, "mean_of_the_10_degraded": 0.575, "worst": 0.307, "call_mix": 0.307},
+  "limits": "Acted speech only. Codecs are real but noise and rooms are simulated, so real call audio may still be harder. 16 test actors: clean-accuracy gaps of 2-3 points are within noise. Sad (55% recall) is still the weakest class.",
+  "date": "2026-10-10",
+  "reports": ["reports/finetune_full_aug2.json", "reports/robustness_v2.json"]
+}

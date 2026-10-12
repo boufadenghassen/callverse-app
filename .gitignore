@@ -36,3 +36,9 @@ venv/
 .github/modernize/
 .DS_Store
 Thumbs.db
+
+# ---- model project: decoded audio, checkpoints and weights stay local (reports and code are tracked) ----
+/models/cache/
+/models/registry/
+/models/runs/
+/models/mlruns/

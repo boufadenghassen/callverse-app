@@ -1,0 +1,190 @@
+{
+  "overall": {
+    "clips": 1198,
+    "accuracy": 0.7529215358931552,
+    "macro_f1": 0.7536312807665309
+  },
+  "CREMA-D": {
+    "clips": 1066,
+    "accuracy": 0.7485928705440901,
+    "macro_f1": 0.7498116593347871,
+    "accuracy_ci95": [
+      0.6857410881801126,
+      0.8076923076923077
+    ],
+    "test_actors": 13
+  },
+  "RAVDESS": {
+    "clips": 132,
+    "accuracy": 0.7878787878787878,
+    "macro_f1": 0.7854573301941722
+  },
+  "per_emotion_recall": {
+    "anger": 0.9223300970873787,
+    "disgust": 0.7524271844660194,
+    "fear": 0.7427184466019418,
+    "happy": 0.7135922330097088,
+    "neutral": 0.8452380952380952,
+    "sad": 0.558252427184466
+  },
+  "confusion_matrix": {
+    "labels": [
+      "anger",
+      "disgust",
+      "fear",
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "rows_true_cols_pred": [
+      [
+        190,
+        3,
+        8,
+        3,
+        2,
+        0
+      ],
+      [
+        12,
+        155,
+        17,
+        1,
+        3,
+        18
+      ],
+      [
+        4,
+        17,
+        153,
+        12,
+        1,
+        19
+      ],
+      [
+        15,
+        13,
+        16,
+        147,
+        9,
+        6
+      ],
+      [
+        9,
+        1,
+        5,
+        2,
+        142,
+        9
+      ],
+      [
+        4,
+        26,
+        43,
+        5,
+        13,
+        115
+      ]
+    ]
+  },
+  "CREMA-D_by_sex": {
+    "Female": 0.7484756097560976,
+    "Male": 0.748780487804878
+  },
+  "CREMA-D_by_age_band": {
+    "18-25": {
+      "accuracy": 0.774390243902439,
+      "clips": 328
+    },
+    "26-35": {
+      "accuracy": 0.7386759581881533,
+      "clips": 574
+    },
+    "36-50": {
+      "accuracy": 0.7317073170731707,
+      "clips": 164
+    }
+  },
+  "run": "full_noaug",
+  "best_validation_macro_f1": 0.7495351694183543,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.2356189876142718,
+      "val_macro_f1": 0.4934864967183726,
+      "val_accuracy": 0.5221036585365854,
+      "seconds": 80.75282526016235
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8338695837417189,
+      "val_macro_f1": 0.6253216091686006,
+      "val_accuracy": 0.635670731707317,
+      "seconds": 67.14330649375916
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.674507048585209,
+      "val_macro_f1": 0.7014212846431214,
+      "val_accuracy": 0.7019817073170732,
+      "seconds": 65.71658372879028
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.5792822699047437,
+      "val_macro_f1": 0.6550073491760715,
+      "val_accuracy": 0.6509146341463414,
+      "seconds": 65.71288704872131
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.49473490940224296,
+      "val_macro_f1": 0.7147143805436916,
+      "val_accuracy": 0.7141768292682927,
+      "seconds": 65.78564357757568
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.4204505298897084,
+      "val_macro_f1": 0.7495351694183543,
+      "val_accuracy": 0.7507621951219512,
+      "seconds": 66.03607892990112
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.38316784106930446,
+      "val_macro_f1": 0.734260241682915,
+      "val_accuracy": 0.7339939024390244,
+      "seconds": 65.65280151367188
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.347302143424824,
+      "val_macro_f1": 0.7402011874911003,
+      "val_accuracy": 0.739329268292683,
+      "seconds": 65.77694416046143
+    }
+  ],
+  "params": {
+    "quick": false,
+    "epochs": 8,
+    "batch": 16,
+    "lr": 3e-05,
+    "head_lr": 0.001,
+    "dropout": 0.2,
+    "patience": 3,
+    "no_aug": true,
+    "model": "microsoft/wavlm-base-plus",
+    "seed": 42,
+    "tag": null,
+    "resume": false,
+    "data": "C:\\Users\\Msi Katana\\Desktop\\PI\\callverse\\datasets"
+  },
+  "frozen_baseline_for_comparison": {
+    "CREMA-D test accuracy": 0.772,
+    "CREMA-D test macro F1": 0.773,
+    "RAVDESS test accuracy": 0.727,
+    "note": "frozen WavLM layers 5+7+6 concatenated + logistic regression, trained on both datasets (notebook section 9)"
+  },
+  "finished": "2026-10-10 17:39"
+}

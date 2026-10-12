@@ -1,0 +1,190 @@
+{
+  "overall": {
+    "clips": 1198,
+    "accuracy": 0.7370617696160268,
+    "macro_f1": 0.7356096274954137
+  },
+  "CREMA-D": {
+    "clips": 1066,
+    "accuracy": 0.7345215759849906,
+    "macro_f1": 0.7339182698910317,
+    "accuracy_ci95": [
+      0.6772983114446529,
+      0.7954971857410882
+    ],
+    "test_actors": 13
+  },
+  "RAVDESS": {
+    "clips": 132,
+    "accuracy": 0.7575757575757576,
+    "macro_f1": 0.7464213683890234
+  },
+  "per_emotion_recall": {
+    "anger": 0.9514563106796117,
+    "disgust": 0.7281553398058253,
+    "fear": 0.7864077669902912,
+    "happy": 0.6699029126213593,
+    "neutral": 0.75,
+    "sad": 0.5388349514563107
+  },
+  "confusion_matrix": {
+    "labels": [
+      "anger",
+      "disgust",
+      "fear",
+      "happy",
+      "neutral",
+      "sad"
+    ],
+    "rows_true_cols_pred": [
+      [
+        196,
+        1,
+        5,
+        2,
+        2,
+        0
+      ],
+      [
+        17,
+        150,
+        19,
+        0,
+        3,
+        17
+      ],
+      [
+        7,
+        11,
+        162,
+        9,
+        0,
+        17
+      ],
+      [
+        29,
+        8,
+        21,
+        138,
+        6,
+        4
+      ],
+      [
+        24,
+        0,
+        3,
+        6,
+        126,
+        9
+      ],
+      [
+        5,
+        21,
+        47,
+        9,
+        13,
+        111
+      ]
+    ]
+  },
+  "CREMA-D_by_sex": {
+    "Female": 0.739329268292683,
+    "Male": 0.7268292682926829
+  },
+  "CREMA-D_by_age_band": {
+    "18-25": {
+      "accuracy": 0.7652439024390244,
+      "clips": 328
+    },
+    "26-35": {
+      "accuracy": 0.7317073170731707,
+      "clips": 574
+    },
+    "36-50": {
+      "accuracy": 0.6829268292682927,
+      "clips": 164
+    }
+  },
+  "run": "full",
+  "best_validation_macro_f1": 0.7573673182513508,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.292259284624457,
+      "val_macro_f1": 0.5828718486314292,
+      "val_accuracy": 0.5914634146341463,
+      "seconds": 98.80891394615173
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.9143043464534725,
+      "val_macro_f1": 0.6717497646642484,
+      "val_accuracy": 0.6852134146341463,
+      "seconds": 77.84229016304016
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.7610171419940609,
+      "val_macro_f1": 0.667697449559614,
+      "val_accuracy": 0.6646341463414634,
+      "seconds": 71.57090139389038
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.6591667795651183,
+      "val_macro_f1": 0.6982141495970441,
+      "val_accuracy": 0.6989329268292683,
+      "seconds": 72.1692852973938
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.5786961308152047,
+      "val_macro_f1": 0.6796476786987785,
+      "val_accuracy": 0.6737804878048781,
+      "seconds": 71.73502445220947
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.5303777192408321,
+      "val_macro_f1": 0.7573673182513508,
+      "val_accuracy": 0.7560975609756098,
+      "seconds": 71.66246914863586
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.4818427991305565,
+      "val_macro_f1": 0.7469693448035265,
+      "val_accuracy": 0.7454268292682927,
+      "seconds": 71.60914587974548
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.4598907980354198,
+      "val_macro_f1": 0.7442151823890316,
+      "val_accuracy": 0.7423780487804879,
+      "seconds": 71.69895076751709
+    }
+  ],
+  "params": {
+    "quick": false,
+    "epochs": 8,
+    "batch": 16,
+    "lr": 3e-05,
+    "head_lr": 0.001,
+    "dropout": 0.2,
+    "patience": 3,
+    "no_aug": false,
+    "model": "microsoft/wavlm-base-plus",
+    "seed": 42,
+    "tag": null,
+    "resume": false,
+    "data": "C:\\Users\\Msi Katana\\Desktop\\PI\\callverse\\datasets"
+  },
+  "frozen_baseline_for_comparison": {
+    "CREMA-D test accuracy": 0.772,
+    "CREMA-D test macro F1": 0.773,
+    "RAVDESS test accuracy": 0.727,
+    "note": "frozen WavLM layers 5+7+6 concatenated + logistic regression, trained on both datasets (notebook section 9)"
+  },
+  "finished": "2026-10-10 17:29"
+}
