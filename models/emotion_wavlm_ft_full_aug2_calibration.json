@@ -1,0 +1,17 @@
+{
+  "temperature": 1.228,
+  "fitted_on": "1312 validation clips",
+  "checked_on": "1198 test clips (unseen actors)",
+  "before": {
+    "ECE": 0.081,
+    "mean_confidence": 0.806,
+    "accuracy": 0.735,
+    "NLL": 0.753
+  },
+  "after": {
+    "ECE": 0.03,
+    "mean_confidence": 0.752,
+    "accuracy": 0.735,
+    "NLL": 0.735
+  }
+}

@@ -19,3 +19,10 @@ Start it from the repo root, then open the app as Nour (quality) or admin, page 
 
 `POST /emotion/analyze` takes the raw audio file and returns the emotion, confidence, mood 0-100, all six probabilities and a
 3-second-window timeline. The app finds the service through `CALLVERSE_EMOTION_URL` (default `http://localhost:8001`).
+
+### Calibration (honest percentages)
+
+The raw model is over-confident: on the 1,198 unseen test clips it averaged 80.6% confidence for 73.5% accuracy.
+`src/calibrate.py` fits one temperature (T = 1.228) on the validation actors and `serve.py` applies it. On the test actors the
+calibration error (ECE) fell from 0.081 to 0.030 and the average confidence to 75.2%; accuracy and predicted emotions are unchanged.
+Result and numbers: `emotion_wavlm_ft_full_aug2_calibration.json`. Calibrated on clean acted speech only, so on real, noisy calls the percentages are probably still a bit high.

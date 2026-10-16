@@ -4,6 +4,7 @@ Run from the repo root:  ..\venv\Scripts\python.exe -m uvicorn serve:app --app-d
 POST /emotion/analyze  body = raw audio file (wav, mp3, ogg, flac...)  ->  JSON, see analyze() below.
 """
 import io
+import json
 import os
 from pathlib import Path
 
@@ -17,6 +18,10 @@ import finetune as ft
 WEIGHTS = Path(os.environ.get("EMOTION_WEIGHTS", ft.MODELS / "registry" / "emotion_wavlm_ft_full_aug2.pt"))
 WINDOW = 3 * ft.SR          # the model was trained on short acted clips, so long calls are scored in 3 s windows
 MAX_SECONDS = 120
+
+# temperature from calibrate.py: softens the over-confident percentages (the predicted emotion never changes)
+CAL = ft.MODELS / (WEIGHTS.stem + "_calibration.json")
+TEMPERATURE = json.loads(CAL.read_text())["temperature"] if CAL.exists() else 1.0
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ck = torch.load(WEIGHTS, map_location="cpu", weights_only=False)
@@ -49,6 +54,8 @@ async def analyze(req: Request):
     bounds = np.linspace(0, len(y), n + 1).astype(int)
     waves = [y[a:b] for a, b in zip(bounds[:-1], bounds[1:])]
     proba = ft.predict(model, waves, list(range(n)), device)       # (windows, 6)
+    proba = proba ** (1 / TEMPERATURE)             # same as dividing the raw scores by T before the softmax
+    proba /= proba.sum(1, keepdims=True)
     whole = proba.mean(0)
 
     best = int(whole.argmax())
