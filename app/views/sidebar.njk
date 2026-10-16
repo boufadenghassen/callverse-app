@@ -13,6 +13,7 @@
       {% if can('ADVISOR') %}{{ m.navlink('/advisor', 'advisor', 'p-advisor', 'M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1v-4zm16 0h-3v5h2a1 1 0 001-1v-4zM17 19c0 1.7-2 2.5-5 2.5', 'Advisor console', active) }}{% endif %}
       {% if can('WORKFORCE') %}{{ m.navlink('/workforce', 'workforce', 'p-workforce', 'M4 20v-7m5 7V4m5 16v-9m5 9v-5', 'Workforce twin', active) }}{% endif %}
       {% if can('QUALITY') %}{{ m.navlink('/quality', 'quality', 'p-quality', 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.3 6.8 19.1l1-5.8L3.5 9.2l5.9-.9L12 3z', 'Quality reviews', active) }}{% endif %}
+      {% if can('QUALITY') %}{{ m.navlink('/call-review', 'call-review', 'p-quality', 'M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v4', 'Call review (AI)', active) }}{% endif %}
       {% if can('COMPLAINT') %}{{ m.navlink('/complaints', 'complaints', 'p-complaint', 'M12 4l9 16H3L12 4zm0 6v4m0 3v.01', 'Complaints', active) }}{% endif %}
       {% if can('TRAINER') %}{{ m.navlink('/training', 'training', 'p-training', 'M3 9l9-5 9 5-9 5-9-5zm4 3v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4', 'Training scenarios', active) }}{% endif %}
       {% if can('SALES') %}{{ m.navlink('/sales', 'sales', 'p-sales', 'M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01', 'Sales opportunities', active) }}{% endif %}

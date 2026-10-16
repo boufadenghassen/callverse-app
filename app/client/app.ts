@@ -158,6 +158,7 @@
     '/advisor': 'M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1v-4zm16 0h-3v5h2a1 1 0 001-1v-4zM17 19c0 1.7-2 2.5-5 2.5',
     '/workforce': 'M4 20v-7m5 7V4m5 16v-9m5 9v-5',
     '/quality': 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.3 6.8 19.1l1-5.8L3.5 9.2l5.9-.9L12 3z',
+    '/call-review': 'M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v4',
     '/complaints': 'M12 4l9 16H3L12 4zm0 6v4m0 3v.01',
     '/training': 'M3 9l9-5 9 5-9 5-9-5zm4 3v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4',
     '/sales': 'M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01',
@@ -195,6 +196,44 @@
     addEventListener('pageshow', (e) => { if (e.persisted) $$('.wipe').forEach((w) => w.remove()); });
   }
 
+  // Call review: send the recording to the emotion model and draw the answer
+  const reviewForm = byId<HTMLFormElement>('review-form');
+  if (reviewForm) {
+    const file = byId<HTMLInputElement>('audio')!, player = byId<HTMLAudioElement>('player')!, status = byId('review-status')!, out = byId('review-result')!;
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      player.hidden = !f;
+      if (f) player.src = URL.createObjectURL(f);
+    });
+    reviewForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = file.files?.[0];
+      if (!f) return;
+      status.textContent = 'Listening… the first run can take a few seconds.';
+      out.hidden = true;
+      try {
+        const res = await fetch('/call-review/analyze', { method: 'POST', body: f, headers: { 'Content-Type': 'application/octet-stream', 'X-CSRF-Token': reviewForm.dataset.csrf! } });
+        const d = await res.json();
+        if (!res.ok) { status.textContent = d.error ?? 'Something went wrong.'; return; }
+        status.textContent = '';
+        byId('r-emotion')!.textContent = d.emotion;
+        byId('r-detail')!.textContent = `${Math.round(d.confidence * 100)}% sure · mood ${d.mood}/100 · ${d.durationSec}s of speech`;
+        const rows = Object.entries<number>(d.probabilities).sort((a, b) => b[1] - a[1]);
+        byId('r-bars')!.replaceChildren(...rows.map(([name, p]) => {
+          const li = make('li'), fill = make('span', { className: 'fill' });
+          fill.style.width = `${Math.round(p * 100)}%`;
+          const track = make('span', { className: 'track' });
+          track.append(fill);
+          li.append(make('span', { textContent: name }), track, make('span', { textContent: `${Math.round(p * 100)}%` }));
+          return li;
+        }));
+        byId('r-timeline')!.replaceChildren(...d.timeline.map((t: { startSec: number; emotion: string }) =>
+          make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
+        out.hidden = false;
+      } catch { status.textContent = 'The app could not be reached. Try again.'; }
+    });
+  }
+
   // Ideas: filter by decision
   const filters = $$('[data-filter]');
   filters.forEach((btn) => btn.addEventListener('click', () => {
@@ -202,6 +241,7 @@
     const f = btn.dataset.filter;
     $$('.idea').forEach((i) => { i.hidden = f !== 'all' && i.dataset.decision !== f; });
     $$('.idea-set').forEach((s) => { s.hidden = !s.querySelector('.idea:not([hidden])'); });
+    byId('no-ideas')!.hidden = !!document.querySelector('.idea:not([hidden])');
   }));
 
   // Training: scenario builder, replay and what-if (demo data; the Training agent would supply these)

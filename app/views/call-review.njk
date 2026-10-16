@@ -1,0 +1,33 @@
+{% extends "app.njk" %}
+{% set title = "Call review" %}
+{% set active = "call-review" %}
+{% set bodyClass = "p-quality" %}
+{% block content %}
+    <header class="page-head">
+      <p class="eyebrow">Nour · Quality analyst agent</p>
+      <h1>Call review</h1>
+      <p class="lede">Upload a call recording. The fine-tuned WavLM emotion model listens to it and shows how the caller felt, moment by moment.</p>
+      <p class="head-actions"><span class="badge cov live">Real model, not demo data</span></p>
+    </header>
+
+    <section class="panel" aria-labelledby="up">
+      <h2 id="up">Recording</h2>
+      <form id="review-form" data-csrf="{{ csrf }}">
+        <label for="audio">Audio file (wav, mp3, ogg, flac; up to 15 MB, first 2 minutes are scored)</label>
+        <input id="audio" type="file" accept="audio/*" required>
+        <audio id="player" controls hidden></audio>
+        <p><button type="submit" class="btn">Analyze emotion</button></p>
+      </form>
+      <p id="review-status" role="status" class="muted"></p>
+    </section>
+
+    <section class="panel" id="review-result" aria-labelledby="rs" hidden>
+      <h2 id="rs">Result</h2>
+      <p class="review-main"><strong id="r-emotion"></strong> <span class="muted" id="r-detail"></span></p>
+      <h3>How sure is the model</h3>
+      <ul class="emo-bars" id="r-bars"></ul>
+      <h3>Through the call</h3>
+      <ol class="emo-timeline" id="r-timeline"></ol>
+      <p class="muted">Trained on acted speech (CREMA-D, RAVDESS) with phone-line effects added. Real calls may be harder; sad is its weakest emotion. See the model card in <code>models/</code>.</p>
+    </section>
+{% endblock %}

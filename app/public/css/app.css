@@ -975,3 +975,18 @@ dialog.shortcuts .shortcuts-foot { margin: var(--s4) 0 0; color: var(--muted); f
   html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after { transition: background-color .45s var(--ease), color .45s var(--ease), border-color .45s var(--ease), box-shadow .45s var(--ease), fill .45s var(--ease), stroke .45s var(--ease) !important; }
 }
 html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #141a2e); }   /* pages without a workspace colour need it too */
+.empty-state { text-align: center; color: var(--muted); padding: var(--s8) var(--s4); border: 1px dashed var(--line, currentColor); border-radius: var(--r, 12px); }
+.empty-state[hidden] { display: none; }
+
+/* Call review */
+#review-form input[type=file] { display: block; margin: var(--s2) 0 var(--s3); max-width: 100%; }
+#review-form audio { display: block; width: 100%; max-width: 28rem; margin-bottom: var(--s3); }
+#review-form audio[hidden], #review-result[hidden] { display: none; }
+.review-main strong { font-size: 1.75rem; text-transform: capitalize; }
+.emo-bars, .emo-timeline { list-style: none; margin: 0 0 var(--s4); padding: 0; }
+.emo-bars li { display: grid; grid-template-columns: 5.5rem 1fr 3rem; align-items: center; gap: var(--s3); padding: .2rem 0; text-transform: capitalize; }
+.emo-bars .track { height: .6rem; border-radius: 999px; background: var(--paper); overflow: hidden; }
+.emo-bars .fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .7s var(--ease); }
+.emo-timeline { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.emo-timeline li { padding: .3rem .7rem; border-radius: 999px; background: var(--paper); font-size: .8125rem; text-transform: capitalize; }
+.emo-timeline li.bad { background: var(--danger-soft); color: var(--danger); }

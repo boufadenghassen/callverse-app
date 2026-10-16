@@ -48,6 +48,8 @@
       <button type="button" class="chip-btn" data-filter="perspective" aria-pressed="false">Perspective</button>
     </div>
 
+    <p id="no-ideas" class="empty-state" role="status" hidden>No ideas with this decision yet. Try another filter.</p>
+
     {% for p in personas %}
     <section class="idea-set {{ p.accent }}">
       <header class="idea-set-head">

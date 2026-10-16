@@ -36,7 +36,7 @@ export class AccessGuard implements CanActivate {
 }
 
 function validCsrf(req: Request): boolean {
-  const sent = req.body?._csrf, expected = req.session.csrf;
+  const sent = req.body?._csrf ?? req.headers['x-csrf-token'], expected = req.session.csrf;
   if (typeof sent !== 'string' || !expected || sent.length !== expected.length) return false;
   return timingSafeEqual(Buffer.from(sent), Buffer.from(expected));
 }
