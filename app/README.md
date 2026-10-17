@@ -64,3 +64,10 @@ interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alia
 | GET | `/complaints/open` | ComplaintCase[] |
 | GET | `/training/scenarios` | Scenario[] |
 | GET | `/sales/opportunities` | Opportunity[] |
+
+## Voice
+
+Agent answers (advisor suggestions, quality coaching hints, workforce recommendations) have a **Listen** button, and the advisor's live call
+speaks the customer's replies, faster and higher when she is upset, calmer when she is content (switch: "Speak her replies",
+remembered). It uses the browser's built-in speech synthesis, so nothing is sent anywhere and the voices depend on the browser.
+Mark any text with `data-speak` to give it a Listen button. A neural voice from the Python agents is the next step if the browser voices are not enough.

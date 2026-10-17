@@ -30,7 +30,7 @@
         </form>
         <article class="answer">
           <h3>Suggested answer</h3>
-          <p>{{ answer.text }}</p>
+          <p data-speak>{{ answer.text }}</p>
           <p class="muted">Sources: <span>{{ answer.sources | join(', ') }}</span>
             · confidence <span>{{ answer.confidence | pct }}</span></p>
         </article>
@@ -59,6 +59,7 @@
         <div><label for="lv-diff">Difficulty</label>
           <select id="lv-diff">{% for k, d in difficulties %}<option value="{{ k }}"{% if k == 'MEDIUM' %} selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
         <div class="live-check"><input id="lv-memory" type="checkbox"><label for="lv-memory">Repeat contact</label></div>
+        <div class="live-check"><input id="lv-voice" type="checkbox" checked><label for="lv-voice">Speak her replies</label></div>
         <button type="submit" class="btn">Start call</button>
       </form>
       <p id="live-status" role="status" class="muted"></p>
@@ -79,7 +80,7 @@
         </form>
         <article class="answer" id="live-suggest" hidden>
           <h3>Advisor agent suggests</h3>
-          <p id="lv-s-text"></p>
+          <p id="lv-s-text" data-speak></p>
           <p class="muted" id="lv-s-meta"></p>
           <p class="warning" id="lv-s-warn" role="note" hidden></p>
         </article>

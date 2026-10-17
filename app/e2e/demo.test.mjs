@@ -353,3 +353,39 @@ test('switching the theme cross-fades, and an unknown page shows the friendly er
   await page.waitForURL(`${BASE}/`);
   await ctx.close();
 });
+
+test('agents speak: answers have a Listen button and the live call reads the customer aloud, shaped by her mood', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await ctx.addInitScript(() => {   // a recording stand-in for the browser's speech, so the test needs no sound card
+    window.__said = [];
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
+      speak: (u) => { window.__said.push({ text: u.text, rate: u.rate, pitch: u.pitch }); setTimeout(() => u.onend && u.onend(), 5); },
+      cancel() {}, getVoices: () => [] } });
+    window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  await page.goto(`${BASE}/advisor`);
+
+  await page.locator('.answer .listen').first().click();
+  const answer = (await page.locator('.answer p[data-speak]').first().textContent()).trim();
+  assert.equal((await page.evaluate(() => window.__said))[0].text.trim(), answer);
+
+  await page.selectOption('#lv-persona', 'ANGRY_PREMIUM');
+  await page.click('#live-setup button[type=submit]');
+  await page.waitForSelector('#live-call:not([hidden])');
+  const said = await page.evaluate(() => window.__said);
+  const opening = said.at(-1);
+  assert.match(opening.text, /charged twice/);
+  assert.ok(opening.pitch > 1 && opening.rate > 1, 'an upset customer sounds faster and higher');
+
+  await page.uncheck('#lv-voice');
+  const before = (await page.evaluate(() => window.__said)).length;
+  await page.fill('#lv-text', 'I am so sorry, I understand.');
+  await page.click('#live-say button[type=submit]');
+  await page.waitForFunction(() => document.querySelectorAll('#live-log li').length >= 3);
+  assert.equal((await page.evaluate(() => window.__said)).length, before, 'voice off: nothing is spoken');
+  await ctx.close();
+});

@@ -22,6 +22,39 @@
     sdel(k: string) { try { sessionStorage.removeItem(k); } catch { /* blocked */ } },
   };
 
+  // Voice: agents can read their answers out loud with the browser's own speech (nothing is sent anywhere).
+  // `speak(text, 'customer', mood)` shapes the voice by mood: upset = faster and higher, calm = slower and lower.
+  const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+  let speaking: HTMLElement | null = null;   // the Listen button whose text is being read
+  const stopSpeaking = () => { synth?.cancel(); if (speaking) { speaking.classList.remove('speaking'); speaking.textContent = 'Listen'; } speaking = null; };
+  const pickVoice = (role: 'advisor' | 'customer') => {
+    const en = synth!.getVoices().filter((v) => /^en/i.test(v.lang));
+    if (!en.length) return null;
+    const female = /(aria|jenny|zira|samantha|female|susan|hazel)/i, male = /(guy|davis|david|mark|male|ryan|george)/i;
+    return en.find((v) => (role === 'customer' ? female : male).test(v.name)) ?? en[role === 'customer' ? 0 : en.length - 1];
+  };
+  const speak = (text: string, role: 'advisor' | 'customer' = 'advisor', mood = 50, onEnd?: () => void) => {
+    if (!synth || !text) return;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text), shift = (50 - Math.max(0, Math.min(100, mood))) / 250;
+    u.lang = 'en-US'; u.voice = pickVoice(role); u.rate = 1 + shift; u.pitch = 1 + shift;
+    u.onend = u.onerror = () => onEnd?.();
+    synth.speak(u);
+  };
+  // every element marked data-speak gets a Listen button next to it
+  if (synth) $$('[data-speak]').forEach((el) => {
+    const btn = make('button', { type: 'button', className: 'btn-quiet listen', textContent: 'Listen' });
+    btn.addEventListener('click', () => {
+      if (speaking === btn) return stopSpeaking();
+      stopSpeaking();
+      speaking = btn; btn.classList.add('speaking'); btn.textContent = 'Stop';
+      const words = [...el.childNodes].filter((n) => n !== btn).map((n) => n.textContent).join('');
+      speak(words, 'advisor', 50, () => { if (speaking === btn) stopSpeaking(); });
+    });
+    if (el.tagName === 'LI') el.append(btn); else el.after(btn);   // a button cannot sit directly inside a list
+  });
+  addEventListener('pagehide', stopSpeaking);
+
   // Toasts
   const stack = document.body.appendChild(make('div', { className: 'toasts', role: 'status', ariaLive: 'polite' }));
   const toast = (msg: string) => {
@@ -243,6 +276,8 @@
     const csrf = live.dataset.csrf!, sel = (id: string) => byId<HTMLSelectElement>(id)!.value;
     const status = byId('live-status')!, call = byId('live-call')!, log = byId('live-log')!, text = byId<HTMLTextAreaElement>('lv-text')!;
     const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
+    const voiceOn = byId<HTMLInputElement>('lv-voice');
+    if (voiceOn) { voiceOn.checked = store.get('cv-voice') !== 'off'; voiceOn.addEventListener('change', () => { store.set('cv-voice', voiceOn.checked ? 'on' : 'off'); if (!voiceOn.checked) stopSpeaking(); }); }
     let callId = '', topic = '';
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
@@ -250,7 +285,8 @@
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       return data;
     };
-    const say = (who: string, msg: string, extra = '') => {
+    const say = (who: string, msg: string, extra = '', mood = 50) => {
+      if (who === 'client' && voiceOn?.checked) speak(msg, 'customer', mood);
       const li = make('li', { className: `live-msg ${who}` });
       li.append(make('strong', { textContent: who === 'client' ? 'Customer' : 'You' }), make('span', { textContent: msg }));
       if (extra) li.append(make('small', { className: 'muted', textContent: extra }));
@@ -277,7 +313,7 @@
       try {
         const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
         callId = d.id; topic = d.opening; log.replaceChildren(); byId('live-outcome')!.hidden = true;
-        say('client', d.opening, d.persona);
+        say('client', d.opening, d.persona, d.mood);
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
       } catch (err) { status.textContent = (err as Error).message; }
@@ -292,7 +328,7 @@
       text.value = '';
       try {
         const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
-        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '');
+        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood);
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {
           const o = d.outcome, box = byId('live-outcome')!;

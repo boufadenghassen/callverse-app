@@ -73,7 +73,7 @@
              SLA <strong>{{ result.baselineSla | pct }}</strong> becomes
              <strong>{{ result.simulatedSla | pct }}</strong>.</p>
           <h3>Ranked recommendations</h3>
-          <ol>{% for r in result.recommendations %}<li>{{ r }}</li>{% endfor %}</ol>
+          <ol>{% for r in result.recommendations %}<li data-speak>{{ r }}</li>{% endfor %}</ol>
         </div>
         {% endif %}
     </section>

@@ -1006,3 +1006,5 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .evidence { margin: var(--s3) 0; padding-left: var(--s4); font-size: .875rem; }
 #live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden] { display: none; }
 .live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
+.listen { margin-left: var(--s2); font-size: .8125rem; }
+.listen.speaking { color: var(--accent-ink); font-weight: 700; }
