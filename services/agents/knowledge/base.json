@@ -1,0 +1,86 @@
+[
+  {
+    "source": "Billing policy §4.2",
+    "title": "Duplicate charge on a bill",
+    "text": "A customer charged twice for the same invoice, double charge, duplicate payment or the same amount billed two times on the monthly bill. Check the billing history for two identical lines on the same invoice date. If both lines are confirmed, the second one is refunded. The refund appears on the next statement.",
+    "reply": "I can see the amount was charged twice on your bill. I will check the billing history to confirm both lines, then refund the duplicate; it will appear on your next statement. I'm sorry for the inconvenience.",
+    "policy": "Refunds above 50 TND need supervisor approval."
+  },
+  {
+    "source": "Refund procedure v3",
+    "title": "How a refund is approved",
+    "text": "Refund request, reimburse, credit back to the customer. Check eligibility and the policy first. Refunds up to 50 TND can be approved by the advisor. Refunds above 50 TND need supervisor approval before anything is promised to the customer. Never promise a refund before the approval is checked. Confirm the outcome in writing with a reference number.",
+    "reply": "Let me check the refund policy and the approval first, so that what I promise is correct. I will confirm the result in writing with a reference number.",
+    "policy": "Never promise a refund before the approval is checked. Above 50 TND a supervisor must approve."
+  },
+  {
+    "source": "Roaming guide §2",
+    "title": "Roaming bundle not working abroad",
+    "text": "Roaming bundle did not work abroad, no data roaming, no signal or internet when travelling. Check that the roaming bundle is active for the destination country and the dates. Check that data roaming is switched on in the phone settings and that the customer selected a partner network. If the bundle was not activated before departure, activate it now and reset the connection.",
+    "reply": "I'm sorry the roaming bundle did not work while you were abroad. I will check that the bundle was active for the country and dates, and I will ask you to confirm that data roaming is switched on and a partner network is selected. If it was not activated, I can activate it now.",
+    "policy": null
+  },
+  {
+    "source": "Roaming guide §5",
+    "title": "Compensation for a failed roaming bundle",
+    "text": "Compensation or refund for a roaming bundle that did not work abroad. If the fault came from the network or from a missed activation by the operator, the bundle price for the affected days is credited. Credits need a ticket number and are granted after the technical check.",
+    "reply": "If the fault came from our side, the price of the affected days is credited to your account. I will open a ticket, run the technical check and send you the reference number.",
+    "policy": "Credit only after the technical check; a ticket number is required."
+  },
+  {
+    "source": "Contract terms §7",
+    "title": "Cancellation and early termination fee",
+    "text": "Customer wants to cancel the contract, cancellation, terminate the subscription, early termination fee, leaving the operator. The early termination fee applies when the commitment period has not ended and covers the remaining discount. Customers with more than five years of loyalty can ask for the fee to be reviewed. Before processing a cancellation, offer a retention plan review.",
+    "reply": "I understand you want to cancel, and I'm sorry the fee feels unfair. Let me look at your contract and explain exactly how the fee is calculated. As you have been with us for years, I can also ask for the fee to be reviewed and check whether a better plan fits you.",
+    "policy": "Offer a retention plan review before processing a cancellation."
+  },
+  {
+    "source": "Plan change guide §1",
+    "title": "Changing the plan",
+    "text": "Plan change, upgrade or downgrade the mobile plan, switch to another offer or bundle. A plan change takes effect on the next billing cycle. The remaining data of the old plan is not carried over. Confirm the price difference with the customer before changing.",
+    "reply": "I can change your plan; it takes effect on your next billing cycle and the remaining data of the current plan is not carried over. Let me confirm the new price with you before I make the change.",
+    "policy": null
+  },
+  {
+    "source": "Data usage FAQ §3",
+    "title": "Data limit does not match the plan",
+    "text": "Data limit shown does not match the plan, data allowance lower than the contract, usage meter shows the wrong amount, mobile data finished too early. Compare the plan data allowance with the usage report. Usage can lag by up to two hours. Boosters and promotions have their own expiry dates.",
+    "reply": "Let me compare the data allowance of your plan with your usage report. The meter can lag by up to two hours, and promotional boosters expire on their own dates, so I will check both and explain the difference.",
+    "policy": null
+  },
+  {
+    "source": "Dispute handling §2",
+    "title": "Disputing an invoice",
+    "text": "Invoice dispute, customer contests an amount, complaint about a bill. Register the dispute with a ticket number. The disputed amount is not collected during the review. The answer is given within five working days.",
+    "reply": "I will register your dispute with a ticket number. The disputed amount will not be collected during the review, and you will get an answer within five working days.",
+    "policy": null
+  },
+  {
+    "source": "Service rules §6",
+    "title": "Transfers and callbacks",
+    "text": "Transfer the customer to another team or department, callback, escalate to a supervisor. Avoid transfers: every transfer makes the customer repeat the story. Transfer only when the other team has the skill, stay on the line until it is picked up and pass the full history. Offer a callback when the wait passes three minutes.",
+    "reply": "I would like to solve this myself. If another team is really needed, I will stay on the line until they pick up and pass them your full history so that you do not have to repeat anything.",
+    "policy": "Pass the full history on every transfer; offer a callback after 3 minutes of waiting."
+  },
+  {
+    "source": "Service rules §2",
+    "title": "Empathy and customer history",
+    "text": "Upset customer, angry or frustrated client, repeat contact, called several times about the same problem. Acknowledge the frustration, use the history that is already on file and do not ask the customer to repeat. Then say clearly what will be done and by when.",
+    "reply": "I understand how frustrating this is, and I can see the history of your previous calls, so you do not need to repeat anything. Here is what I will do and when you will see the result.",
+    "policy": null
+  },
+  {
+    "source": "SIM and devices FAQ §1",
+    "title": "SIM card replacement",
+    "text": "Lost or damaged SIM card, SIM replacement, new SIM, phone number kept. A replacement SIM keeps the same number. The old SIM is blocked at once. Identity must be verified before the replacement.",
+    "reply": "I can order a replacement SIM that keeps your number, and block the old one right away. I first need to verify your identity.",
+    "policy": "Verify the identity before replacing a SIM."
+  },
+  {
+    "source": "Payments FAQ §2",
+    "title": "Payment methods and late payment",
+    "text": "Payment method, pay the bill, late payment, payment deadline, service suspended for non payment. Bills can be paid by card, bank transfer or at a shop. A payment received late restores the service within one hour. A payment plan can be agreed for large amounts.",
+    "reply": "You can pay by card, bank transfer or in a shop, and the service is restored within one hour of the payment. For a larger amount I can also set up a payment plan.",
+    "policy": null
+  }
+]

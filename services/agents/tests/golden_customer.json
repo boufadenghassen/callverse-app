@@ -1,0 +1,1018 @@
+{
+ "texts": [
+  [
+   "I'm so sorry about this, I understand how frustrating it is.",
+   "EMPATHY"
+  ],
+  [
+   "Could you explain the problem again from the start?",
+   "ASK_REPEAT"
+  ],
+  [
+   "Let me transfer you to the billing team.",
+   "TRANSFER"
+  ],
+  [
+   "I will check the refund policy first.",
+   "CHECK_POLICY"
+  ],
+  [
+   "I promise the refund right away.",
+   "PROMISE"
+  ],
+  [
+   "I will send you a confirmation by email and call you back.",
+   "FOLLOW_UP"
+  ],
+  [
+   "Hello, how are you today?",
+   "OTHER"
+  ],
+  [
+   "Let me verify the eligibility rules.",
+   "CHECK_POLICY"
+  ]
+ ],
+ "cases": [
+  {
+   "persona": "IMPATIENT",
+   "mix": "ANXIOUS",
+   "difficulty": "EASY",
+   "intent": "BILLING",
+   "memory": true,
+   "said": [
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?"
+   ],
+   "moves": [
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT"
+   ],
+   "opening": "I was charged twice on my September bill. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "That's kind of you, thank you. I feel heard.",
+     "mood": 72,
+     "patience": 89
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Thank you, I'm glad we sorted this out.",
+     "mood": 84,
+     "patience": 95
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 21,
+    "effort": 0,
+    "notes": [
+     "Memory ignored: the history was on file but the client was asked to repeat."
+    ]
+   }
+  },
+  {
+   "persona": "IMPATIENT",
+   "mix": null,
+   "difficulty": "MEDIUM",
+   "intent": "ROAMING",
+   "memory": false,
+   "said": [
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away."
+   ],
+   "moves": [
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE"
+   ],
+   "opening": "My roaming bundle did not work abroad.",
+   "turns": [
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay, I'll wait a moment. Can we speed this up?",
+     "mood": 57,
+     "patience": 56
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Thank you, that already feels better.",
+     "mood": 65,
+     "patience": 60
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Perfect. That's all I needed.",
+     "mood": 76,
+     "patience": 66
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 35,
+    "effort": 0,
+    "notes": []
+   }
+  },
+  {
+   "persona": "IMPATIENT",
+   "mix": null,
+   "difficulty": "HARD",
+   "intent": "CANCELLATION",
+   "memory": true,
+   "said": [
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules."
+   ],
+   "moves": [
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Alright... go on. Can we speed this up?",
+     "mood": 56,
+     "patience": 47
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay. Let me know what you find. Can we speed this up?",
+     "mood": 58,
+     "patience": 34
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "I appreciate that. Let's sort it out together.",
+     "mood": 75,
+     "patience": 38
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Great, thank you. You have been very helpful.",
+     "mood": 86,
+     "patience": 44
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 37,
+    "effort": 0,
+    "notes": []
+   }
+  },
+  {
+   "persona": "ANXIOUS",
+   "mix": null,
+   "difficulty": "EASY",
+   "intent": "BILLING",
+   "memory": false,
+   "said": [
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team."
+   ],
+   "moves": [
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER"
+   ],
+   "opening": "I was charged twice on my September bill.",
+   "turns": [
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "I'll say it once more, then please write it down. I hope I'm explaining this properly.",
+     "mood": 41,
+     "patience": 79
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Alright... go on. I hope I'm explaining this properly.",
+     "mood": 42,
+     "patience": 76
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay, I'll wait a moment. I hope I'm explaining this properly.",
+     "mood": 44,
+     "patience": 72
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Okay. At least you seem to know my file. I hope I'm explaining this properly.",
+     "mood": 56,
+     "patience": 76
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Perfect. That's all I needed. Thank you for being patient with me.",
+     "mood": 70,
+     "patience": 82
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 40,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s)."
+    ]
+   }
+  },
+  {
+   "persona": "ANXIOUS",
+   "mix": "IMPATIENT",
+   "difficulty": "MEDIUM",
+   "intent": "ROAMING",
+   "memory": true,
+   "said": [
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back."
+   ],
+   "moves": [
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP"
+   ],
+   "opening": "My roaming bundle did not work abroad. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "Brilliant. I really appreciate it.",
+     "mood": 66,
+     "patience": 75
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Do I really have to? Fine, from the start then.",
+     "mood": 47,
+     "patience": 57
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Hm, okay. And then? I hope I'm explaining this properly.",
+     "mood": 48,
+     "patience": 54
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay. Let me know what you find.",
+     "mood": 50,
+     "patience": 46
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "I appreciate that. Let's sort it out together.",
+     "mood": 70,
+     "patience": 50
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Great, thank you. You have been very helpful. Thank you for being patient with me.",
+     "mood": 82,
+     "patience": 56
+    }
+   ],
+   "outcome": {
+    "verdict": "Closed, but trust is shaky.",
+    "expectationMet": false,
+    "churnRisk": 54,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s).",
+     "Compliance risk: a refund was promised before the policy was checked.",
+     "Memory ignored: the history was on file but the client was asked to repeat."
+    ]
+   }
+  },
+  {
+   "persona": "ANXIOUS",
+   "mix": null,
+   "difficulty": "HARD",
+   "intent": "CANCELLATION",
+   "memory": false,
+   "said": [
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is."
+   ],
+   "moves": [
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense.",
+   "turns": [
+    {
+     "move": "CHECK_POLICY",
+     "said": "Let me verify the eligibility rules.",
+     "client": "Okay. Let me know what you find. I hope I'm explaining this properly.",
+     "mood": 52,
+     "patience": 51
+    },
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "Perfect, that is exactly what I wanted. Thank you for being patient with me.",
+     "mood": 66,
+     "patience": 56
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Do I really have to? Fine, from the start then.",
+     "mood": 48,
+     "patience": 34
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Alright... go on. I hope I'm explaining this properly.",
+     "mood": 49,
+     "patience": 31
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Alright, as long as it gets sorted. I hope I'm explaining this properly.",
+     "mood": 51,
+     "patience": 22
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Thanks, honestly that means a lot. Thank you for being patient with me.",
+     "mood": 63,
+     "patience": 26
+    }
+   ],
+   "outcome": {
+    "verdict": "Call left open.",
+    "expectationMet": false,
+    "churnRisk": 63,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s).",
+     "The call ended without a written follow-up."
+    ]
+   }
+  },
+  {
+   "persona": "ANGRY_PREMIUM",
+   "mix": null,
+   "difficulty": "EASY",
+   "intent": "BILLING",
+   "memory": true,
+   "said": [
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first."
+   ],
+   "moves": [
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY"
+   ],
+   "opening": "I was charged twice on my September bill. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "TRANSFER",
+     "said": "Let me transfer you to the billing team.",
+     "client": "Transfer me again and I cancel. I pay a premium price for better than this.",
+     "mood": 29,
+     "patience": 47
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "Let me verify the eligibility rules.",
+     "client": "Okay, I'll wait a moment. I expect proper service.",
+     "mood": 31,
+     "patience": 40
+    },
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "Alright. When will I see it?",
+     "mood": 45,
+     "patience": 45
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "You have my file. Read it! I pay a premium price for better than this.",
+     "mood": 29,
+     "patience": 30
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "I'm not sure I follow. Can you be more specific?",
+     "mood": 30,
+     "patience": 27
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay. Let me know what you find. I expect proper service.",
+     "mood": 32,
+     "patience": 20
+    }
+   ],
+   "outcome": {
+    "verdict": "Call left open.",
+    "expectationMet": false,
+    "churnRisk": 89,
+    "effort": 2,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 2 time(s).",
+     "Memory ignored: the history was on file but the client was asked to repeat.",
+     "The call ended without a written follow-up."
+    ]
+   }
+  },
+  {
+   "persona": "ANGRY_PREMIUM",
+   "mix": null,
+   "difficulty": "MEDIUM",
+   "intent": "ROAMING",
+   "memory": false,
+   "said": [
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?"
+   ],
+   "moves": [
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER"
+   ],
+   "opening": "My roaming bundle did not work abroad.",
+   "turns": [
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Good, I'd like to have that in writing. I expect proper service.",
+     "mood": 47,
+     "patience": 51
+    }
+   ],
+   "outcome": {
+    "verdict": "Closed, but trust is shaky.",
+    "expectationMet": false,
+    "churnRisk": 56,
+    "effort": 0,
+    "notes": []
+   }
+  },
+  {
+   "persona": "ANGRY_PREMIUM",
+   "mix": "NEW_SUBSCRIBER",
+   "difficulty": "HARD",
+   "intent": "CANCELLATION",
+   "memory": true,
+   "said": [
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?"
+   ],
+   "moves": [
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "That's kind of you, thank you. I feel heard.",
+     "mood": 69,
+     "patience": 54
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Thank you, I'm glad we sorted this out.",
+     "mood": 81,
+     "patience": 60
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 34,
+    "effort": 0,
+    "notes": [
+     "Memory ignored: the history was on file but the client was asked to repeat."
+    ]
+   }
+  },
+  {
+   "persona": "LOYAL_AT_RISK",
+   "mix": null,
+   "difficulty": "EASY",
+   "intent": "BILLING",
+   "memory": false,
+   "said": [
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away."
+   ],
+   "moves": [
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE"
+   ],
+   "opening": "I was charged twice on my September bill.",
+   "turns": [
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Good, I'd rather it be right.",
+     "mood": 62,
+     "patience": 70
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Thank you, that already feels better. This is why I stayed with you.",
+     "mood": 72,
+     "patience": 74
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Perfect. That's all I needed.",
+     "mood": 85,
+     "patience": 80
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 25,
+    "effort": 0,
+    "notes": []
+   }
+  },
+  {
+   "persona": "LOYAL_AT_RISK",
+   "mix": null,
+   "difficulty": "MEDIUM",
+   "intent": "ROAMING",
+   "memory": true,
+   "said": [
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules."
+   ],
+   "moves": [
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER",
+    "CHECK_POLICY"
+   ],
+   "opening": "My roaming bundle did not work abroad. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Alright, I see. Please continue. This is why I stayed with you.",
+     "mood": 61,
+     "patience": 57
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "That makes sense. Better to be sure. This is why I stayed with you.",
+     "mood": 63,
+     "patience": 49
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "I appreciate that. Let's sort it out together. This is why I stayed with you.",
+     "mood": 84,
+     "patience": 53
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Great, thank you. You have been very helpful. This is why I stayed with you.",
+     "mood": 97,
+     "patience": 59
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 26,
+    "effort": 0,
+    "notes": []
+   }
+  },
+  {
+   "persona": "LOYAL_AT_RISK",
+   "mix": null,
+   "difficulty": "HARD",
+   "intent": "CANCELLATION",
+   "memory": false,
+   "said": [
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back.",
+    "Let me transfer you to the billing team."
+   ],
+   "moves": [
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP",
+    "TRANSFER"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense.",
+   "turns": [
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Do I really have to? Fine, from the start then.",
+     "mood": 38,
+     "patience": 18
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Hm, okay. And then? I would hate to leave after all this time.",
+     "mood": 39,
+     "patience": 15
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Alright, as long as it gets sorted.",
+     "mood": 41,
+     "patience": 4
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Alright, that helps a little. Go on. I would hate to leave after all this time.",
+     "mood": 51,
+     "patience": 8
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Wonderful, that's exactly what I hoped for. This is why I stayed with you.",
+     "mood": 64,
+     "patience": 14
+    }
+   ],
+   "outcome": {
+    "verdict": "Resolved: the client leaves satisfied.",
+    "expectationMet": true,
+    "churnRisk": 67,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s)."
+    ]
+   }
+  },
+  {
+   "persona": "NEW_SUBSCRIBER",
+   "mix": "LOYAL_AT_RISK",
+   "difficulty": "EASY",
+   "intent": "BILLING",
+   "memory": true,
+   "said": [
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is.",
+    "I will send you a confirmation by email and call you back."
+   ],
+   "moves": [
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY",
+    "FOLLOW_UP"
+   ],
+   "opening": "I was charged twice on my September bill. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "That's great news, thank you so much.",
+     "mood": 76,
+     "patience": 92
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Sure, I'll explain it from the beginning.",
+     "mood": 64,
+     "patience": 80
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Mm-hm, go ahead.",
+     "mood": 65,
+     "patience": 77
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Thank you for being careful about it.",
+     "mood": 67,
+     "patience": 72
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "That's kind of you, thank you. I feel heard.",
+     "mood": 88,
+     "patience": 76
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will send you a confirmation by email and call you back.",
+     "client": "Thank you, I'm glad we sorted this out.",
+     "mood": 100,
+     "patience": 82
+    }
+   ],
+   "outcome": {
+    "verdict": "Closed, but trust is shaky.",
+    "expectationMet": false,
+    "churnRisk": 35,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s).",
+     "Compliance risk: a refund was promised before the policy was checked.",
+     "Memory ignored: the history was on file but the client was asked to repeat."
+    ]
+   }
+  },
+  {
+   "persona": "NEW_SUBSCRIBER",
+   "mix": null,
+   "difficulty": "MEDIUM",
+   "intent": "ROAMING",
+   "memory": false,
+   "said": [
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first.",
+    "I'm so sorry about this, I understand how frustrating it is."
+   ],
+   "moves": [
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY",
+    "EMPATHY"
+   ],
+   "opening": "My roaming bundle did not work abroad.",
+   "turns": [
+    {
+     "move": "CHECK_POLICY",
+     "said": "Let me verify the eligibility rules.",
+     "client": "Thank you for being careful about it.",
+     "mood": 67,
+     "patience": 79
+    },
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "Wonderful, thank you!",
+     "mood": 81,
+     "patience": 84
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Happy to. It started on the first of the month.",
+     "mood": 70,
+     "patience": 70
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Mm-hm, go ahead.",
+     "mood": 71,
+     "patience": 67
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Good, I'd rather it be right.",
+     "mood": 73,
+     "patience": 61
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I'm so sorry about this, I understand how frustrating it is.",
+     "client": "Thank you, that already feels better.",
+     "mood": 83,
+     "patience": 65
+    }
+   ],
+   "outcome": {
+    "verdict": "Call left open.",
+    "expectationMet": false,
+    "churnRisk": 39,
+    "effort": 1,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 1 time(s).",
+     "The call ended without a written follow-up."
+    ]
+   }
+  },
+  {
+   "persona": "NEW_SUBSCRIBER",
+   "mix": null,
+   "difficulty": "HARD",
+   "intent": "CANCELLATION",
+   "memory": true,
+   "said": [
+    "Let me transfer you to the billing team.",
+    "Let me verify the eligibility rules.",
+    "I promise the refund right away.",
+    "Could you explain the problem again from the start?",
+    "Hello, how are you today?",
+    "I will check the refund policy first."
+   ],
+   "moves": [
+    "TRANSFER",
+    "CHECK_POLICY",
+    "PROMISE",
+    "ASK_REPEAT",
+    "OTHER",
+    "CHECK_POLICY"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "TRANSFER",
+     "said": "Let me transfer you to the billing team.",
+     "client": "I'd rather you handled it, but fine.",
+     "mood": 54,
+     "patience": 55
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "Let me verify the eligibility rules.",
+     "client": "Okay, I'll wait a moment. Sorry, I am still learning how it all works.",
+     "mood": 56,
+     "patience": 47
+    },
+    {
+     "move": "PROMISE",
+     "said": "I promise the refund right away.",
+     "client": "Brilliant. I really appreciate it.",
+     "mood": 70,
+     "patience": 52
+    },
+    {
+     "move": "ASK_REPEAT",
+     "said": "Could you explain the problem again from the start?",
+     "client": "Okay, but it's frustrating to repeat myself. Sorry, I am still learning how it all works.",
+     "mood": 50,
+     "patience": 33
+    },
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "I'm not sure I follow. Can you be more specific?",
+     "mood": 51,
+     "patience": 30
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "I will check the refund policy first.",
+     "client": "Okay. Let me know what you find. Sorry, I am still learning how it all works.",
+     "mood": 53,
+     "patience": 22
+    }
+   ],
+   "outcome": {
+    "verdict": "Call left open.",
+    "expectationMet": false,
+    "churnRisk": 77,
+    "effort": 2,
+    "notes": [
+     "Customer effort: the client had to repeat or be transferred 2 time(s).",
+     "Memory ignored: the history was on file but the client was asked to repeat.",
+     "The call ended without a written follow-up."
+    ]
+   }
+  }
+ ]
+}

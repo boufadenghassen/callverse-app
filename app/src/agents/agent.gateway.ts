@@ -2,6 +2,8 @@ import * as m from './models';
 
 /** Raised when an agent service cannot be reached; shown as a friendly 503 page. */
 export class AgentDownError extends Error {}
+/** The call id is not known to the customer simulator. */
+export class UnknownCallError extends Error {}
 
 /**
  * Single entry point from the web layer to the seven agents. The UI never talks to an agent directly,
@@ -10,6 +12,9 @@ export class AgentDownError extends Error {}
 export abstract class AgentGateway {
   abstract customerContext(customerId: string): Promise<m.CustomerContext>;
   abstract suggestAnswer(customerId: string, query: string): Promise<m.SuggestedAnswer>;
+  abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
+  /** Throws UnknownCallError when the call id is not known (for example the agents service restarted). */
+  abstract say(callId: string, text: string): Promise<m.CallReply>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;

@@ -34,6 +34,11 @@
           <p class="muted">Sources: <span>{{ answer.sources | join(', ') }}</span>
             · confidence <span>{{ answer.confidence | pct }}</span></p>
         </article>
+        {% if answer.evidence and answer.evidence | length %}
+        <ul class="evidence" aria-label="Passages the answer comes from">
+          {% for e in answer.evidence %}<li><span>{{ e.source }}</span> · {{ e.excerpt }} <span class="muted">· match {{ e.score }}</span></li>{% endfor %}
+        </ul>
+        {% endif %}
         {% if answer.policyWarning %}<p class="warning" role="note">{{ answer.policyWarning }}</p>{% endif %}
         <div class="actions">
           <button type="button" class="btn" data-action="use">Use answer</button>
@@ -42,4 +47,42 @@
         </div>
       </section>
     </div>
+
+    <section class="panel" id="live" data-csrf="{{ csrf }}" aria-labelledby="lv">
+      <h2 id="lv">Live call with a simulated customer</h2>
+      <p class="muted">The customer agent answers in real time. After each of her messages, the advisor agent suggests the next answer with its sources.</p>
+      <form id="live-setup" class="live-setup">
+        <div><label for="lv-persona">Customer</label>
+          <select id="lv-persona">{% for k, p in personas %}<option value="{{ k }}">{{ p.label }}</option>{% endfor %}</select></div>
+        <div><label for="lv-intent">Reason for the call</label>
+          <select id="lv-intent">{% for k, i in intents %}<option value="{{ k }}">{{ i.label }}</option>{% endfor %}</select></div>
+        <div><label for="lv-diff">Difficulty</label>
+          <select id="lv-diff">{% for k, d in difficulties %}<option value="{{ k }}"{% if k == 'MEDIUM' %} selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
+        <div class="live-check"><input id="lv-memory" type="checkbox"><label for="lv-memory">Repeat contact</label></div>
+        <button type="submit" class="btn">Start call</button>
+      </form>
+      <p id="live-status" role="status" class="muted"></p>
+      <div id="live-call" hidden>
+        <div class="live-meters">
+          <label for="lv-mood">Mood</label><meter id="lv-mood" min="0" max="100" low="30" high="60" optimum="100" value="50"></meter><span id="lv-mood-n"></span>
+          <label for="lv-pat">Patience</label><meter id="lv-pat" min="0" max="100" low="25" high="50" optimum="100" value="50"></meter><span id="lv-pat-n"></span>
+        </div>
+        <ol id="live-log" class="live-log" aria-live="polite" aria-label="The call so far"></ol>
+        <div id="live-outcome" class="warning" role="note" hidden></div>
+        <form id="live-say" class="live-say">
+          <label for="lv-text">Your reply</label>
+          <textarea id="lv-text" rows="3" maxlength="300" required></textarea>
+          <div class="actions">
+            <button type="submit" class="btn">Send</button>
+            <button type="button" class="btn-line" id="lv-use" disabled>Use suggested answer</button>
+          </div>
+        </form>
+        <article class="answer" id="live-suggest" hidden>
+          <h3>Advisor agent suggests</h3>
+          <p id="lv-s-text"></p>
+          <p class="muted" id="lv-s-meta"></p>
+          <p class="warning" id="lv-s-warn" role="note" hidden></p>
+        </article>
+      </div>
+    </section>
 {% endblock %}

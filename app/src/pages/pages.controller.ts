@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query, Rend
 import { AgentGateway } from '../agents/agent.gateway';
 import { Roles } from '../auth/access.guard';
 import { lineChart, qualityView } from './charts';
+import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
 
 const CHART_W = 640, CHART_H = 280;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -39,7 +40,7 @@ export class PagesController {
     if (typeof raw !== 'string' || raw.length < 3 || raw.length > 200) throw new BadRequestException('Search must be 3 to 200 characters');
     const query = raw.replace(/\p{Cc}/gu, ' ').trim();
     const [customer, answer] = await Promise.all([this.agents.customerContext(customerId), this.agents.suggestAnswer(customerId, query)]);
-    return { customer, query, answer };
+    return { customer, query, answer, personas: PERSONAS, difficulties: DIFFICULTIES, intents: INTENTS };
   }
 
   // ---- Sana: workforce twin ------------------------------------------------------------------

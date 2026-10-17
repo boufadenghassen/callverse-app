@@ -141,9 +141,12 @@
   addEventListener('pageshow', () => $$('.is-loading').forEach((b) => b.classList.remove('is-loading')));
 
   // Submit feedback: spinner in the button while the server works
-  $$<HTMLFormElement>('form').forEach((f) => f.addEventListener('submit', () => {
+  $$<HTMLFormElement>('form').forEach((f) => f.addEventListener('submit', (e) => {
     const b = $('button.btn[type="submit"]', f);
-    if (b) { b.classList.add('is-loading'); b.setAttribute('aria-busy', 'true'); }
+    if (!b) return;
+    b.classList.add('is-loading'); b.setAttribute('aria-busy', 'true');
+    // forms handled by script (fetch) call preventDefault later: no page change is coming, so stop the spinner
+    setTimeout(() => { if (e.defaultPrevented) { b.classList.remove('is-loading'); b.removeAttribute('aria-busy'); } });
   }));
   // Demo buttons: any element with data-toast shows a toast (nothing is sent anywhere)
   document.addEventListener('click', (e) => {
@@ -231,6 +234,72 @@
           make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
         out.hidden = false;
       } catch { status.textContent = 'The app could not be reached. Try again.'; }
+    });
+  }
+
+  // Advisor live call: talk to the simulated customer, read the advisor agent's suggestion after every message
+  const live = byId('live');
+  if (live) {
+    const csrf = live.dataset.csrf!, sel = (id: string) => byId<HTMLSelectElement>(id)!.value;
+    const status = byId('live-status')!, call = byId('live-call')!, log = byId('live-log')!, text = byId<HTMLTextAreaElement>('lv-text')!;
+    const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
+    let callId = '';
+    const post = async (path: string, body: object) => {
+      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
+      return data;
+    };
+    const say = (who: string, msg: string, extra = '') => {
+      const li = make('li', { className: `live-msg ${who}` });
+      li.append(make('strong', { textContent: who === 'client' ? 'Customer' : 'You' }), make('span', { textContent: msg }));
+      if (extra) li.append(make('small', { className: 'muted', textContent: extra }));
+      log.append(li);
+      li.scrollIntoView({ block: 'nearest' });
+    };
+    const meters = (mood: number, patience: number) => {
+      byId<HTMLMeterElement>('lv-mood')!.value = mood; byId('lv-mood-n')!.textContent = String(mood);
+      byId<HTMLMeterElement>('lv-pat')!.value = patience; byId('lv-pat-n')!.textContent = String(patience);
+    };
+    const suggest = (s: { text: string; sources: string[]; confidence: number; intents?: string[]; policyWarning: string | null } | null) => {
+      byId('live-suggest')!.hidden = !s;
+      useBtn.disabled = !s;
+      if (!s) return;
+      byId('lv-s-text')!.textContent = s.text;
+      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'} · match ${s.confidence}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
+      const w = byId('lv-s-warn')!;
+      w.hidden = !s.policyWarning;
+      w.textContent = s.policyWarning ?? '';
+    };
+    byId('live-setup')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'Calling the customer…';
+      try {
+        const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
+        callId = d.id; log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        say('client', d.opening, d.persona);
+        meters(d.mood, d.patience); suggest(d.suggestion);
+        sendBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
+    useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
+    byId('live-say')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = text.value.trim();
+      if (!msg || !callId) return;
+      sendBtn.disabled = true;
+      say('advisor', msg);
+      text.value = '';
+      try {
+        const d = await post('/advisor/live/say', { id: callId, text: msg });
+        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '');
+        meters(d.mood, d.patience); suggest(d.suggestion);
+        if (d.ended) {
+          const o = d.outcome, box = byId('live-outcome')!;
+          box.textContent = `${o.verdict} Churn risk ${o.churnRisk}%. ${o.notes.join(' ')}`;
+          box.hidden = false; useBtn.disabled = true;
+        } else sendBtn.disabled = false;
+      } catch (err) { status.textContent = (err as Error).message; }
     });
   }
 

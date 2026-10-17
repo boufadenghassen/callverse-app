@@ -990,3 +990,18 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .emo-timeline { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .emo-timeline li { padding: .3rem .7rem; border-radius: 999px; background: var(--paper); font-size: .8125rem; text-transform: capitalize; }
 .emo-timeline li.bad { background: var(--danger-soft); color: var(--danger); }
+
+/* Advisor live call */
+.live-setup { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: end; margin: var(--s4) 0; }
+.live-setup > div { display: flex; flex-direction: column; gap: var(--s1); }
+.live-check { flex-direction: row !important; align-items: center; gap: var(--s2) !important; }
+.live-meters { display: grid; grid-template-columns: auto 1fr 2.5rem; gap: var(--s2) var(--s3); align-items: center; max-width: 28rem; margin-bottom: var(--s4); }
+.live-meters meter { width: 100%; height: .75rem; }
+.live-log { list-style: none; margin: 0 0 var(--s4); padding: 0; display: flex; flex-direction: column; gap: var(--s2); max-height: 22rem; overflow-y: auto; }
+.live-msg { display: flex; flex-direction: column; gap: .15rem; padding: .6rem .9rem; border-radius: 12px; max-width: 75%; background: var(--paper); }
+.live-msg.advisor { align-self: flex-end; background: var(--accent-soft); }
+.live-msg strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
+.live-say textarea { width: 100%; display: block; margin: var(--s2) 0 var(--s3); }
+.evidence { margin: var(--s3) 0; padding-left: var(--s4); font-size: .875rem; }
+#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden] { display: none; }
+.live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
