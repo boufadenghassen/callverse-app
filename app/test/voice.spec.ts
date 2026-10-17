@@ -2,7 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { AgentDownError, BadAudioError, VoiceUnavailableError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { client, startApp } from './helpers';
 
@@ -55,6 +55,42 @@ test('the http gateway fetches audio from the Python voice and maps its errors',
     await assert.rejects(() => gw.speak({ text: 'missing', role: 'advisor', persona: null, mood: 50 }), VoiceUnavailableError);
     process.env.CALLVERSE_AGENTS_URL = 'http://localhost:1';
     await assert.rejects(() => new HttpAgentGateway().speak({ text: 'Hello', role: 'advisor', persona: null, mood: 50 }), AgentDownError);
+  } finally {
+    delete process.env.CALLVERSE_AGENTS_URL;
+    fake.close();
+  }
+});
+
+const wav = (n = 400) => Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(n)]);
+
+test('voice notes: demo mode cannot transcribe (503), and bad uploads are refused', async () => {
+  const karim = await client(app, 'karim'), token = await tokenOf(karim);
+  const up = (body: Buffer) => karim.post('/voice/transcribe').set('Content-Type', 'audio/wav').set('X-CSRF-Token', token).send(body);
+  assert.match((await up(wav()).expect(503)).body.error, /speech-to-text/);
+  await up(Buffer.alloc(10)).expect(400);
+  await karim.post('/voice/transcribe').set('Content-Type', 'audio/wav').send(wav()).expect(403);
+  await (await client(app)).post('/voice/transcribe').set('Content-Type', 'audio/wav').send(wav()).expect(403);
+});
+
+test('the http gateway sends voice notes to the Python agents and maps their answers', async () => {
+  const fake: Server = createServer((req, res) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      const body = Buffer.concat(chunks).toString();
+      res.setHeader('Content-Type', 'application/json');
+      if (body.includes('silent')) { res.statusCode = 400; return res.end('{"detail":"I could not hear anything."}'); }
+      if (body.includes('nomodel')) { res.statusCode = 503; return res.end('{}'); }
+      res.end('{"text":"I will check the policy.","seconds":2.4}');
+    });
+  });
+  await new Promise<void>((ok) => fake.listen(0, ok));
+  process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
+  try {
+    const gw = new HttpAgentGateway();
+    assert.deepEqual(await gw.transcribe(Buffer.from('RIFFok')), { text: 'I will check the policy.', seconds: 2.4 });
+    await assert.rejects(() => gw.transcribe(Buffer.from('silent')), (e: Error) => e instanceof BadAudioError && /could not hear/.test(e.message));
+    await assert.rejects(() => gw.transcribe(Buffer.from('nomodel')), VoiceUnavailableError);
   } finally {
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();

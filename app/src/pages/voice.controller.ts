@@ -1,6 +1,6 @@
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
-import type { Response } from 'express';
-import { AgentDownError, AgentGateway, VoiceUnavailableError } from '../agents/agent.gateway';
+import { Body, Controller, HttpCode, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { AgentDownError, AgentGateway, BadAudioError, VoiceUnavailableError } from '../agents/agent.gateway';
 import { PERSONAS } from './client-simulator';
 
 /**
@@ -23,6 +23,20 @@ export class VoiceController {
     } catch (e) {
       if (e instanceof VoiceUnavailableError) return res.status(503).json({ error: 'No neural voice available.' });
       if (e instanceof AgentDownError) return res.status(503).json({ error: 'The voice service is not responding.' });
+      throw e;
+    }
+  }
+
+  /** A voice note from the microphone (a 16 kHz mono WAV made by the page) as text. */
+  @HttpCode(200) @Post('transcribe')
+  async transcribe(@Req() req: Request, @Res() res: Response) {
+    if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.status(400).json({ error: 'There is no recording to read.' });
+    try {
+      return res.json(await this.agents.transcribe(req.body));
+    } catch (e) {
+      if (e instanceof BadAudioError) return res.status(400).json({ error: e.message });
+      if (e instanceof VoiceUnavailableError) return res.status(503).json({ error: 'Voice notes need the speech-to-text model (see services/agents/README.md). You can type instead.' });
+      if (e instanceof AgentDownError) return res.status(503).json({ error: 'The voice service is not responding. You can type instead.' });
       throw e;
     }
   }

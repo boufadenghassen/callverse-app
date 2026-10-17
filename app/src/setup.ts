@@ -34,6 +34,7 @@ export function setup(app: NestExpressApplication) {
   // ---- health + static files come before sessions, so they never create one
   server.get('/actuator/health', (_req: express.Request, res: express.Response) => res.json({ status: 'UP' }));
   server.use(compression());
+  server.use('/voice/transcribe', express.raw({ type: 'audio/wav', limit: '6mb' }));                      // voice notes
   server.use('/call-review/analyze', express.raw({ type: 'application/octet-stream', limit: '15mb' }));    // uploaded recordings
   server.use(express.static(join(ROOT, 'public'), { maxAge: '7d', index: false }));
 
@@ -52,7 +53,7 @@ export function setup(app: NestExpressApplication) {
     strictTransportSecurity: { maxAge: 31_536_000, includeSubDomains: true },
   }));
   server.use((_req: express.Request, res: express.Response, next: express.NextFunction) => {
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');
     next();
   });
 

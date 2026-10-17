@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AgentDownError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
+import { AgentDownError, BadAudioError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import { MockAgentGateway } from './mock.gateway';
 import * as m from './models';
 
@@ -49,6 +49,18 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (res.status === 503) throw new VoiceUnavailableError('the neural voice is not installed');
     if (!res.ok) throw new AgentDownError(`/voice/speak answered ${res.status}`);
     return Buffer.from(await res.arrayBuffer());
+  }
+  async transcribe(audio: Buffer): Promise<m.Transcript> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.base}/voice/transcribe`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: new Uint8Array(audio), signal: AbortSignal.timeout(60_000) });
+    } catch (e) {
+      throw new AgentDownError(String(e));
+    }
+    if (res.status === 503) throw new VoiceUnavailableError('the speech-to-text model is not installed');
+    if (res.status === 400) throw new BadAudioError(((await res.json().catch(() => ({}))) as { detail?: string }).detail ?? 'Could not use this recording.');
+    if (!res.ok) throw new AgentDownError(`/voice/transcribe answered ${res.status}`);
+    return (await res.json()) as m.Transcript;
   }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }

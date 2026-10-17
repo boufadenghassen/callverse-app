@@ -322,10 +322,23 @@
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       return data;
     };
-    const say = (who: string, msg: string, extra = '', mood = 50) => {
-      if (who === 'client' && voiceOn?.checked) void speak(msg, 'customer', mood, personaKey);
+    const sayMine = byId<HTMLInputElement>('lv-sayme');
+    if (sayMine) { sayMine.checked = store.get('cv-sayme') !== 'off'; sayMine.addEventListener('change', () => store.set('cv-sayme', sayMine.checked ? 'on' : 'off')); }
+    const recBtn = byId<HTMLButtonElement>('lv-rec');
+    // voice: `after` makes the customer wait until the advisor's own voice has finished; `url` is a recorded voice note
+    const say = (who: string, msg: string, extra = '', mood = 50, voice?: { url?: string; after?: Promise<unknown> }) => {
+      if (who === 'client' && voiceOn?.checked) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
       const li = make('li', { className: `live-msg ${who}` });
-      li.append(make('strong', { textContent: who === 'client' ? 'Customer' : 'You' }), make('span', { textContent: msg }));
+      li.append(make('strong', { textContent: who === 'client' ? 'Customer' : voice?.url ? 'You (voice note)' : 'You' }), make('span', { textContent: msg }));
+      if (who === 'advisor' && voice?.url) {
+        const player = make('audio', { controls: true, src: voice.url });
+        player.setAttribute('aria-label', 'Your voice note');
+        li.append(player);
+      } else if (who === 'advisor') {
+        const b = make('button', { type: 'button', className: 'btn-quiet listen', textContent: 'Listen' });
+        b.addEventListener('click', () => void speak(msg, 'advisor'));
+        li.append(b);
+      }
       if (extra) li.append(make('small', { className: 'muted', textContent: extra }));
       log.append(li);
       li.scrollIntoView({ block: 'nearest' });
@@ -352,28 +365,90 @@
         callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true;
         say('client', d.opening, d.persona, d.mood);
         meters(d.mood, d.patience); suggest(d.suggestion);
-        sendBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
+        sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
       } catch (err) { status.textContent = (err as Error).message; }
     });
     useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
-    byId('live-say')!.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = text.value.trim();
+    // one way to answer the customer, whether the words were typed or came from a voice note
+    const sendAdvisor = async (msg: string, voiceUrl?: string) => {
       if (!msg || !callId) return;
-      sendBtn.disabled = true;
-      say('advisor', msg);
+      sendBtn.disabled = true; if (recBtn) recBtn.disabled = true;
+      // a typed reply can be said out loud in the advisor's voice; the customer then answers after it
+      const spoken = !voiceUrl && sayMine?.checked ? speak(msg, 'advisor') : undefined;
+      say('advisor', msg, '', 50, { url: voiceUrl });
       text.value = '';
       try {
         const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
-        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood);
+        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken });
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {
           const o = d.outcome, box = byId('live-outcome')!;
           box.textContent = `${o.verdict} Churn risk ${o.churnRisk}%. ${o.notes.join(' ')}`;
           box.hidden = false; useBtn.disabled = true;
-        } else sendBtn.disabled = false;
+        } else { sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; }
       } catch (err) { status.textContent = (err as Error).message; }
-    });
+    };
+    byId('live-say')!.addEventListener('submit', (e) => { e.preventDefault(); void sendAdvisor(text.value.trim()); });
+
+    // voice notes: record, turn the recording into a 16 kHz WAV here in the page, let the speech-to-text agent write it down, then send it
+    const toWav = async (blob: Blob): Promise<Blob> => {
+      const ac = new AudioContext();
+      const decoded = await ac.decodeAudioData(await blob.arrayBuffer());
+      void ac.close();
+      const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration * 16000)), 16000);
+      const src = off.createBufferSource();
+      src.buffer = decoded; src.connect(off.destination); src.start();
+      const pcm = (await off.startRendering()).getChannelData(0);
+      const buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
+      const str = (o: number, s: string) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+      str(0, 'RIFF'); v.setUint32(4, 36 + pcm.length * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 16000, true);
+      v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, pcm.length * 2, true);
+      pcm.forEach((x, i) => v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x)) * 0x7fff, true));
+      return new Blob([buf], { type: 'audio/wav' });
+    };
+    if (recBtn && navigator.mediaDevices?.getUserMedia && 'MediaRecorder' in window) {
+      const clock = byId('lv-rec-time')!;
+      let recorder: MediaRecorder | null = null, timer = 0;
+      const MAX_SECONDS = 60;
+      recBtn.addEventListener('click', async () => {
+        if (recorder) { recorder.stop(); return; }
+        if (!callId) return;
+        stopSpeaking();
+        let stream: MediaStream;
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+        catch { status.textContent = 'The microphone is blocked. Allow it in the browser, or type your reply.'; return; }
+        const chunks: Blob[] = [], started = Date.now();
+        const r = recorder = new MediaRecorder(stream);
+        r.ondataavailable = (e) => chunks.push(e.data);
+        r.onstop = async () => {
+          clearInterval(timer); clock.textContent = ''; recorder = null;
+          stream.getTracks().forEach((t) => t.stop());
+          recBtn.textContent = 'Record voice note'; recBtn.classList.remove('recording');
+          const recording = new Blob(chunks, { type: r.mimeType });
+          sendBtn.disabled = true; recBtn.disabled = true;
+          status.textContent = 'Writing down your voice note…';
+          try {
+            const wav = await toWav(recording);
+            const res = await fetch('/voice/transcribe', { method: 'POST', headers: { 'Content-Type': 'audio/wav', 'X-CSRF-Token': csrf }, body: wav });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error ?? 'Could not read the voice note.');
+            status.textContent = '';
+            await sendAdvisor(data.text, URL.createObjectURL(recording));
+          } catch (err) {
+            status.textContent = (err as Error).message;
+            sendBtn.disabled = false; recBtn.disabled = false;
+          }
+        };
+        r.start();
+        recBtn.textContent = 'Stop and send'; recBtn.classList.add('recording');
+        timer = window.setInterval(() => {
+          const s = Math.floor((Date.now() - started) / 1000);
+          clock.textContent = `${s}s`;
+          if (s >= MAX_SECONDS) r.stop();
+        }, 500);
+      });
+    } else if (recBtn) recBtn.hidden = true;   // no microphone support: typing still works
   }
 
   // Ideas: filter by decision

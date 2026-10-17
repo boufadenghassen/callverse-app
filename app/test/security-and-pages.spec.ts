@@ -24,6 +24,7 @@ test('security headers are present', async () => {
   const res = await (await client(app, 'karim')).get('/advisor');
   assert.match(res.headers['content-security-policy'], /script-src 'self'/);
   assert.match(res.headers['content-security-policy'], /media-src 'self' blob:/, 'the neural voice plays from a blob URL');
+  assert.match(res.headers['permissions-policy'], /microphone=\(self\)/, 'voice notes need the microphone, for this site only');
   assert.equal(res.headers['x-frame-options'], 'DENY');
   assert.ok(res.headers['permissions-policy']);
 });

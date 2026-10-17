@@ -44,3 +44,10 @@ into `models/voices/`. Without them the service still runs, `/voice/speak` answe
 
 Live calls are kept in memory (200 at most): restarting the service ends open calls. The knowledge base is invented demo content
 for a fictional operator, to be replaced by the real FAQ.
+
+### Voice notes (advisor live call)
+
+The advisor can record a voice note or type. A voice note is turned into a 16 kHz WAV in the page, sent to `POST /voice/transcribe` (Whisper base.en,
+GPU, offline), and the text goes to the customer agent; the note stays playable in the call. Typed replies are said aloud in the advisor voice
+(switch "Say my typed replies aloud"); the customer answers after it. Needs a one-time model download: `openai/whisper-base.en` (about 290 MB) into the normal
+Hugging Face cache (`huggingface_hub.snapshot_download`). The microphone works on localhost or https only.

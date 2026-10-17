@@ -91,3 +91,21 @@ def test_the_voice_endpoint_returns_audio_or_says_it_is_missing():
     assert client.post("/voice/speak", json={"text": "", "role": "advisor"}).status_code == 422
     assert client.post("/voice/speak", json={"text": "x" * 401}).status_code == 422
     assert client.post("/voice/speak", json={"text": "hi", "mood": 101}).status_code == 422
+
+
+def test_voice_notes_are_written_down_or_refused():
+    import io
+
+    import numpy as np
+    import soundfile as sf
+    import stt
+    if not (stt.available() and voice.available()):
+        pytest.skip("voice models not downloaded")
+    wav = voice.speak("I will check the refund policy first.", "advisor")
+    r = client.post("/voice/transcribe", content=wav, headers={"Content-Type": "audio/wav"})
+    assert r.status_code == 200 and "refund policy" in r.json()["text"].lower()
+    silent = io.BytesIO()
+    sf.write(silent, np.zeros(16000, dtype="float32"), 16000, format="WAV")
+    assert client.post("/voice/transcribe", content=silent.getvalue()).status_code == 400
+    assert client.post("/voice/transcribe", content=b"not audio at all").status_code == 400
+    assert client.post("/voice/transcribe", content=b"").status_code == 400

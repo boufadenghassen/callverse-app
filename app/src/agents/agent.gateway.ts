@@ -6,6 +6,8 @@ export class AgentDownError extends Error {}
 export class UnknownCallError extends Error {}
 /** No neural voice is available (demo mode, or the voice model is not installed): the page falls back to the browser's voice. */
 export class VoiceUnavailableError extends Error {}
+/** The recording cannot be used (unreadable, silent, too short); the message is safe to show. */
+export class BadAudioError extends Error {}
 
 /**
  * Single entry point from the web layer to the seven agents. The UI never talks to an agent directly,
@@ -19,6 +21,8 @@ export abstract class AgentGateway {
   abstract say(callId: string, text: string): Promise<m.CallReply>;
   /** The text as WAV audio. Throws VoiceUnavailableError when no neural voice exists. */
   abstract speak(request: m.SpeakRequest): Promise<Buffer>;
+  /** A voice note (16 kHz mono WAV) as text. Throws VoiceUnavailableError or BadAudioError. */
+  abstract transcribe(audio: Buffer): Promise<m.Transcript>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;

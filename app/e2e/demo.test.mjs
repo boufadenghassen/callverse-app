@@ -382,7 +382,7 @@ test('agents speak: answers have a Listen button and the live call reads the cus
   assert.match(opening.text, /charged twice/);
   assert.ok(opening.pitch > 1 && opening.rate > 1, 'an upset customer sounds faster and higher');
 
-  await page.uncheck('#lv-voice');
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
   const before = (await page.evaluate(() => window.__said)).length;
   await page.fill('#lv-text', 'I am so sorry, I understand.');
   await page.click('#live-say button[type=submit]');
@@ -410,4 +410,86 @@ test('neural voice: the customer is read sentence by sentence in her own voice, 
   assert.deepEqual({ role: asked[0].role, persona: asked[0].persona, mood: asked[0].mood }, { role: 'customer', persona: 'ANGRY_PREMIUM', mood: 35 });
   assert.match(asked[0].text, /charged twice/);
   await ctx.close();
+});
+
+test('a typed reply is also said aloud in the advisor voice, before the customer answers', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await ctx.addInitScript(() => {
+    window.__said = [];
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
+      speak: (u) => { window.__said.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices: () => [] } });
+    window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+  });
+  const page = await ctx.newPage();
+  await page.route('**/voice/speak', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  await page.goto(`${BASE}/advisor`);
+  await page.click('#live-setup button[type=submit]');
+  await page.waitForSelector('#live-call:not([hidden])');
+  await page.fill('#lv-text', 'I am so sorry, I understand how frustrating this is.');
+  await page.click('#live-say button[type=submit]');
+  await page.waitForFunction(() => window.__said.length >= 3);
+  const said = await page.evaluate(() => window.__said);
+  assert.match(said[1], /so sorry/, 'the advisor is heard first');
+  assert.ok(said[2] && said[2] !== said[1], 'then the customer answers');
+  assert.equal(await page.locator('#live-log .advisor button.listen').count(), 1, 'a typed reply has its own Listen button');
+  await ctx.close();
+});
+
+test('voice notes: the advisor records, the speech-to-text agent writes it down, the customer answers', async () => {
+  const mic = await chromium.launch({ executablePath: findBrowser(), headless: true, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  try {
+    const ctx = await mic.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', permissions: ['microphone'] });
+    const page = await ctx.newPage();
+    let received = 0;
+    await page.route('**/voice/speak', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
+    await page.route('**/voice/transcribe', (r) => {
+      received = r.request().postDataBuffer().length;
+      assert.equal(r.request().headers()['content-type'], 'audio/wav');
+      r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: 'I will check the refund policy first.', seconds: 1.5 }) });
+    });
+    await page.goto(`${BASE}/login`);
+    await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+    await page.waitForURL(`${BASE}/`);
+    await page.goto(`${BASE}/advisor`);
+    await page.click('#live-setup button[type=submit]');
+    await page.waitForSelector('#live-call:not([hidden])');
+    await page.click('#lv-rec');
+    await page.waitForFunction(() => document.getElementById('lv-rec').classList.contains('recording'));
+    await page.waitForTimeout(1500);
+    await page.click('#lv-rec');
+    await page.waitForFunction(() => document.querySelectorAll('#live-log li').length >= 3, null, { timeout: 20000 });
+    assert.ok(received > 1000, 'a WAV recording was sent');
+    assert.equal(await page.locator('#live-log li audio').count(), 1, 'the voice note stays playable in the call');
+    assert.match(await page.locator('#live-log li.advisor').innerText(), /refund policy first/);
+    assert.match(await page.locator('#live-log li.client').last().innerText(), /Check the refund policy/);
+    assert.equal(await page.textContent('#lv-rec'), 'Record voice note');
+    await ctx.close();
+  } finally { await mic.close(); }
+});
+
+test('voice notes fail kindly: no speech model means a message and typing still works', async () => {
+  const mic = await chromium.launch({ executablePath: findBrowser(), headless: true, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  try {
+    const ctx = await mic.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', permissions: ['microphone'] });
+    const page = await ctx.newPage();
+    await page.route('**/voice/speak', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
+    await page.route('**/voice/transcribe', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Voice notes need the speech-to-text model. You can type instead.' }) }));
+    await page.goto(`${BASE}/login`);
+    await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+    await page.waitForURL(`${BASE}/`);
+    await page.goto(`${BASE}/advisor`);
+    await page.click('#live-setup button[type=submit]');
+    await page.waitForSelector('#live-call:not([hidden])');
+    await page.click('#lv-rec');
+    await page.waitForFunction(() => document.getElementById('lv-rec').classList.contains('recording'));
+    await page.waitForTimeout(800);
+    await page.click('#lv-rec');
+    await page.waitForFunction(() => /You can type instead/.test(document.getElementById('live-status').textContent), null, { timeout: 15000 });
+    assert.equal(await page.isEnabled('#live-say button[type=submit]'), true);
+    assert.equal(await page.isEnabled('#lv-rec'), true);
+    await ctx.close();
+  } finally { await mic.close(); }
 });

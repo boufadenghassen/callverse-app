@@ -8,11 +8,12 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 import advisor
 import customer
+import stt
 import voice
 
 
@@ -21,6 +22,8 @@ async def lifespan(_app):
     # load the voice model in the background, so the first spoken line does not wait for it
     if voice.available():
         threading.Thread(target=lambda: voice.speak("Ready."), daemon=True).start()
+    if stt.available():
+        threading.Thread(target=stt._pipeline, daemon=True).start()
     yield
 
 
@@ -55,7 +58,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor"], "voice": voice.available()}
+    return {"status": "UP", "agents": ["customer", "advisor"], "voice": voice.available(), "listen": stt.available()}
 
 
 @app.post("/voice/speak")
@@ -84,3 +87,17 @@ def say(sid: str, body: SayIn):
         return customer.say(sid, body.text)
     except KeyError:
         raise HTTPException(404, "Unknown call.")
+
+
+@app.post("/voice/transcribe")
+async def transcribe(req: Request):
+    """A voice note (16 kHz mono WAV, up to 5 MB) as text."""
+    if not stt.available():
+        raise HTTPException(503, "The speech-to-text model is not installed (see services/agents/README.md).")
+    body = await req.body()
+    if not body or len(body) > 5_000_000:
+        raise HTTPException(400, "Send a recording of up to about 2 minutes.")
+    try:
+        return stt.transcribe(body)
+    except stt.BadAudio as e:
+        raise HTTPException(400, str(e))

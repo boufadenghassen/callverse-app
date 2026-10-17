@@ -1008,3 +1008,7 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
 .listen { margin-left: var(--s2); font-size: .8125rem; }
 .listen.speaking { color: var(--accent-ink); font-weight: 700; }
+
+.live-msg audio { width: 100%; max-width: 20rem; margin-top: .25rem; }
+#lv-rec.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
+#lv-rec[hidden] { display: none; }

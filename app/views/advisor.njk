@@ -60,6 +60,7 @@
           <select id="lv-diff">{% for k, d in difficulties %}<option value="{{ k }}"{% if k == 'MEDIUM' %} selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
         <div class="live-check"><input id="lv-memory" type="checkbox"><label for="lv-memory">Repeat contact</label></div>
         <div class="live-check"><input id="lv-voice" type="checkbox" checked><label for="lv-voice">Speak her replies</label></div>
+        <div class="live-check"><input id="lv-sayme" type="checkbox" checked><label for="lv-sayme">Say my typed replies aloud</label></div>
         <button type="submit" class="btn">Start call</button>
       </form>
       <p id="live-status" role="status" class="muted"></p>
@@ -76,6 +77,7 @@
           <div class="actions">
             <button type="submit" class="btn">Send</button>
             <button type="button" class="btn-line" id="lv-use" disabled>Use suggested answer</button>
+            <button type="button" class="btn-line" id="lv-rec">Record voice note</button><span id="lv-rec-time" class="muted"></span>
           </div>
         </form>
         <article class="answer" id="live-suggest" hidden>
