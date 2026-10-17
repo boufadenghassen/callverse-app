@@ -1012,3 +1012,4 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .live-msg audio { width: 100%; max-width: 20rem; margin-top: .25rem; }
 #lv-rec.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
 #lv-rec[hidden] { display: none; }
+.how { margin-top: var(--s4); } .how summary { cursor: pointer; font-weight: 700; }

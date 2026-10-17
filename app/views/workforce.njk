@@ -45,7 +45,7 @@
           </li>
           {% endfor %}
         </ol>
-        <p class="muted small heat-key">Load against a 60 calls/hour capacity: calm, busy, overloaded. Wait and SLA are estimates from the mock model.</p>
+        <p class="muted small heat-key">Load against a 60 calls/hour capacity: calm, busy, overloaded. Wait and SLA are model estimates; with the real agent, the simulation below shows how they are computed.</p>
       </section>
     </div>
     <section class="panel" aria-labelledby="wi">
@@ -74,6 +74,19 @@
              <strong>{{ result.simulatedSla | pct }}</strong>.</p>
           <h3>Ranked recommendations</h3>
           <ol>{% for r in result.recommendations %}<li data-speak>{{ r }}</li>{% endfor %}</ol>
+          {% if result.hours and result.hours | length %}
+          <details class="how">
+            <summary>How this was computed</summary>
+            <p class="muted">{{ result.method }}</p>
+            <table class="data" aria-label="Simulation, hour by hour">
+              <thead><tr><th>Hour</th><th>Calls</th><th>Advisors</th><th>Wait (s)</th><th>SLA</th><th>Needed for the target</th></tr></thead>
+              <tbody>{% for h in result.hours %}
+                <tr><td>{{ h.hour }}</td><td>{{ h.calls }}</td><td>{{ h.advisors }} to {{ h.simulatedAdvisors }}</td>
+                  <td>{{ h.baselineWaitSec }} to {{ h.simulatedWaitSec }}</td><td>{{ h.baselineSla | pct }} to {{ h.simulatedSla | pct }}</td><td>{{ h.needed }}</td></tr>
+              {% endfor %}</tbody>
+            </table>
+          </details>
+          {% endif %}
         </div>
         {% endif %}
     </section>

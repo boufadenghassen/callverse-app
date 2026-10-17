@@ -153,9 +153,12 @@ test('the training builder adds a scenario and what-if compares one change', asy
 test('the workforce slider moves the marker and the quality pins show the evidence', async () => {
   const { ctx, page } = await signIn('admin');
   await page.goto(`${BASE}/workforce`);
-  assert.match(await page.textContent('#scrub-read'), /forecast 72 calls\/h/); // starts on the peak hour
+  // the numbers come from whichever agent is behind the page (demo data or the Python agent), so read them from the chart itself
+  const points = await page.$$eval('[data-forecast]', (els) => els.map((e) => ({ hour: e.dataset.hour, forecast: Number(e.dataset.forecast) })));
+  const peak = Math.max(...points.map((p) => p.forecast));
+  assert.match(await page.textContent('#scrub-read'), new RegExp(`forecast ${peak} calls/h`)); // starts on the peak hour
   await page.fill('#hour', '0');
-  assert.match(await page.textContent('#scrub-read'), /^9h: forecast 22/);
+  assert.match(await page.textContent('#scrub-read'), new RegExp(`^9h: forecast ${points[0].forecast}`));
   await page.goto(`${BASE}/quality`);
   const first = page.locator('.review').first();
   await first.locator('.pin').first().click();

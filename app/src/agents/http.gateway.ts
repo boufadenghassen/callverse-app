@@ -5,7 +5,7 @@ import * as m from './models';
 
 /**
  * Calls the Python agents over HTTP (AGENTS_MODE=http). It starts from the demo data and replaces only the agents that
- * exist in services/agents (advisor suggestions, customer simulator); the rest stay demo until their Python agent is built.
+ * exist in services/agents (advisor suggestions, customer simulator, workforce forecast and simulation, voice); the rest stay demo until their Python agent is built.
  * Every path variable is encoded, so user input can never change the path or inject query parameters.
  */
 @Injectable()
@@ -34,7 +34,7 @@ export class HttpAgentGateway extends MockAgentGateway {
     return value;
   }
 
-  /** Real Python agents: the advisor and the customer simulator. */
+  /** Real Python agents: the advisor, the customer simulator, the workforce manager, the voice. */
   suggestAnswer(customerId: string, query: string) { return this.call<m.SuggestedAnswer>('/advisor/suggest', { customer_id: customerId, query }); }
   async speak(r: m.SpeakRequest): Promise<Buffer> {
     let res: Response;
@@ -62,6 +62,8 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (!res.ok) throw new AgentDownError(`/voice/transcribe answered ${res.status}`);
     return (await res.json()) as m.Transcript;
   }
+  forecast(queue: string) { return this.call<m.ForecastPoint[]>(`/workforce/forecast?queue=${encodeURIComponent(queue)}`, undefined, true); }
+  simulate(r: m.SimulationRequest) { return this.call<m.SimulationResult>('/workforce/simulate', r); }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
 }

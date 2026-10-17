@@ -109,3 +109,58 @@ def test_voice_notes_are_written_down_or_refused():
     assert client.post("/voice/transcribe", content=silent.getvalue()).status_code == 400
     assert client.post("/voice/transcribe", content=b"not audio at all").status_code == 400
     assert client.post("/voice/transcribe", content=b"").status_code == 400
+
+
+import workforce  # noqa: E402
+
+
+def test_erlang_c_matches_the_textbook_and_behaves():
+    assert round(workforce.erlang_c(11, 10), 4) == 0.6821                      # classic example: 11 advisors, 10 erlangs
+    assert workforce.erlang_c(5, 5) == 1.0 and workforce.erlang_c(3, 7) == 1.0   # no spare capacity: everybody waits
+    waits = [workforce.stats(72, 300, n)["wait"] for n in range(7, 14)]
+    slas = [workforce.stats(72, 300, n)["sla"] for n in range(7, 14)]
+    assert waits == sorted(waits, reverse=True) and slas == sorted(slas)         # more advisors: shorter wait, better service level
+    assert workforce.stats(72, 300, 6)["wait"] == workforce.WAIT_CAP             # 6 erlangs of load with 6 advisors: overloaded
+    assert workforce.stats(0, 300, 3)["sla"] == 1.0
+    n = workforce.advisors_needed(72, 300)
+    assert workforce.stats(72, 300, n)["sla"] >= 0.8 > workforce.stats(72, 300, n - 1)["sla"]
+
+
+def test_the_forecast_has_one_point_per_hour_and_actuals_only_until_now():
+    for q in "ABCDE":
+        f = workforce.forecast(q)
+        assert [p["hour"] for p in f] == [f"{h}h" for h in range(9, 18)]
+        assert all(p["actual"] is not None for p in f[:5]) and all(p["actual"] is None for p in f[5:])
+        assert all(isinstance(p["forecast"], int) and p["forecast"] > 0 for p in f)
+    assert workforce.forecast("B") == workforce.forecast("B")                     # deterministic
+
+
+def test_a_simulation_is_consistent_with_the_hour_by_hour_numbers():
+    r = workforce.simulate("B", 2, "14:00", "16:00")
+    assert [h["hour"] for h in r["hours"]] == ["14h", "15h"]
+    assert r["simulatedSla"] > r["baselineSla"] and r["simulatedWaitSec"] < r["baselineWaitSec"]
+    calls = [h["calls"] for h in r["hours"]]
+    assert abs(r["baselineSla"] - sum(h["baselineSla"] * c for h, c in zip(r["hours"], calls)) / sum(calls)) < 0.011
+    assert all(h["simulatedAdvisors"] == h["advisors"] + 2 for h in r["hours"])
+    assert any("Add" in t and "queue B" in t for t in r["recommendations"])
+    same = workforce.simulate("B", 0, "14:00", "16:00")
+    assert (same["baselineWaitSec"], same["baselineSla"]) == (same["simulatedWaitSec"], same["simulatedSla"])
+    fewer = workforce.simulate("B", -2, "14:00", "16:00")
+    assert fewer["simulatedSla"] < fewer["baselineSla"]
+    half = workforce.simulate("B", 1, "14:30", "15:00")                          # half an hour counts as half an hour
+    assert [h["hour"] for h in half["hours"]] == ["14h"]
+
+
+def test_a_window_outside_opening_hours_says_so():
+    r = workforce.simulate("A", 3, "19:00", "21:00")
+    assert r["hours"] == [] and "No opening hours" in r["recommendations"][0]
+
+
+def test_the_workforce_endpoints_validate_their_input():
+    assert len(client.get("/workforce/forecast", params={"queue": "C"}).json()) == 9
+    assert client.get("/workforce/forecast", params={"queue": "Z"}).status_code == 422
+    ok = client.post("/workforce/simulate", json={"queue": "B", "extraAdvisors": 2, "from": "14:00", "to": "16:00"})
+    assert ok.status_code == 200 and ok.json()["simulatedSla"] > ok.json()["baselineSla"]
+    for bad in ({"queue": "B", "extraAdvisors": 99, "from": "14:00", "to": "16:00"}, {"queue": "B", "extraAdvisors": 1, "from": "16:00", "to": "14:00"},
+                {"queue": "B", "extraAdvisors": 1, "from": "25:00", "to": "26:00"}, {"queue": "Q", "extraAdvisors": 1, "from": "14:00", "to": "16:00"}):
+        assert client.post("/workforce/simulate", json=bad).status_code == 422

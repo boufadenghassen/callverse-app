@@ -59,7 +59,7 @@ export class MockAgentGateway extends AgentGateway {
     throw new VoiceUnavailableError('demo mode cannot transcribe');
   }
 
-  async forecast(): Promise<m.ForecastPoint[]> {
+  async forecast(_queue?: string): Promise<m.ForecastPoint[]> {
     // [hour, actual, forecast]; actual is null for hours not reached yet
     const rows: [string, number | null, number][] = [['9h', 20, 22], ['10h', 28, 30], ['11h', 40, 42], ['12h', 52, 55], ['13h', 60, 64],
       ['14h', null, 72], ['15h', null, 60], ['16h', null, 45], ['17h', null, 35]];

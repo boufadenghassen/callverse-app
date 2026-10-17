@@ -1,6 +1,6 @@
 """orqestra agents service (FastAPI). Run from services/agents:  ../../../venv/Scripts/python.exe -m uvicorn main:app --port 8000
 
-Real today: the customer simulator and the customer advisor. The web app keeps using demo data for the other agents
+Real today: the customer simulator, the customer advisor, the neural voice, speech to text and the workforce agent (Erlang C). The web app keeps using demo data for the other agents
 (see HttpAgentGateway). The contract is the table in app/README.md.
 """
 import re
@@ -8,13 +8,14 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 import advisor
 import customer
 import stt
 import voice
+import workforce
 
 
 @asynccontextmanager
@@ -58,7 +59,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor"], "voice": voice.available(), "listen": stt.available()}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce"], "voice": voice.available(), "listen": stt.available()}
 
 
 @app.post("/voice/speak")
@@ -101,3 +102,23 @@ async def transcribe(req: Request):
         return stt.transcribe(body)
     except stt.BadAudio as e:
         raise HTTPException(400, str(e))
+
+
+class SimulateIn(BaseModel):
+    queue: str = Field(pattern=r"^[A-E]$")
+    extraAdvisors: int = Field(ge=-5, le=10)
+    from_: str = Field(alias="from", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    to: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+@app.get("/workforce/forecast")
+def workforce_forecast(queue: str = Query("B", pattern=r"^[A-E]$")):
+    """Calls per hour for the day: the actual so far and the forecast (a point per opening hour)."""
+    return workforce.forecast(queue)
+
+
+@app.post("/workforce/simulate")
+def workforce_simulate(body: SimulateIn):
+    if body.from_ >= body.to:
+        raise HTTPException(422, "The end time must be after the start time.")
+    return workforce.simulate(body.queue, body.extraAdvisors, body.from_, body.to)
