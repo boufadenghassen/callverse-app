@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { DifficultyKey, IntentKey, MOVES, MoveKey, PersonaKey, PERSONAS, replay } from '../pages/client-simulator';
 import { readAdvisor } from '../pages/customer-llm';
-import { AgentGateway, UnknownCallError } from './agent.gateway';
+import { AgentGateway, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import * as m from './models';
 
 interface Call { cfg: m.CallConfig; moves: MoveKey[]; said: string[] }
@@ -49,6 +49,10 @@ export class MockAgentGateway extends AgentGateway {
     call.moves.push(move); call.said.push(text);
     const r = this.replayOf(call), t = r.turns[r.turns.length - 1];
     return { ended: !!r.outcome, outcome: r.outcome, mood: t.mood, patience: t.patience, client: t.client, move, moveLabel: MOVES[move].label };
+  }
+
+  async speak(_request: m.SpeakRequest): Promise<Buffer> {
+    throw new VoiceUnavailableError('demo mode has no neural voice');
   }
 
   async forecast(): Promise<m.ForecastPoint[]> {

@@ -22,34 +22,71 @@
     sdel(k: string) { try { sessionStorage.removeItem(k); } catch { /* blocked */ } },
   };
 
-  // Voice: agents can read their answers out loud with the browser's own speech (nothing is sent anywhere).
-  // `speak(text, 'customer', mood)` shapes the voice by mood: upset = faster and higher, calm = slower and lower.
+  // Voice: agents read their answers out loud. The neural voice of the Python agents is tried first (a voice per persona,
+  // faster when the customer is upset); when it is not available the browser's own speech takes over. Text is read sentence
+  // by sentence so the first words start early. `speak(text, role, mood, persona)` stops whatever was being said.
   const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+  let neural = true;                         // set to false once the server says it has no neural voice
+  let player: HTMLAudioElement | null = null;
+  let turn = 0;                              // each speak() takes a new number, so older playback stops itself
   let speaking: HTMLElement | null = null;   // the Listen button whose text is being read
-  const stopSpeaking = () => { synth?.cancel(); if (speaking) { speaking.classList.remove('speaking'); speaking.textContent = 'Listen'; } speaking = null; };
-  const pickVoice = (role: 'advisor' | 'customer') => {
-    const en = synth!.getVoices().filter((v) => /^en/i.test(v.lang));
-    if (!en.length) return null;
-    const female = /(aria|jenny|zira|samantha|female|susan|hazel)/i, male = /(guy|davis|david|mark|male|ryan|george)/i;
-    return en.find((v) => (role === 'customer' ? female : male).test(v.name)) ?? en[role === 'customer' ? 0 : en.length - 1];
+  const stopSpeaking = () => {
+    turn++; synth?.cancel(); player?.pause(); player = null;
+    if (speaking) { speaking.classList.remove('speaking'); speaking.textContent = 'Listen'; }
+    speaking = null;
   };
-  const speak = (text: string, role: 'advisor' | 'customer' = 'advisor', mood = 50, onEnd?: () => void) => {
-    if (!synth || !text) return;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(text), shift = (50 - Math.max(0, Math.min(100, mood))) / 250;
-    u.lang = 'en-US'; u.voice = pickVoice(role); u.rate = 1 + shift; u.pitch = 1 + shift;
-    u.onend = u.onerror = () => onEnd?.();
+  const sentences = (t: string) => (t.match(/[^.!?]+[.!?]*/g) ?? [t]).map((s) => s.trim()).filter(Boolean);
+  const neuralClip = async (text: string, role: string, mood: number, persona: string | null): Promise<string | null> => {
+    try {
+      const res = await fetch('/voice/speak', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ text, role, mood, persona }) });
+      if (res.status === 503) neural = false;
+      return res.ok ? URL.createObjectURL(await res.blob()) : null;
+    } catch { return null; }
+  };
+  const browserSpeak = (text: string, role: string, mood: number, mine: number) => new Promise<void>((done) => {
+    if (!synth || mine !== turn) return done();
+    const en = synth.getVoices().filter((v) => /^en/i.test(v.lang));
+    const female = /(aria|jenny|zira|samantha|female|susan|hazel)/i, male = /(guy|davis|david|mark|male|ryan|george)/i;
+    const shift = (50 - Math.max(0, Math.min(100, mood))) / 250;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 1 + shift; u.pitch = 1 + shift;
+    u.voice = en.find((v) => (role === 'customer' ? female : male).test(v.name)) ?? (en.length ? en[role === 'customer' ? 0 : en.length - 1] : null);
+    u.onend = u.onerror = () => done();
     synth.speak(u);
+  });
+  const speak = async (text: string, role: 'advisor' | 'customer' = 'advisor', mood = 50, persona: string | null = null, onEnd?: () => void) => {
+    if (!text) return;
+    stopSpeaking();
+    const mine = turn;
+    if (neural) {
+      // fetch the sentences one after the other in the background while the earlier ones play
+      let chain: Promise<unknown> = Promise.resolve();
+      const clips = sentences(text).map((s) => { const p = chain.then(() => neuralClip(s, role, mood, persona)) as Promise<string | null>; chain = p; return { s, p }; });
+      for (const [i, { s, p }] of clips.entries()) {
+        const url = await p;
+        if (mine !== turn) return;
+        if (!url && !neural) { await browserSpeak(clips.slice(i).map((c) => c.s).join(' '), role, mood, mine); break; }   // no neural voice: the browser reads the rest
+        if (!url) { await browserSpeak(s, role, mood, mine); continue; }
+        const a = player = new Audio(url);
+        await new Promise<void>((done) => { a.onended = a.onerror = () => done(); a.play().catch(() => done()); });
+        URL.revokeObjectURL(url);
+        if (mine !== turn) return;
+      }
+    } else {
+      await browserSpeak(text, role, mood, mine);
+    }
+    if (mine === turn) onEnd?.();
   };
   // every element marked data-speak gets a Listen button next to it
-  if (synth) $$('[data-speak]').forEach((el) => {
+  $$('[data-speak]').forEach((el) => {
     const btn = make('button', { type: 'button', className: 'btn-quiet listen', textContent: 'Listen' });
     btn.addEventListener('click', () => {
       if (speaking === btn) return stopSpeaking();
       stopSpeaking();
       speaking = btn; btn.classList.add('speaking'); btn.textContent = 'Stop';
       const words = [...el.childNodes].filter((n) => n !== btn).map((n) => n.textContent).join('');
-      speak(words, 'advisor', 50, () => { if (speaking === btn) stopSpeaking(); });
+      void speak(words, 'advisor', 50, null, () => { if (speaking === btn) stopSpeaking(); });
     });
     if (el.tagName === 'LI') el.append(btn); else el.after(btn);   // a button cannot sit directly inside a list
   });
@@ -278,7 +315,7 @@
     const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
     const voiceOn = byId<HTMLInputElement>('lv-voice');
     if (voiceOn) { voiceOn.checked = store.get('cv-voice') !== 'off'; voiceOn.addEventListener('change', () => { store.set('cv-voice', voiceOn.checked ? 'on' : 'off'); if (!voiceOn.checked) stopSpeaking(); }); }
-    let callId = '', topic = '';
+    let callId = '', topic = '', personaKey = '';
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -286,7 +323,7 @@
       return data;
     };
     const say = (who: string, msg: string, extra = '', mood = 50) => {
-      if (who === 'client' && voiceOn?.checked) speak(msg, 'customer', mood);
+      if (who === 'client' && voiceOn?.checked) void speak(msg, 'customer', mood, personaKey);
       const li = make('li', { className: `live-msg ${who}` });
       li.append(make('strong', { textContent: who === 'client' ? 'Customer' : 'You' }), make('span', { textContent: msg }));
       if (extra) li.append(make('small', { className: 'muted', textContent: extra }));
@@ -312,7 +349,7 @@
       status.textContent = 'Calling the customer…';
       try {
         const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
-        callId = d.id; topic = d.opening; log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true;
         say('client', d.opening, d.persona, d.mood);
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();

@@ -46,3 +46,6 @@ Thumbs.db
 # python caches
 __pycache__/
 .pytest_cache/
+
+# neural voice model files (downloaded, see services/agents/README.md)
+/models/voices/

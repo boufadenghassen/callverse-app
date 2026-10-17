@@ -9,11 +9,12 @@ import { AuthService } from './auth/auth.service';
 import { ErrorFilter } from './errors.filter';
 import { CallReviewController } from './pages/call-review.controller';
 import { LiveCallController } from './pages/live-call.controller';
+import { VoiceController } from './pages/voice.controller';
 import { DeckController } from './pages/deck.controller';
 import { PagesController } from './pages/pages.controller';
 
 @Module({
-  controllers: [AuthController, PagesController, DeckController, CallReviewController, LiveCallController],
+  controllers: [AuthController, PagesController, DeckController, CallReviewController, LiveCallController, VoiceController],
   providers: [
     AuthService,
     // AGENTS_MODE=http calls the real Python agents; anything else serves the mock data.

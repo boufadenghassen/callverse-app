@@ -364,6 +364,7 @@ test('agents speak: answers have a Listen button and the live call reads the cus
     window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
   });
   const page = await ctx.newPage();
+  await page.route('**/voice/speak', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));   // no neural voice: the browser voice takes over
   await page.goto(`${BASE}/login`);
   await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/`);
@@ -371,7 +372,7 @@ test('agents speak: answers have a Listen button and the live call reads the cus
 
   await page.locator('.answer .listen').first().click();
   const answer = (await page.locator('.answer p[data-speak]').first().textContent()).trim();
-  assert.equal((await page.evaluate(() => window.__said))[0].text.trim(), answer);
+  assert.equal((await page.evaluate(() => window.__said))[0].text.replace(/\s+/g, ' ').trim(), answer.replace(/\s+/g, ' '));
 
   await page.selectOption('#lv-persona', 'ANGRY_PREMIUM');
   await page.click('#live-setup button[type=submit]');
@@ -387,5 +388,26 @@ test('agents speak: answers have a Listen button and the live call reads the cus
   await page.click('#live-say button[type=submit]');
   await page.waitForFunction(() => document.querySelectorAll('#live-log li').length >= 3);
   assert.equal((await page.evaluate(() => window.__said)).length, before, 'voice off: nothing is spoken');
+  await ctx.close();
+});
+
+test('neural voice: the customer is read sentence by sentence in her own voice, shaped by her mood', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.from([36, 0, 0, 0]), Buffer.from('WAVEfmt '), Buffer.from([16, 0, 0, 0, 1, 0, 1, 0, 0x40, 0x1f, 0, 0, 0x80, 0x3e, 0, 0, 2, 0, 16, 0]), Buffer.from('data'), Buffer.from([0, 0, 0, 0])]);
+  const asked = [];
+  await page.route('**/voice/speak', (r) => { asked.push(JSON.parse(r.request().postData())); r.fulfill({ status: 200, contentType: 'audio/wav', body: wav }); });
+  await page.goto(`${BASE}/login`);
+  await page.fill('#username', 'karim'); await page.fill('#password', PASSWORD); await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/`);
+  await page.goto(`${BASE}/advisor`);
+  await page.selectOption('#lv-persona', 'ANGRY_PREMIUM');
+  await page.click('#live-setup button[type=submit]');
+  await page.waitForSelector('#live-call:not([hidden])');
+  await page.waitForFunction(() => true);
+  await page.waitForTimeout(500);
+  assert.ok(asked.length >= 1, 'the opening line was sent to the neural voice');
+  assert.deepEqual({ role: asked[0].role, persona: asked[0].persona, mood: asked[0].mood }, { role: 'customer', persona: 'ANGRY_PREMIUM', mood: 35 });
+  assert.match(asked[0].text, /charged twice/);
   await ctx.close();
 });

@@ -4,6 +4,8 @@ import * as m from './models';
 export class AgentDownError extends Error {}
 /** The call id is not known to the customer simulator. */
 export class UnknownCallError extends Error {}
+/** No neural voice is available (demo mode, or the voice model is not installed): the page falls back to the browser's voice. */
+export class VoiceUnavailableError extends Error {}
 
 /**
  * Single entry point from the web layer to the seven agents. The UI never talks to an agent directly,
@@ -15,6 +17,8 @@ export abstract class AgentGateway {
   abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
   /** Throws UnknownCallError when the call id is not known (for example the agents service restarted). */
   abstract say(callId: string, text: string): Promise<m.CallReply>;
+  /** The text as WAV audio. Throws VoiceUnavailableError when no neural voice exists. */
+  abstract speak(request: m.SpeakRequest): Promise<Buffer>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;

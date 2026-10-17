@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AgentDownError, UnknownCallError } from './agent.gateway';
+import { AgentDownError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import { MockAgentGateway } from './mock.gateway';
 import * as m from './models';
 
@@ -36,6 +36,20 @@ export class HttpAgentGateway extends MockAgentGateway {
 
   /** Real Python agents: the advisor and the customer simulator. */
   suggestAnswer(customerId: string, query: string) { return this.call<m.SuggestedAnswer>('/advisor/suggest', { customer_id: customerId, query }); }
+  async speak(r: m.SpeakRequest): Promise<Buffer> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.base}/voice/speak`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r),
+        signal: AbortSignal.timeout(60_000),   // the first sentence loads the voice model
+      });
+    } catch (e) {
+      throw new AgentDownError(String(e));
+    }
+    if (res.status === 503) throw new VoiceUnavailableError('the neural voice is not installed');
+    if (!res.ok) throw new AgentDownError(`/voice/speak answered ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
 }

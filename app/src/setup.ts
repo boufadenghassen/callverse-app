@@ -43,6 +43,7 @@ export function setup(app: NestExpressApplication) {
       useDefaults: false,
       directives: {
         'default-src': ["'self'"], 'script-src': ["'self'"], 'style-src': ["'self'"], 'img-src': ["'self'", 'data:'], 'font-src': ["'self'"],
+        'media-src': ["'self'", 'blob:'],      // the agents' neural voice is played from a blob made in the page
         'object-src': ["'none'"], 'base-uri': ["'self'"], 'form-action': ["'self'"], 'frame-ancestors': ["'none'"],
       },
     },

@@ -69,3 +69,25 @@ def test_the_advisor_flags_big_refunds_and_admits_when_it_does_not_know():
 
 def test_intents_come_out_as_chips():
     assert {"Billing", "Roaming"} <= set(advisor.detect_intents("charged twice for my roaming bundle"))
+
+
+import pytest  # noqa: E402
+import voice  # noqa: E402
+
+
+def test_voice_speed_follows_mood_and_voices_follow_persona():
+    assert voice.speed_for(0) == 1.2 and voice.speed_for(100) == 0.85 and voice.speed_for(50) == 1.0
+    assert voice.voice_for("advisor", "ANGRY_PREMIUM") == voice.ADVISOR_VOICE
+    assert voice.voice_for("customer", "ANGRY_PREMIUM") != voice.voice_for("customer", "ANXIOUS")
+    assert voice.voice_for("customer", None) == voice.DEFAULT_CUSTOMER_VOICE
+
+
+def test_the_voice_endpoint_returns_audio_or_says_it_is_missing():
+    r = client.post("/voice/speak", json={"text": "Hello there.", "role": "customer", "persona": "ANXIOUS", "mood": 30})
+    if not voice.available():
+        assert r.status_code == 503
+        pytest.skip("voice model files not downloaded")
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/wav" and r.content[:4] == b"RIFF"
+    assert client.post("/voice/speak", json={"text": "", "role": "advisor"}).status_code == 422
+    assert client.post("/voice/speak", json={"text": "x" * 401}).status_code == 422
+    assert client.post("/voice/speak", json={"text": "hi", "mood": 101}).status_code == 422

@@ -4,15 +4,27 @@ Real today: the customer simulator and the customer advisor. The web app keeps u
 (see HttpAgentGateway). The contract is the table in app/README.md.
 """
 import re
+import threading
+from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 
 import advisor
 import customer
+import voice
 
-app = FastAPI(title="orqestra agents")
+
+@asynccontextmanager
+async def lifespan(_app):
+    # load the voice model in the background, so the first spoken line does not wait for it
+    if voice.available():
+        threading.Thread(target=lambda: voice.speak("Ready."), daemon=True).start()
+    yield
+
+
+app = FastAPI(title="orqestra agents", lifespan=lifespan)
 
 Persona = Literal["IMPATIENT", "ANXIOUS", "ANGRY_PREMIUM", "LOYAL_AT_RISK", "NEW_SUBSCRIBER"]
 
@@ -34,9 +46,24 @@ class SayIn(BaseModel):
     text: str = Field(min_length=1, max_length=300)
 
 
+class SpeakIn(BaseModel):
+    text: str = Field(min_length=1, max_length=400)
+    role: Literal["advisor", "customer"] = "advisor"
+    persona: Persona | None = None
+    mood: int = Field(50, ge=0, le=100)
+
+
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor"]}
+    return {"status": "UP", "agents": ["customer", "advisor"], "voice": voice.available()}
+
+
+@app.post("/voice/speak")
+def speak(body: SpeakIn):
+    """The text as a WAV, in the advisor's voice or the customer's (a voice per persona, faster when she is upset)."""
+    if not voice.available():
+        raise HTTPException(503, "The neural voice is not installed (see services/agents/README.md).")
+    return Response(voice.speak(body.text, body.role, body.persona, body.mood), media_type="audio/wav")
 
 
 @app.post("/advisor/suggest")

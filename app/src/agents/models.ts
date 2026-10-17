@@ -2,6 +2,7 @@ export interface CustomerContext { id: string; name: string; profile: string; in
 export interface Evidence { source: string; score: number; excerpt: string }
 /** `intents` and `evidence` come from the real advisor agent; the demo data leaves them out. */
 export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
+export interface SpeakRequest { text: string; role: 'advisor' | 'customer'; persona: string | null; mood: number }
 /** A live call with the simulated customer: `moveLabel` says how the customer's agent read the advisor's last reply. */
 export interface CallConfig { persona: string; mix: string | null; difficulty: string; intent: string; memory: boolean }
 export interface CallStart { id: string; persona: string; opening: string; mood: number; patience: number }
