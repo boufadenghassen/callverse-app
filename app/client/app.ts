@@ -243,7 +243,7 @@
     const csrf = live.dataset.csrf!, sel = (id: string) => byId<HTMLSelectElement>(id)!.value;
     const status = byId('live-status')!, call = byId('live-call')!, log = byId('live-log')!, text = byId<HTMLTextAreaElement>('lv-text')!;
     const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
-    let callId = '';
+    let callId = '', topic = '';
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -276,7 +276,7 @@
       status.textContent = 'Calling the customer…';
       try {
         const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
-        callId = d.id; log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        callId = d.id; topic = d.opening; log.replaceChildren(); byId('live-outcome')!.hidden = true;
         say('client', d.opening, d.persona);
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
@@ -291,7 +291,7 @@
       say('advisor', msg);
       text.value = '';
       try {
-        const d = await post('/advisor/live/say', { id: callId, text: msg });
+        const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
         if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '');
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {

@@ -33,10 +33,12 @@ export class LiveCallController {
     const text = typeof b.text === 'string' ? b.text.replace(/\p{Cc}/gu, ' ').trim() : '';
     if (typeof b.id !== 'string' || !/^[0-9a-f]{16}$/.test(b.id)) return res.status(400).json({ error: 'This call is not valid. Start a new one.' });
     if (text.length < 1 || text.length > 300) return res.status(400).json({ error: 'Write a reply of 1 to 300 characters.' });
+    // what the call is about (the customer's opening line) keeps the suggestion on topic when her reply is short
+    const topic = typeof b.topic === 'string' ? b.topic.replace(/\p{Cc}/gu, ' ').trim().slice(0, 200) : '';
     return this.run(res, async () => {
       const reply = await this.agents.say(b.id as string, text);
       // the advisor agent reads what the customer just said, unless the call is over
-      return { ...reply, suggestion: reply.client ? await this.agents.suggestAnswer(CUSTOMER_ID, reply.client) : null };
+      return { ...reply, suggestion: reply.client ? await this.agents.suggestAnswer(CUSTOMER_ID, `${topic} ${reply.client}`.trim()) : null };
     });
   }
 

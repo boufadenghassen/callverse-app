@@ -853,14 +853,15 @@ html[data-theme="dark"] .lane-head .count { color: #10152a; }
   .nav-title { margin-block: .15rem; }
 }
 @media (min-width: 901px) and (max-height: 800px) {
-  .nav .ico { width: 1.7rem; height: 1.7rem; }
-  .nav .ico svg { width: .9rem; height: .9rem; }
-  .nav-scroll { gap: 2px; }
+  .nav .ico { width: 1.55rem; height: 1.55rem; }
+  .nav .ico svg { width: .85rem; height: .85rem; }
+  .nav-scroll { gap: 1px; }
 }
 @media (min-width: 901px) and (max-height: 700px) {
-  .nav .ico { width: 1.5rem; height: 1.5rem; }
-  .nav .ico svg { width: .8rem; height: .8rem; }
-  .sidebar { gap: .3rem; padding-block: .45rem; }
+  .nav .ico { width: 1.4rem; height: 1.4rem; }
+  .nav .ico svg { width: .75rem; height: .75rem; }
+  .sidebar { gap: .25rem; padding-block: .4rem; }
+  .nav-scroll { gap: 1px; }
 }
 
 /* ---------- orqestra brand: logo colours, wordmark, tagline ---------- */
