@@ -65,8 +65,8 @@ export function qualityView(review: QualityReview) {
       bad: (c.max === 0 ? 0 : Math.round((100 * c.score) / c.max)) < 70,
     };
   });
-  // the customer's mood through the call (viewBox 600 x 90, mood 0 at the bottom)
-  const curve = (review.moodCurve ?? []).map(([t, mood]) => `${(LEFT + (WIDTH * Math.min(t, total)) / total).toFixed(1)},${(80 - 0.7 * mood).toFixed(1)}`).join(' ');
+  // the customer's mood through the call (viewBox 600 x 56, mood 0 at the bottom)
+  const curve = (review.moodCurve ?? []).map(([t, mood]) => `${(LEFT + (WIDTH * Math.min(t, total)) / total).toFixed(1)},${(50 - 0.45 * mood).toFixed(1)}`).join(' ');
   const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.round(s % 60)).padStart(2, '0')}`;
   const turns = (review.turns ?? []).map((t, i) => ({
     ...t, time: mmss(t.start),

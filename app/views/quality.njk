@@ -120,8 +120,8 @@
         </svg>
         <p class="pin-read" role="status" aria-live="polite">Select a pin to see the moment.</p>
         {% if v.curve %}
-        <svg class="qmood" viewBox="0 0 600 90" role="img" aria-label="The customer's mood through the call, from 0 (very upset) to 100 (delighted)">
-          <line class="mid" x1="24" x2="576" y1="45" y2="45"/>
+        <svg class="qmood" viewBox="0 0 600 56" role="img" aria-label="The customer's mood through the call, from 0 (very upset) to 100 (delighted)">
+          <line class="mid" x1="24" x2="576" y1="27.5" y2="27.5"/>
           <polyline points="{{ v.curve }}"/>
         </svg>
         <p class="muted small">Customer mood through the call (higher is better). Source: {{ v.moodNote }}.</p>
