@@ -14,10 +14,10 @@ from pydantic import BaseModel, Field
 
 import advisor
 import customer
-import quality
-import quality_audio
-import quality_eval
-import quality_store
+from quality_analyst import audio as quality_audio
+from quality_analyst import engine as quality
+from quality_analyst import evaluation as quality_eval
+from quality_analyst import store as quality_store
 import stt
 import voice
 import routing

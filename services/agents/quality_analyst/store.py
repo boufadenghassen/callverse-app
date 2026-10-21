@@ -1,7 +1,7 @@
 """Where reviewed calls are kept (SQLite, one file) and the analytics computed from them: per advisor and for the team.
 
 The file lives in services/agents/data/ (git-ignored). On a first run with an empty store a synthetic history of past calls is created
-by quality_seed.py, so the analytics have something to show; the calls are simulated but every one is scored by the real quality.review().
+by seed.py, so the analytics have something to show; the calls are simulated but every one is scored by the real engine.review().
 """
 import datetime as dt
 import json
@@ -10,14 +10,14 @@ import sqlite3
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import quality as q
+from . import engine as q
 
 FIRST_ID = 3300
 
 
 def db_path() -> Path:
     """Read each time, so a test (or another deployment) can point the store somewhere else with QUALITY_DB."""
-    return Path(os.environ.get("QUALITY_DB", Path(__file__).parent / "data" / "quality.db"))
+    return Path(os.environ.get("QUALITY_DB", Path(__file__).resolve().parents[1] / "data" / "quality.db"))
 
 
 def _conn() -> sqlite3.Connection:
@@ -110,8 +110,8 @@ def _rows() -> list[tuple[str, str, dict]]:
 def ensure_history() -> None:
     """Create the synthetic history once, when the store is empty."""
     if count() == 0:
-        import quality_seed
-        quality_seed.build()
+        from . import seed
+        seed.build()
 
 
 # ---- analytics ---------------------------------------------------------------------------------------

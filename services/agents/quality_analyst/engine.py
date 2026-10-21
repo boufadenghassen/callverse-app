@@ -16,7 +16,7 @@ import re
 
 import advisor as kb
 import customer
-import semantic
+from . import semantic
 
 CRITERIA = ["Accuracy", "Compliance", "Communication", "Resolution", "Customer sentiment"]
 WEIGHTS = {"Accuracy": 0.25, "Compliance": 0.25, "Communication": 0.20, "Resolution": 0.20, "Customer sentiment": 0.10}

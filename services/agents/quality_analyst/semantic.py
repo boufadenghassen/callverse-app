@@ -1,9 +1,9 @@
 """A semantic second opinion for the quality analyst's detectors.
 
-The keyword rules in quality.py miss paraphrases ("you'll have your money back today" is a promise, but no keyword says so). Here every
+The keyword rules in engine.py miss paraphrases ("you'll have your money back today" is a promise, but no keyword says so). Here every
 sentence the advisor says is embedded with a small sentence-embedding model (all-MiniLM-L6-v2, 22 M parameters, offline, from the normal
 Hugging Face cache) and compared with a few prototype sentences per move; a move is detected when the cosine similarity reaches that move's
-threshold. The thresholds are tuned on the development calls of quality_eval_cases.py only (see tune()), never on the held-out test calls.
+threshold. The thresholds are tuned on the development calls of eval_cases.py only (see tune()), never on the held-out test calls.
 Without the model files the analyst silently falls back to its keyword rules.
 """
 import functools
@@ -40,7 +40,7 @@ PROTOTYPES = {
                 "Before I start, I need your full name and the address on file.", "For security I need to confirm who you are first."],
 }
 THRESHOLDS = {move: 0.60 for move in PROTOTYPES}
-THRESHOLDS.update(CHECK_POLICY=0.45, FOLLOW_UP=0.55, TRANSFER=0.70)          # tuned on the DEVELOPMENT calls by quality_eval.tune(); the rest kept the default 0.60
+THRESHOLDS.update(CHECK_POLICY=0.45, FOLLOW_UP=0.55, TRANSFER=0.70)          # tuned on the DEVELOPMENT calls by evaluation.tune(); the rest kept the default 0.60
 
 _model = None
 _protos: dict[str, np.ndarray] | None = None

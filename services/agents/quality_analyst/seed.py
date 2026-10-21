@@ -10,8 +10,8 @@ import random
 
 import advisor as kb
 import customer
-import quality
-import quality_store
+from . import engine as quality
+from . import store as quality_store
 
 GREET = ["Hello, thank you for calling, how can I help you today?", "Good afternoon, you are speaking with {name}. How can I help?", "Welcome, my name is {name}. What can I do for you?"]
 IDENT = ["Before I look at the account, can you confirm your date of birth so I can verify your identity?", "Could you please confirm your full name and date of birth to verify your identity?"]

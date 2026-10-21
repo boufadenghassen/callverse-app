@@ -1,7 +1,7 @@
 """A third batch of hand-labelled calls: the final TEST. Written before the detectors were improved on the failures of batch 2 and not looked at
 until that work was done, so the score on it is the honest one. New wording again; the same kinds of situations.
 """
-from quality_eval_cases import BILL, case
+from .eval_cases import BILL, case
 
 T = "test"
 CASES3 = [

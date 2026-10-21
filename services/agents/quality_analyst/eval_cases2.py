@@ -1,11 +1,11 @@
 """A second, harder batch of hand-labelled calls. It was written as TEST calls and measured once (first score: F1 81 %, keyword rules alone 75 %),
 nothing having been tuned on it. Its failures were then used to improve the detectors in general ways, so from that moment these calls are DEVELOPMENT
-calls and the final test is batch 3 (quality_eval_cases3.py).
+calls and the final test is batch 3 (eval_cases3.py).
 
 They try to break the analyst: paraphrases the prototypes do not contain, negations, conditionals, restating instead of repeating, and wording the keyword
 lists never saw.
 """
-from quality_eval_cases import BILL, case
+from .eval_cases import BILL, case
 
 T = "dev"
 CASES2 = [

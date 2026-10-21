@@ -1,13 +1,13 @@
-"""How accurate is the quality analyst? Runs the hand-labelled calls of quality_eval_cases.py through quality.review().
+"""How accurate is the quality analyst? Runs the hand-labelled calls of eval_cases.py through engine.review().
 
 For every rule: true positives (expected and found), false negatives (expected, missed), false alarms (must stay silent, fired) and true negatives,
 then precision, recall and F1. `split` picks the development cases, the held-out test cases or all of them. Run it as a script for a report:
-    ../../../venv/Scripts/python.exe quality_eval.py
+    ../../../venv/Scripts/python.exe -m quality_analyst.evaluation
 """
 import functools
 
-import quality
-import quality_eval_cases as data
+from . import engine as quality
+from . import eval_cases as data
 
 
 def evaluate(split: str | None = None) -> dict:
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
 def tune(grid=(0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75), passes=2) -> dict:
     """Choose each move's similarity threshold on the DEVELOPMENT calls only: the value with the best F1 (the middle one when several tie)."""
-    import semantic
+    from . import semantic
     best_f1 = evaluate("dev")["f1"]
     for _ in range(passes):
         for move in semantic.PROTOTYPES:
@@ -83,7 +83,7 @@ LIMITS = ("The calls are written by us and short, the labels are our own judgeme
 @functools.lru_cache(maxsize=1)
 def report() -> dict:
     """The accuracy report shown on the Quality page. Deterministic for a given set of rules and cases, so it is computed once."""
-    import semantic
+    from . import semantic
     dev, test = evaluate("dev"), evaluate("test")
     by_id = {c["id"]: c for c in data.CASES}
     for e in (dev, test):
