@@ -12,6 +12,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 KB = json.loads((Path(__file__).parent / "knowledge" / "base.json").read_text(encoding="utf-8"))
+CUSTOMERS = json.loads((Path(__file__).parent / "knowledge" / "customers.json").read_text(encoding="utf-8"))
+_CUSTOMERS_BY_ID = {c["id"]: c for c in CUSTOMERS}
 _vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
 _matrix = _vec.fit_transform([f"{d['title']}. {d['text']}" for d in KB])
 
@@ -31,6 +33,11 @@ INTENT_WORDS = {
 
 def detect_intents(text: str) -> list[str]:
     return [name for name, rx in INTENT_WORDS.items() if re.search(rx, text, re.I)]
+
+
+def get_customer(customer_id: str) -> dict | None:
+    """Looks up a customer's 360-degree context by id (e.g. "YT-1042"). None if the id is unknown."""
+    return _CUSTOMERS_BY_ID.get(customer_id)
 
 
 def retrieve(query: str, k: int = 3) -> list[tuple[dict, float]]:

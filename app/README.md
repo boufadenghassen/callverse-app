@@ -51,10 +51,10 @@ interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alia
 
 | Method | Path | Returns |
 |---|---|---|
-> **Built in `services/agents`:** `/advisor/suggest`, `/customer/sessions` and `/customer/sessions/{id}/say` (marked ✔ below).
+> **Built in `services/agents`:** `/advisor/customers/{id}`, `/advisor/suggest`, `/customer/sessions` and `/customer/sessions/{id}/say` (marked ✔ below).
 > `HttpAgentGateway` keeps demo data for every other row until its Python agent exists.
 
-| GET | `/advisor/customers/{id}` | CustomerContext |
+| GET | `/advisor/customers/{id}` ✔ | CustomerContext |
 | POST | `/advisor/suggest` `{customer_id, query}` ✔ | SuggestedAnswer (with optional `intents`, `evidence`) |
 | POST | `/customer/sessions` `{persona, mix, difficulty, intent, memory}` ✔ | CallStart |
 | POST | `/customer/sessions/{id}/say` `{text}` ✔ | CallReply |
