@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { DifficultyKey, IntentKey, MOVES, MoveKey, PersonaKey, PERSONAS, replay } from '../pages/client-simulator';
 import { readAdvisor } from '../pages/customer-llm';
-import { AgentGateway, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
+import { AgentGateway, NeedsRealAgentsError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import * as m from './models';
 
 interface Call { cfg: m.CallConfig; moves: MoveKey[]; said: string[] }
@@ -55,6 +55,25 @@ export class MockAgentGateway extends AgentGateway {
     throw new VoiceUnavailableError('demo mode has no neural voice');
   }
 
+  async schedule(): Promise<m.SchedulePlan> {
+    return {
+      baselineSla: 0.82, plannedSla: 0.85, idealSla: 0.77, overtimeHours: 1, method: 'Demo data: the real workforce agent places lunches with Erlang C.',
+      queues: [{ queue: 'A', name: 'Billing', advisors: 10, onLunch: 8, idealSla: 0.73, baselineSla: 0.81, plannedSla: 0.82, worstBaseline: { hour: '12h', sla: 0.5 }, worstPlanned: { hour: '13h', sla: 0.59 },
+        lunchHours: [{ hour: '11h', naive: 0, planned: 2, onDuty: 8 }, { hour: '12h', naive: 8, planned: 2, onDuty: 9 }, { hour: '13h', naive: 0, planned: 3, onDuty: 10 }, { hour: '14h', naive: 0, planned: 1, onDuty: 10 }] }],
+      overtime: [{ queue: 'A', hour: '13h', advisors: 1, sla: 0.59, calls: 73, text: 'Queue A at 13h: 1 advisor on overtime for that hour (demo data).' }],
+    };
+  }
+
+  async routing(): Promise<m.RoutingPlan> {
+    const q = (queue: string, name: string, calls: number, advisors: number, recommended: number, b: number, r: number): m.RoutingQueue =>
+      ({ queue, name, calls, priority: 1, advisors, recommended, baselineSla: b, recommendedSla: r, baselineWaitSec: 0, recommendedWaitSec: 0 });
+    return {
+      baselineSla: 0.7, optimizedSla: 0.78, moves: 1, method: 'Demo data: the real workforce agent computes this with Erlang C and a local search.',
+      hours: [{ hour: '14h', queues: [q('A', 'Billing', 91, 8, 9, 0.47, 0.71), q('B', 'Plans and billing, premium', 81, 8, 8, 0.49, 0.49), q('C', 'Roaming', 26, 5, 4, 0.87, 0.67)],
+        moves: [{ advisor: 'C02', skills: ['C', 'D', 'A'], fromQueue: 'C', toQueue: 'A', gain: 17, text: 'Move C02 (skills C, D, A) from queue C to queue A at 14h: queue A goes from 47% to 71% within 20 s, queue C from 87% to 67%.' }] }],
+    };
+  }
+
   async transcribe(_audio: Buffer): Promise<m.Transcript> {
     throw new VoiceUnavailableError('demo mode cannot transcribe');
   }
@@ -76,7 +95,44 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
-  async recentReviews(): Promise<m.QualityReview[]> {
+  async qualityReview(callId: string): Promise<m.QualityReview | null> {
+    return (await this.recentReviews()).find((r) => r.callId === callId) ?? null;
+  }
+
+  async qualityAnalytics(): Promise<m.QualityAnalytics> {
+    const crit = { Accuracy: 8.5, Compliance: 7, Communication: 9, Resolution: 7.5 };
+    return {
+      method: 'Demo data: the real quality agent scores every stored call.',
+      team: { calls: 2, avgOverall: 75, avgByCriterion: crit, weeks: [null, null, null, null, null, null, 62, 88], causes: [{ cause: 'Process skipped', calls: 1, share: 1 }], byIntent: [{ intent: 'Billing', calls: 2, avg: 75 }],
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }] },
+      advisors: [{ advisor: 'Karim B.', calls: 1, avgOverall: 62, vsTeam: -13, avgByCriterion: crit, weeks: [null, null, null, null, null, null, null, 62], trend: null,
+        weakest: { criterion: 'Compliance', avg: 4 }, strongest: { criterion: 'Communication', avg: 9 },
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
+        coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }], lastCalls: ['CALL-3381'] }],
+    };
+  }
+
+  async reviewCall(_callId: string, _advisor: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode cannot review live calls');
+  }
+
+  async reviewAudio(_audio: Buffer, _advisor: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode cannot review recordings');
+  }
+
+  async sampleCall(): Promise<Buffer> {
+    throw new NeedsRealAgentsError('demo mode has no sample call');
+  }
+
+  async qualityEvaluation(): Promise<m.QualityEvaluation | null> {
+    return null;
+  }
+
+  async qualityFeedback(_callId: string, _rule: string, _turn: number, _verdict: 'agree' | 'disagree' | 'clear', _by: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode keeps no verdicts');
+  }
+
+  async recentReviews(_filter?: m.ReviewFilter): Promise<m.QualityReview[]> {
     return [
       { callId: 'CALL-3381', advisor: 'Karim B.', overall: 62, criteria: [
           { name: 'Accuracy', score: 8, max: 10, evidence: 'Correct refund amount quoted', timestamp: '01:12' },

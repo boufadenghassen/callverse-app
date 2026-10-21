@@ -2,7 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, UnknownCallError } from '../src/agents/agent.gateway';
+import { AgentDownError, CustomerNotFoundError, UnknownCallError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { client, startApp } from './helpers';
 
@@ -61,6 +61,7 @@ test('the http gateway sends the real calls to the Python agents and maps their 
       seen.push(`${req.method} ${req.url} ${body}`);
       res.setHeader('Content-Type', 'application/json');
       if (req.url!.endsWith('/gone/say')) { res.statusCode = 404; return res.end('{}'); }
+      if (req.url === '/advisor/customers/ZZ-0000') { res.statusCode = 404; return res.end('{}'); }
       res.end(JSON.stringify({ id: 'x', persona: 'p', opening: 'o', mood: 1, patience: 2 }));
     });
   });
@@ -73,8 +74,10 @@ test('the http gateway sends the real calls to the Python agents and maps their 
     assert.match(seen[0], /POST \/customer\/sessions \{"persona":"IMPATIENT"/);
     assert.match(seen[1], /POST \/advisor\/suggest \{"customer_id":"YT-1042","query":"double charge"\}/);
     await assert.rejects(() => gw.say('gone', 'hi'), UnknownCallError);
-    await gw.customerContext('YT-1042'); // still demo data: no request goes out
-    assert.equal(seen.length, 3);
+    await gw.customerContext('YT-1042');
+    assert.equal(seen.length, 4);
+    assert.match(seen[3], /GET \/advisor\/customers\/YT-1042/);
+    await assert.rejects(() => gw.customerContext('ZZ-0000'), CustomerNotFoundError);
     process.env.CALLVERSE_AGENTS_URL = 'http://localhost:1';
     await assert.rejects(() => new HttpAgentGateway().startCall({ persona: 'IMPATIENT', mix: null, difficulty: 'EASY', intent: 'BILLING', memory: false }), AgentDownError);
   } finally {

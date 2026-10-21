@@ -90,4 +90,54 @@
         </div>
         {% endif %}
     </section>
+    {% if plan %}
+    <section class="panel" aria-labelledby="rt">
+      <h2 id="rt">Routing and allocation</h2>
+      <p class="lede">Which advisor should work which queue for the rest of the day. Only advisors with the right skills move, and no queue is pushed below a protected service level.</p>
+      <p class="result" role="status">Calls answered within 20 s: <strong>{{ plan.baselineSla | pct }}</strong> becomes <strong>{{ plan.optimizedSla | pct }}</strong>
+        with <strong>{{ plan.moves }}</strong> move{{ '' if plan.moves == 1 else 's' }}.
+        {% if plan.simulated %}An independent simulation ({{ plan.simulated.replications }} runs) finds {{ plan.simulated.baselineSla | pct }} becomes {{ plan.simulated.optimizedSla | pct }}.{% endif %}</p>
+      {% for h in plan.hours %}
+      <article class="route-hour">
+        <h3>{{ h.hour }}</h3>
+        {% if h.moves | length %}
+        <ol>{% for mv in h.moves %}<li data-speak>{{ mv.text }}</li>{% endfor %}</ol>
+        {% else %}<p class="muted">No move helps this hour.</p>{% endif %}
+        <details>
+          <summary>All queues at {{ h.hour }}</summary>
+          <table class="data" aria-label="Queues at {{ h.hour }}">
+            <thead><tr><th>Queue</th><th>Calls</th><th>Advisors</th><th>Answered within 20 s</th></tr></thead>
+            <tbody>{% for r in h.queues %}
+              <tr><td>{{ r.queue }} · {{ r.name }}</td><td>{{ r.calls }}</td><td>{{ r.advisors }}{% if r.recommended != r.advisors %} to {{ r.recommended }}{% endif %}</td>
+                <td>{{ r.baselineSla | pct }}{% if r.recommendedSla != r.baselineSla %} to {{ r.recommendedSla | pct }}{% endif %}</td></tr>
+            {% endfor %}</tbody>
+          </table>
+        </details>
+      </article>
+      {% endfor %}
+      <p class="actions"><button type="button" class="btn-line" data-toast="Demo: nothing was changed in the real roster">Apply the moves</button></p>
+      <details class="how"><summary>How this was computed</summary><p class="muted">{{ plan.method }}</p></details>
+    </section>
+    {% endif %}
+    {% if schedule %}
+    <section class="panel" aria-labelledby="breaks">
+      <h2 id="breaks">Breaks and shifts</h2>
+      <p class="lede">When each advisor takes lunch on a typical day, and where overtime is still needed. Lunches are placed where they cost the fewest calls answered in time.</p>
+      <p class="result" role="status">Everybody at noon: <strong>{{ schedule.baselineSla | pct }}</strong> of calls answered within 20 s. Lunches spread out: <strong>{{ schedule.plannedSla | pct }}</strong>.
+        Overtime still needed: <strong>{{ schedule.overtimeHours }}</strong> advisor-hour{{ '' if schedule.overtimeHours == 1 else 's' }}.</p>
+      <table class="data" aria-label="Lunch plan by queue">
+        <thead><tr><th>Queue</th><th>Advisors</th>{% for h in schedule.queues[0].lunchHours %}<th>Lunch at {{ h.hour }}</th>{% endfor %}<th>Day</th><th>Worst hour</th></tr></thead>
+        <tbody>{% for q in schedule.queues %}
+          <tr><td>{{ q.queue }} · {{ q.name }}</td><td>{{ q.advisors }}</td>
+            {% for h in q.lunchHours %}<td>{{ h.naive }} to {{ h.planned }}</td>{% endfor %}
+            <td>{{ q.baselineSla | pct }} to {{ q.plannedSla | pct }}</td>
+            <td>{{ q.worstBaseline.hour }} {{ q.worstBaseline.sla | pct }} to {{ q.worstPlanned.hour }} {{ q.worstPlanned.sla | pct }}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+      <h3>Overtime</h3>
+      {% if schedule.overtime | length %}<ol>{% for o in schedule.overtime %}<li data-speak>{{ o.text }}</li>{% endfor %}</ol>
+      {% else %}<p class="muted">No overtime needed: the planned lunches keep every hour above the target.</p>{% endif %}
+      <details class="how"><summary>How this was computed</summary><p class="muted">{{ schedule.method }}</p></details>
+    </section>
+    {% endif %}
 {% endblock %}

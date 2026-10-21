@@ -2,17 +2,113 @@
 {% set title = "Quality reviews" %}
 {% set active = "quality" %}
 {% set bodyClass = "p-quality" %}
+{% macro spark(lines, w, h, label) %}
+  <svg class="spark" viewBox="0 0 {{ w }} {{ h }}" width="{{ w }}" height="{{ h }}" role="img" aria-label="{{ label }}">
+    {% for l in lines %}<polyline points="{{ l }}"/>{% endfor %}
+  </svg>
+{% endmacro %}
 {% block content %}
     <header class="page-head">
       <p class="eyebrow">Nour · Quality analyst agent</p>
       <h1>Quality reviews</h1>
-      <p class="lede">Every call is scored. Each lost point shows the moment in the transcript that caused it.</p>
+      <p class="lede">Every call is scored. Each lost point shows the moment in the transcript that caused it, and the team view shows what to coach.</p>
     </header>
+
+    {% if analytics.team %}
+    <section class="panel" aria-labelledby="qa">
+      <h2 id="qa">Team analytics</h2>
+      <div class="qa-stats">
+        <p><strong>{{ analytics.team.calls }}</strong><span>calls reviewed</span></p>
+        <p><strong>{{ analytics.team.avgOverall }}</strong><span>team average out of 100</span></p>
+        {% if analytics.team.topErrors | length %}<p><strong>{{ (analytics.team.topErrors[0].share * 100) | round }}%</strong><span>of calls: {{ analytics.team.topErrors[0].label | lower }}</span></p>{% endif %}
+        {% if analytics.team.causes | length %}<p><strong>{{ (analytics.team.causes[0].share * 100) | round }}%</strong><span>of errors: {{ analytics.team.causes[0].cause | lower }}</span></p>{% endif %}
+      </div>
+      {% if analytics.agreement %}
+      <p class="muted agreement">{% if analytics.agreement.judged %}Nour checked <strong>{{ analytics.agreement.judged }}</strong> findings: <strong>{{ (analytics.agreement.rate * 100) | round }}%</strong> were right{% if analytics.agreement.byRule | length and analytics.agreement.byRule[0].disagree %}; the most disputed is “{{ analytics.agreement.byRule[0].label | lower }}”{% endif %}.
+        {% else %}No finding has been checked yet. Open “reasons points were lost” in a review and mark each one Correct or Not an error: the score follows your verdict, and the analyst’s agreement rate appears here.{% endif %}</p>
+      {% endif %}
+      <div class="qa-grid">
+        <div>
+          <h3>Team average, last 8 weeks</h3>
+          {{ spark(analytics.team.lines, 240, 56, 'Team average score by week, oldest first') }}
+        </div>
+        <div>
+          <h3>Most frequent errors</h3>
+          <ul class="bars">
+            {% for e in analytics.team.topErrors %}<li><span>{{ e.label }}</span><meter min="0" max="100" value="{{ (e.share * 100) | round }}" aria-label="{{ (e.share * 100) | round }} percent of calls"></meter><span>{{ (e.share * 100) | round }}%</span></li>{% endfor %}
+          </ul>
+        </div>
+        <div>
+          <h3>Root causes</h3>
+          <ul class="bars">
+            {% for c in analytics.team.causes %}<li><span>{{ c.cause }}</span><meter min="0" max="100" value="{{ (c.share * 100) | round }}" aria-label="{{ (c.share * 100) | round }} percent of errors"></meter><span>{{ (c.share * 100) | round }}%</span></li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <h3>Advisors</h3>
+      <table class="data advisors" aria-label="Advisors, their average and what to coach">
+        <thead><tr><th scope="col">Advisor</th><th scope="col">Calls</th><th scope="col">Average</th><th scope="col">8 weeks</th><th scope="col">Weakest</th><th scope="col">Most frequent error</th><th scope="col">Coaching plan</th></tr></thead>
+        <tbody>
+          {% for a in analytics.advisors %}
+          <tr>
+            <th scope="row"><a href="/quality?advisor={{ a.advisor | urlencode }}">{{ a.advisor }}</a></th>
+            <td>{{ a.calls }}</td>
+            <td>{{ a.avgOverall }} <span class="muted">({{ '+' if a.vsTeam > 0 }}{{ a.vsTeam }} vs team)</span></td>
+            <td>{{ spark(a.lines, 96, 28, a.advisor ~ ': average score by week, ' ~ a.trendWord) }}<span class="muted">{{ a.trendWord }}</span></td>
+            <td>{{ a.weakest.criterion }} <span class="muted">({{ a.weakest.avg }}/10)</span></td>
+            <td>{{ a.topErrors[0].label if a.topErrors | length else 'none' }}</td>
+            <td>
+              <details>
+                <summary>Plan</summary>
+                <ol class="plan">{% for c in a.coaching %}
+                  <li><strong>{{ c.label }}</strong> in {{ c.calls }} call{{ '' if c.calls == 1 else 's' }}.
+                    <span data-speak>{{ c.tip }}</span>
+                    <span class="muted">Practise: {{ c.scenario }}.</span></li>
+                {% endfor %}</ol>
+              </details>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <details class="how"><summary>How this was computed</summary><p class="muted">{{ analytics.method }}</p></details>
+    </section>
+    {% endif %}
+
+    <section class="panel" aria-labelledby="up">
+      <h2 id="up">Review a call</h2>
+      <p class="muted">Upload a two-channel recording (advisor on the left channel, customer on the right). Each side is written down with its times, the customer's voice goes through the emotion model, and the call is scored.
+        Calls an advisor sends from the live call in the advisor console appear here too.</p>
+      <form id="audio-form" class="audio-form" data-csrf="{{ csrf }}">
+        <div><label for="rec-advisor">Advisor</label><input id="rec-advisor" list="advisor-names" value="{{ names[0] if names | length else 'Karim B.' }}" maxlength="60" required>
+          <datalist id="advisor-names">{% for n in names %}<option value="{{ n }}">{% endfor %}</datalist></div>
+        <div><label for="rec-file">Recording</label><input id="rec-file" type="file" accept="audio/*" required></div>
+        <button type="submit" class="btn">Review the call</button>
+        <a class="btn-quiet" href="/quality/sample-call.wav" download>Download a sample call</a>
+      </form>
+      <p id="audio-status" role="status" class="muted"></p>
+    </section>
+
+    {% if names | length %}
+    <form class="filters-form" method="get" action="/quality">
+      <label for="who">Calls of</label>
+      <select id="who" name="advisor"><option value="">everybody</option>{% for n in names %}<option value="{{ n }}"{% if n == filter %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+      <label for="byrule">with the error</label>
+      <select id="byrule" name="rule"><option value="">any</option>{% for r in analytics.rules %}<option value="{{ r.rule }}"{% if r.rule == rule %} selected{% endif %}>{{ r.label }}</option>{% endfor %}</select>
+      <label for="below">scoring</label>
+      <select id="below" name="below"><option value="">any score</option><option value="70"{% if below == 70 %} selected{% endif %}>below 70</option><option value="50"{% if below == 50 %} selected{% endif %}>below 50</option></select>
+      <button type="submit" class="btn-line">Show</button>
+      {% if filter or rule or below %}<a class="btn-quiet" href="/quality">Reset</a>{% endif %}
+    </form>
+    {% endif %}
+
     {% for v in reviews %}
     {% set r = v.review %}
-    <article class="panel review">
+    <article class="panel review{% if r.callId == focus %} focus{% endif %}" id="{{ r.callId }}">
       <header class="review-head">
         <h2><span>{{ r.callId }}</span> · <span>{{ r.advisor }}</span></h2>
+        <p class="meta muted">{% if r.source %}<span class="badge">{{ r.source }}</span> {% endif %}{{ r.date }}{% if r.intent %} · {{ r.intent }}{% endif %}{% if r.adjusted %} · adjusted after review (was {{ r.originalOverall }}){% endif %}</p>
         <p class="score{% if r.overall < 70 %} low{% endif %}">{{ r.overall }}/100</p>
       </header>
 
@@ -31,6 +127,13 @@
           <text class="end" x="576" y="14" text-anchor="end">{{ v.length }}</text>
         </svg>
         <p class="pin-read" role="status" aria-live="polite">Select a pin to see the moment.</p>
+        {% if v.curve %}
+        <svg class="qmood" viewBox="0 0 600 56" role="img" aria-label="The customer's mood through the call, from 0 (very upset) to 100 (delighted)">
+          <line class="mid" x1="24" x2="576" y1="27.5" y2="27.5"/>
+          <polyline points="{{ v.curve }}"/>
+        </svg>
+        <p class="muted small">Customer mood through the call (higher is better). Source: {{ v.moodNote }}.</p>
+        {% endif %}
       </div>
 
       <table class="criteria">
@@ -49,6 +152,68 @@
         </tbody>
       </table>
       <p class="coach"><strong>Coaching hint.</strong> <span data-speak>{{ r.counterfactual }}</span></p>
+
+      {% if r.errors and r.errors | length %}
+      <details class="lost">
+        <summary>{{ r.errors | length }} reason{{ '' if r.errors | length == 1 else 's' }} points were lost</summary>
+        <ul>{% for e in r.errors %}
+          <li{% if e.verdict == 'disagree' %} class="disputed"{% endif %}><strong>-{{ e.points }}</strong> {{ e.criterion }} at {{ e.timestamp }}: {{ e.reason }}.{% if e.quote %} <q>{{ e.quote }}</q>{% endif %}
+            <span class="fb-group" role="group" aria-label="Your verdict on this finding">
+              <button type="button" class="btn-quiet fb" data-call="{{ r.callId }}" data-rule="{{ e.rule }}" data-turn="{{ e.turn }}" data-verdict="agree" aria-pressed="{{ 'true' if e.verdict == 'agree' else 'false' }}">Correct</button>
+              <button type="button" class="btn-quiet fb" data-call="{{ r.callId }}" data-rule="{{ e.rule }}" data-turn="{{ e.turn }}" data-verdict="disagree" aria-pressed="{{ 'true' if e.verdict == 'disagree' else 'false' }}">Not an error</button>
+            </span>{% if e.verdict == 'disagree' %} <span class="muted">Left out of the score.</span>{% endif %}</li>
+        {% endfor %}</ul>
+      </details>
+      {% endif %}
+      {% if r.strengths and r.strengths | length %}
+      <p class="strengths"><strong>Done well:</strong> {% for g in r.strengths %}<span class="chip">{{ g.text }} at {{ g.timestamp }}</span> {% endfor %}</p>
+      {% endif %}
+      {% if r.coaching and r.coaching | length %}
+      <details class="lost">
+        <summary>Coaching for this call</summary>
+        <ol>{% for c in r.coaching %}<li><span data-speak>{{ c.tip }}</span> <span class="muted">Practise: {{ c.scenario }}.</span></li>{% endfor %}</ol>
+      </details>
+      {% endif %}
+      {% if v.turns | length %}
+      <details class="transcript">
+        <summary>Transcript ({{ v.turns | length }} turns)</summary>
+        <ol>{% for t in v.turns %}
+          <li class="qturn {{ t.speaker }}{% if t.errors | length %} has-error{% endif %}">
+            <span class="qwho">{{ 'Advisor' if t.speaker == 'advisor' else 'Customer' }} · {{ t.time }}{% if t.mood !== null %} · mood {{ t.mood }}{% if t.emotion %} ({{ t.emotion }}){% endif %}{% endif %}</span>
+            <span>{{ t.text }}</span>
+            {% for e in t.errors %}<span class="qflag lost-flag">Lost {{ e.points }}: {{ e.reason }}</span>{% endfor %}
+            {% for g in t.strengths %}<span class="qflag good-flag">{{ g.text }}</span>{% endfor %}
+          </li>
+        {% endfor %}</ol>
+      </details>
+      {% endif %}
     </article>
+    {% else %}
+    <p class="empty-state" role="status">No calls to show{% if filter %} for {{ filter }}{% endif %}.</p>
     {% endfor %}
+    {% if total > reviews | length %}<p class="muted">Showing the {{ reviews | length }} latest of {{ total }} calls. Pick an advisor above to see theirs.</p>{% endif %}
+    {% if evaluation %}
+    <section class="panel" aria-labelledby="acc">
+      <h2 id="acc">How accurate is the analyst?</h2>
+      <p class="result" role="status">On <strong>{{ evaluation.test.cases }}</strong> hand-labelled calls that were never used to tune it: when it flags something it is right
+        <strong>{{ (evaluation.test.precision * 100) | round }}%</strong> of the time (precision), and it finds <strong>{{ (evaluation.test.recall * 100) | round }}%</strong> of what a person finds (recall).
+        On the {{ evaluation.dev.cases }} development calls: {{ (evaluation.dev.f1 * 100) | round }}%.{% if not evaluation.semantic %} The semantic second opinion is off (keyword rules only).{% endif %}</p>
+      <details>
+        <summary>Rule by rule (held-out test calls)</summary>
+        <table class="data" aria-label="Accuracy of each rule on the test calls">
+          <thead><tr><th scope="col">Rule</th><th scope="col">Calls judged</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
+          <tbody>{% for r in evaluation.test.rules %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.judged }}</td><td>{{ (r.precision * 100) | round if r.precision !== null else 'n/a' }}{{ '%' if r.precision !== null }}</td><td>{{ (r.recall * 100) | round if r.recall !== null else 'n/a' }}{{ '%' if r.recall !== null }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </details>
+      <details>
+        <summary>How it was measured, and what it does not prove</summary>
+        <ol>{% for j in evaluation.journey %}<li>{{ j }}</li>{% endfor %}</ol>
+        <p class="muted">{{ evaluation.limits }}</p>
+      </details>
+      <details>
+        <summary>Known mistakes</summary>
+        <ul>{% for m in evaluation.test.mistakes.concat(evaluation.dev.mistakes) %}<li>{{ 'Missed' if m.kind == 'missed' else 'False alarm' }}: {{ m.rule | replace('_', ' ') }}. <q>{{ m.text }}</q></li>{% endfor %}</ul>
+      </details>
+    </section>
+    {% endif %}
 {% endblock %}

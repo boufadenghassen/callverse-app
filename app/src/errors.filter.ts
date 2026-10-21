@@ -1,6 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { AgentDownError } from './agents/agent.gateway';
+import { AgentDownError, CustomerNotFoundError } from './agents/agent.gateway';
 
 const ERRORS: Record<number, { title: string; message: string }> = {
   400: { title: "That request didn't look right", message: 'Some of the values in the request were not valid. Go back and check them.' },
@@ -26,6 +26,10 @@ export class ErrorFilter implements ExceptionFilter {
       this.log.warn(`Agent call failed: ${e.message}`);
       status = 503;
       message = '';
+    } else if (e instanceof CustomerNotFoundError) {
+      this.log.warn(`Customer not found: ${e.message}`);
+      status = 404;
+      message = "We don't have a customer with that id.";
     } else if (e instanceof HttpException) {
       status = e.getStatus();
     } else {

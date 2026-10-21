@@ -34,6 +34,7 @@ export function setup(app: NestExpressApplication) {
   // ---- health + static files come before sessions, so they never create one
   server.get('/actuator/health', (_req: express.Request, res: express.Response) => res.json({ status: 'UP' }));
   server.use(compression());
+  server.use('/quality/audio', express.raw({ type: ['audio/*', 'application/octet-stream'], limit: '11mb' }));      // a recorded call to review
   server.use('/voice/transcribe', express.raw({ type: 'audio/wav', limit: '6mb' }));                      // voice notes
   server.use('/call-review/analyze', express.raw({ type: 'application/octet-stream', limit: '15mb' }));    // uploaded recordings
   server.use(express.static(join(ROOT, 'public'), { maxAge: '7d', index: false }));

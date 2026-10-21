@@ -496,3 +496,178 @@ test('voice notes fail kindly: no speech model means a message and typing still 
     await ctx.close();
   } finally { await mic.close(); }
 });
+
+test('workforce routing: a plan with moves and its explanation, readable aloud', async () => {
+  const { ctx, page } = await signIn('sana');
+  await page.goto(`${BASE}/workforce`);
+  const sec = page.locator('section[aria-labelledby=rt]');
+  assert.match(await sec.locator('p.result').innerText(), /Calls answered within 20 s: \d+% becomes \d+%/);
+  assert.ok(await sec.locator('ol li').count() >= 1, 'at least one move');
+  assert.ok(await sec.locator('ol li .listen').count() >= 1, 'a move can be listened to');
+  await sec.locator('details').first().locator('summary').click();
+  assert.equal(await sec.locator('details').first().locator('tbody tr:visible').count(), 5, 'all five queues are listed');
+  await sec.locator('button[data-toast]').click();
+  assert.match(await page.locator('.toast').first().innerText(), /nothing was changed/);
+  await ctx.close();
+});
+
+test('workforce breaks and shifts: a lunch plan per queue and the overtime still needed', async () => {
+  const { ctx, page } = await signIn('sana');
+  await page.goto(`${BASE}/workforce`);
+  const sec = page.locator('section[aria-labelledby=breaks]');
+  assert.match(await sec.locator('p.result').innerText(), /Everybody at noon: \d+% of calls answered within 20 s\. Lunches spread out: \d+%/);
+  assert.equal(await sec.locator('table tbody tr:visible').count(), 5, 'all five queues');
+  assert.ok(await sec.locator('table thead th').count() >= 7, 'one column per lunch hour');
+  await ctx.close();
+});
+
+// ---- quality analyst: these need the real Python agents (skipped when they are not running) ----
+async function agentsUp() {
+  try { const r = await fetch('http://localhost:8000/health'); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+test('quality: the page shows team analytics, advisors with a coaching plan, and reviews with a transcript', async () => {
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  assert.ok(await page.locator('#qa').count(), 'team analytics');
+  assert.ok(await page.locator('table.advisors tbody tr').count() >= 1, 'at least one advisor');
+  await page.locator('table.advisors details summary').first().click();
+  assert.ok((await page.locator('table.advisors .plan li').first().innerText()).length > 20, 'a coaching plan is written out');
+  assert.ok(await page.locator('article.review').count() >= 2, 'reviews');
+  assert.ok(await page.locator('article.review .listen').count() >= 1, 'coaching can be listened to');
+  await ctx.close();
+});
+
+test('quality: a live call sent by the advisor shows up as a review for Nour', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const karim = await signIn('karim');
+  await karim.page.goto(`${BASE}/advisor`);
+  await karim.page.uncheck('#lv-voice'); await karim.page.uncheck('#lv-sayme');
+  await karim.page.click('#live-setup button[type=submit]');
+  await karim.page.waitForSelector('#live-call:not([hidden])');
+  await karim.page.fill('#lv-text', 'I will refund you right away.');
+  await karim.page.click('#live-say button[type=submit]');
+  await karim.page.waitForFunction(() => document.querySelectorAll('#live-log li').length >= 3);
+  await karim.page.click('#lv-review');
+  await karim.page.waitForFunction(() => /Sent: CALL-\d+ scored \d+\/100/.test(document.getElementById('live-status').textContent), null, { timeout: 30000 });
+  const id = /Sent: (CALL-\d+)/.exec(await karim.page.textContent('#live-status'))[1];
+  await karim.ctx.close();
+
+  const nour = await signIn('nour');
+  await nour.page.goto(`${BASE}/quality?call=${id}`);
+  const card = nour.page.locator(`article#${id}`);
+  assert.equal(await card.count(), 1);
+  assert.match(await card.innerText(), /live call/);
+  assert.equal(await nour.page.locator('article.review').first().getAttribute('id'), id, 'the focused call comes first');
+  await card.locator('summary', { hasText: 'points were lost' }).click();
+  assert.match(await card.locator('.lost').first().innerText(), /Promised a refund before checking/);
+  await card.locator('summary', { hasText: 'Transcript' }).click();
+  assert.match(await card.locator('.transcript').innerText(), /I will refund you right away\./);
+  await nour.ctx.close();
+});
+
+test('quality: a two-channel recording is uploaded, transcribed by speaker, and its review opens', async (t) => {
+  const h = await agentsUp();
+  if (!h || !h.listen || !h.voice) return t.skip('the Python agents or the voice models are not available');
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  const sample = await page.request.get(`${BASE}/quality/sample-call.wav`, { timeout: 180000 });
+  assert.equal(sample.status(), 200);
+  await page.setInputFiles('#rec-file', { name: 'call.wav', mimeType: 'audio/wav', buffer: await sample.body() });
+  await page.fill('#rec-advisor', 'Karim B.');
+  await page.click('#audio-form button[type=submit]');
+  await page.waitForURL(/\/quality\?call=CALL-\d+/, { timeout: 180000 });
+  const card = page.locator('article.review.focus');
+  assert.match(await card.innerText(), /recording/);
+  await card.locator('summary', { hasText: 'Transcript' }).click();
+  const text = await card.locator('.transcript').innerText();
+  assert.match(text, /charged twice/i);
+  assert.match(text, /CUSTOMER/);
+  assert.match(text, /ADVISOR/);
+  await card.locator('summary', { hasText: 'points were lost' }).click();
+  assert.match(await card.locator('.lost').first().innerText(), /transferred|asked the customer to explain|refund/i);
+  await ctx.close();
+});
+
+test('quality: a mono recording is refused with a clear message', async (t) => {
+  const h = await agentsUp();
+  if (!h || !h.listen) return t.skip('the Python agents or the speech model are not available');
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  const n = 16000, data = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) data.writeInt16LE(Math.round(8000 * Math.sin(i / 20)), i * 2);
+  const head = Buffer.alloc(44);
+  head.write('RIFF', 0); head.writeUInt32LE(36 + data.length, 4); head.write('WAVEfmt ', 8); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(16000, 24); head.writeUInt32LE(32000, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34); head.write('data', 36); head.writeUInt32LE(data.length, 40);
+  await page.setInputFiles('#rec-file', { name: 'mono.wav', mimeType: 'audio/wav', buffer: Buffer.concat([head, data]) });
+  await page.click('#audio-form button[type=submit]');
+  await page.waitForFunction(() => /two-channel/.test(document.getElementById('audio-status').textContent), null, { timeout: 30000 });
+  assert.match(await page.textContent('#audio-status'), /advisor on the left/);
+  assert.match(page.url(), /\/quality$/, 'the page stays where it is');
+  await ctx.close();
+});
+
+test('quality: the page says how accurate the analyst is, rule by rule, with its known mistakes', async (t) => {
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  const acc = page.locator('section[aria-labelledby=acc]');
+  if (!(await acc.count())) { await ctx.close(); return t.skip('the demo data has no accuracy report'); }
+  assert.match(await acc.locator('.result').innerText(), /hand-labelled calls that were never used to tune it/);
+  assert.match(await acc.locator('.result').innerText(), /\d+%\s*of the time \(precision\)/);
+  await acc.locator('summary', { hasText: 'Rule by rule' }).click();
+  assert.ok(await acc.locator('table tbody tr:visible').count() >= 15, 'every rule has a row');
+  await acc.locator('summary', { hasText: 'How it was measured' }).click();
+  assert.match(await acc.innerText(), /never looked at/);
+  await acc.locator('summary', { hasText: 'Known mistakes' }).click();
+  assert.ok(await acc.locator('details').last().locator('li').count() >= 1, 'the mistakes are listed, not hidden');
+  await ctx.close();
+});
+
+test('quality: a reviewer can dispute a finding (the score follows) and take the verdict back', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  // a call where "no closing question" cost a point in a criterion that is not at its floor, so removing it must raise the score
+  const all = await (await fetch('http://localhost:8000/quality/reviews?limit=100')).json();
+  const pick = all.find((r) => !r.adjusted && r.errors.some((e) => e.rule === 'no_closing')
+    && r.errors.filter((e) => e.criterion === 'Resolution').reduce((n, e) => n + e.points, 0) <= 8);
+  assert.ok(pick, 'a suitable call exists in the history');
+  const id = pick.callId;
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality?call=${id}`);
+  const scoreOf = async () => Number((await page.locator(`article#${id} .score`).innerText()).split('/')[0]);
+  const before = await scoreOf();
+  const card = page.locator(`article#${id}`);
+  await card.locator('summary', { hasText: 'points were lost' }).click();
+  await card.locator('.lost li', { hasText: 'without a closing question' }).locator('button.fb[data-verdict="disagree"]').click();
+  await page.waitForSelector(`article#${id} .lost li.disputed`);                       // the page reloaded with the verdict applied...
+  assert.ok(await page.locator(`article#${id} details.lost`).first().evaluate((d) => d.open), '...and the list is open again')
+  assert.ok((await scoreOf()) > before, 'the disputed finding no longer costs points');
+  assert.match(await page.locator(`article#${id} .meta`).innerText(), /adjusted after review \(was \d+\)/);
+  const disputed = page.locator(`article#${id} .lost li.disputed`);
+  assert.equal(await disputed.count(), 1);
+  assert.match(await disputed.innerText(), /Left out of the score/);
+  assert.match(await page.locator('.agreement').innerText(), /checked \d+ findings/);
+  await disputed.locator('button.fb[data-verdict="disagree"]').click();          // the pressed button again takes the verdict back
+  await page.waitForFunction((i) => !document.querySelector(`#${i} .lost li.disputed`), id);
+  assert.equal(await scoreOf(), before);
+  await ctx.close();
+});
+
+test('quality: filters narrow the reviews by error and by score', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  await page.selectOption('#byrule', 'no_identity_check');
+  await page.selectOption('#below', '70');
+  await page.click('.filters-form button[type=submit]');
+  await page.waitForURL(/rule=no_identity_check&below=70/);
+  const cards = page.locator('article.review');
+  assert.ok(await cards.count() >= 1, 'some calls match');
+  for (const card of await cards.all()) {
+    assert.ok(Number((await card.locator('.score').innerText()).split('/')[0]) < 70);
+    assert.match(await card.locator('details.lost').first().textContent(), /before verifying the customer's identity/);
+  }
+  assert.equal(await page.locator('#byrule').inputValue(), 'no_identity_check');
+  await page.click('.filters-form a.btn-quiet');
+  await page.waitForURL(/\/quality$/);
+  await ctx.close();
+});

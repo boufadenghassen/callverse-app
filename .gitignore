@@ -49,3 +49,6 @@ __pycache__/
 
 # neural voice model files (downloaded, see services/agents/README.md)
 /models/voices/
+
+# quality analyst store and the generated sample call
+/services/agents/data/
