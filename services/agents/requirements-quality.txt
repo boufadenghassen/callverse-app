@@ -1,0 +1,5 @@
+# Optional dep for the Quality analyst's second opinion (semantic.py, all-MiniLM-L6-v2 embeddings).
+# Not needed to run the API or the tests: without it (or without the cached model) the analyst
+# uses its keyword rules only. torch comes with requirements-voice.txt.
+#   pip install -r requirements-quality.txt
+sentence-transformers

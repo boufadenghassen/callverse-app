@@ -49,18 +49,22 @@ Docker: `docker build -t callverse-nest .` then
 `HttpAgentGateway` (`AGENTS_MODE=http`) calls these. Responses are JSON with the camelCase field names of the
 interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alias_generator=to_camel`.
 
-| Method | Path | Returns |
-|---|---|---|
-> **Built in `services/agents`:** `/advisor/customers/{id}`, `/advisor/suggest`, `/customer/sessions` and `/customer/sessions/{id}/say` (marked ✔ below).
+> **Built in `services/agents` (marked ✔ below):** the advisor, the customer simulator, the workforce manager (forecast, simulation, routing, breaks), the voice and the quality analyst.
 > `HttpAgentGateway` keeps demo data for every other row until its Python agent exists.
 
+| Method | Path | Returns |
+|---|---|---|
 | GET | `/advisor/customers/{id}` ✔ | CustomerContext |
 | POST | `/advisor/suggest` `{customer_id, query}` ✔ | SuggestedAnswer (with optional `intents`, `evidence`) |
 | POST | `/customer/sessions` `{persona, mix, difficulty, intent, memory}` ✔ | CallStart |
 | POST | `/customer/sessions/{id}/say` `{text}` ✔ | CallReply |
-| GET | `/workforce/forecast?queue=B` | ForecastPoint[] |
-| POST | `/workforce/simulate` | SimulationResult |
-| GET | `/quality/reviews?limit=20` | QualityReview[] |
+| GET | `/workforce/forecast?queue=B` ✔ | ForecastPoint[] |
+| POST | `/workforce/simulate` ✔ | SimulationResult |
+| GET | `/workforce/routing` ✔, `/workforce/schedule` ✔ | RoutingPlan, SchedulePlan |
+| GET | `/quality/reviews?limit=20` ✔ | QualityReview[] (filters: advisor, rule, below) |
+| GET | `/quality/reviews/{id}` ✔, `/quality/analytics` ✔, `/quality/evaluation` ✔ | QualityReview, QualityAnalytics, QualityEvaluation |
+| POST | `/quality/review` ✔, `/quality/review-call` ✔, `/quality/review-audio` ✔ | QualityReview (from a transcript, a live call, a two-channel recording) |
+| POST | `/quality/feedback` ✔ | reviewer verdict (agree / disagree / clear) on one finding |
 | GET | `/complaints/open` | ComplaintCase[] |
 | GET | `/training/scenarios` | Scenario[] |
 | GET | `/sales/opportunities` | Opportunity[] |
