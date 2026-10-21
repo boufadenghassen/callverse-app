@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AgentDownError, BadAudioError, RejectedError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
+import { AgentDownError, BadAudioError, CustomerNotFoundError, RejectedError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import { MockAgentGateway } from './mock.gateway';
 import * as m from './models';
 
@@ -28,6 +28,7 @@ export class HttpAgentGateway extends MockAgentGateway {
       throw new AgentDownError(String(e));
     }
     if (res.status === 404 && path.startsWith('/customer/sessions/')) throw new UnknownCallError(path);
+    if (res.status === 404 && path.startsWith('/advisor/customers/')) throw new CustomerNotFoundError(path);
     if (!res.ok) throw new AgentDownError(`${path} answered ${res.status}`);
     const value = (await res.json()) as T;
     if (cacheable) this.cache.set(path, { at: Date.now(), value });
@@ -35,6 +36,7 @@ export class HttpAgentGateway extends MockAgentGateway {
   }
 
   /** Real Python agents: the advisor, the customer simulator, the workforce manager, the voice. */
+  customerContext(customerId: string) { return this.call<m.CustomerContext>(`/advisor/customers/${encodeURIComponent(customerId)}`, undefined, true); }
   suggestAnswer(customerId: string, query: string) { return this.call<m.SuggestedAnswer>('/advisor/suggest', { customer_id: customerId, query }); }
   async speak(r: m.SpeakRequest): Promise<Buffer> {
     let res: Response;

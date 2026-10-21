@@ -71,6 +71,15 @@ def test_intents_come_out_as_chips():
     assert {"Billing", "Roaming"} <= set(advisor.detect_intents("charged twice for my roaming bundle"))
 
 
+def test_the_advisor_looks_up_a_known_customer_and_refuses_an_unknown_one():
+    r = client.get("/advisor/customers/YT-1042")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["id"] == "YT-1042" and body["name"] == "Yasmine Toumi" and body["mood"]
+    assert client.get("/advisor/customers/ZZ-0000").status_code == 404
+    assert client.get("/advisor/customers/not-an-id").status_code == 422
+
+
 import pytest  # noqa: E402
 import voice  # noqa: E402
 

@@ -83,6 +83,15 @@ def suggest(body: SuggestIn):
     return advisor.suggest(body.query)
 
 
+@app.get("/advisor/customers/{customer_id}")
+def advisor_customer(customer_id: str = Path(pattern=r"^[A-Z]{2}-\d{4}$")):
+    """The customer's 360-degree context (name, contract, open tickets, mood...) for the advisor's sidebar."""
+    customer_record = advisor.get_customer(customer_id)
+    if customer_record is None:
+        raise HTTPException(404, f"No customer with id {customer_id}.")
+    return customer_record
+
+
 @app.post("/customer/sessions")
 def start_call(body: CallIn):
     return customer.start(body.persona, body.mix, body.difficulty, body.intent, body.memory)

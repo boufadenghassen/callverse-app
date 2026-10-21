@@ -4,6 +4,8 @@ import * as m from './models';
 export class AgentDownError extends Error {}
 /** The call id is not known to the customer simulator. */
 export class UnknownCallError extends Error {}
+/** No customer exists with that id. */
+export class CustomerNotFoundError extends Error {}
 /** No neural voice is available (demo mode, or the voice model is not installed): the page falls back to the browser's voice. */
 export class VoiceUnavailableError extends Error {}
 /** The recording cannot be used (unreadable, silent, too short); the message is safe to show. */
@@ -18,6 +20,7 @@ export class NeedsRealAgentsError extends Error {}
  * so swapping mock data for the real Python services is an environment change (AGENTS_MODE=http), not a code change.
  */
 export abstract class AgentGateway {
+  /** Throws CustomerNotFoundError when no customer has that id. */
   abstract customerContext(customerId: string): Promise<m.CustomerContext>;
   abstract suggestAnswer(customerId: string, query: string): Promise<m.SuggestedAnswer>;
   abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
