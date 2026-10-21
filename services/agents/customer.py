@@ -256,3 +256,14 @@ def say(sid: str, text: str) -> dict:
     r = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
     t = r.turns[-1]
     return dict(ended=r.outcome is not None, outcome=r.outcome, mood=t.mood, patience=t.patience, client=t.client, move=move, moveLabel=MOVES[move])
+
+
+def transcript(sid: str) -> tuple[list[dict], dict | None, str]:
+    """The call so far as turns for the quality analyst (times are estimated by the analyst), its outcome so far, and the customer persona."""
+    s = SESSIONS[sid]  # KeyError = unknown call
+    start = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, [], [])
+    run = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
+    turns = [dict(speaker="customer", text=start.opening, mood=start.mood)]
+    for i, t in enumerate(run.turns):
+        turns += [dict(speaker="advisor", text=s.said[i]), dict(speaker="customer", text=t.client, mood=t.mood)]
+    return turns, run.outcome, s.persona

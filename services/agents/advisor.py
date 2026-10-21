@@ -66,3 +66,8 @@ def suggest(query: str, customer_name: str | None = None) -> dict:
         intents=intents,
         evidence=[dict(source=d["source"], score=round(s, 2), excerpt=d["title"]) for d, s in hits if s >= MIN_SCORE],
     )
+
+
+def cosine(a: str, b: str) -> float:
+    """TF-IDF cosine similarity of two texts, in the knowledge base's own vocabulary."""
+    return float(cosine_similarity(_vec.transform([a]), _vec.transform([b]))[0][0])
