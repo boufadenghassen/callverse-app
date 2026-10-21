@@ -1013,3 +1013,4 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 #lv-rec.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
 #lv-rec[hidden] { display: none; }
 .how { margin-top: var(--s4); } .how summary { cursor: pointer; font-weight: 700; }
+.route-hour { margin: var(--s4) 0; } .route-hour h3 { margin: 0 0 var(--s2); }

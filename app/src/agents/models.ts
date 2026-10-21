@@ -4,6 +4,11 @@ export interface Evidence { source: string; score: number; excerpt: string }
 export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
 export interface Transcript { text: string; seconds: number }
 export interface SpeakRequest { text: string; role: 'advisor' | 'customer'; persona: string | null; mood: number }
+export interface RoutingQueue { queue: string; name: string; calls: number; priority: number; advisors: number; recommended: number; baselineSla: number; recommendedSla: number; baselineWaitSec: number; recommendedWaitSec: number }
+export interface RoutingMove { advisor: string; skills: string[]; fromQueue: string; toQueue: string; gain: number; text: string }
+export interface RoutingHour { hour: string; queues: RoutingQueue[]; moves: RoutingMove[] }
+/** Who should work which queue for the rest of the day. `simulated` is the independent check by a discrete-event simulation. */
+export interface RoutingPlan { baselineSla: number; optimizedSla: number; moves: number; hours: RoutingHour[]; method: string; simulated?: { baselineSla: number; optimizedSla: number; replications: number } }
 /** A live call with the simulated customer: `moveLabel` says how the customer's agent read the advisor's last reply. */
 export interface CallConfig { persona: string; mix: string | null; difficulty: string; intent: string; memory: boolean }
 export interface CallStart { id: string; persona: string; opening: string; mood: number; patience: number }

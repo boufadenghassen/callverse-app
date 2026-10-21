@@ -15,6 +15,7 @@ import advisor
 import customer
 import stt
 import voice
+import routing
 import workforce
 
 
@@ -122,3 +123,9 @@ def workforce_simulate(body: SimulateIn):
     if body.from_ >= body.to:
         raise HTTPException(422, "The end time must be after the start time.")
     return workforce.simulate(body.queue, body.extraAdvisors, body.from_, body.to)
+
+
+@app.get("/workforce/routing")
+def workforce_routing():
+    """Who should work which queue for the rest of the day: ranked moves per hour, checked by a simulation."""
+    return routing.plan()

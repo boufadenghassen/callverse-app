@@ -55,6 +55,16 @@ export class MockAgentGateway extends AgentGateway {
     throw new VoiceUnavailableError('demo mode has no neural voice');
   }
 
+  async routing(): Promise<m.RoutingPlan> {
+    const q = (queue: string, name: string, calls: number, advisors: number, recommended: number, b: number, r: number): m.RoutingQueue =>
+      ({ queue, name, calls, priority: 1, advisors, recommended, baselineSla: b, recommendedSla: r, baselineWaitSec: 0, recommendedWaitSec: 0 });
+    return {
+      baselineSla: 0.7, optimizedSla: 0.78, moves: 1, method: 'Demo data: the real workforce agent computes this with Erlang C and a local search.',
+      hours: [{ hour: '14h', queues: [q('A', 'Billing', 91, 8, 9, 0.47, 0.71), q('B', 'Plans and billing, premium', 81, 8, 8, 0.49, 0.49), q('C', 'Roaming', 26, 5, 4, 0.87, 0.67)],
+        moves: [{ advisor: 'C02', skills: ['C', 'D', 'A'], fromQueue: 'C', toQueue: 'A', gain: 17, text: 'Move C02 (skills C, D, A) from queue C to queue A at 14h: queue A goes from 47% to 71% within 20 s, queue C from 87% to 67%.' }] }],
+    };
+  }
+
   async transcribe(_audio: Buffer): Promise<m.Transcript> {
     throw new VoiceUnavailableError('demo mode cannot transcribe');
   }

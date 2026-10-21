@@ -1,8 +1,14 @@
-import { test } from 'node:test';
+import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AgentDownError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
+import { client, startApp } from './helpers';
+
+let app: NestExpressApplication;
+before(async () => { app = await startApp(); });
+after(async () => { await app.close(); });
 
 test('the http gateway asks the Python workforce agent for the forecast and the simulation', async () => {
   const seen: string[] = [];
@@ -30,6 +36,30 @@ test('the http gateway asks the Python workforce agent for the forecast and the 
     assert.match(seen[2], /queue=A%2F\.\.%2Fx/);
     process.env.CALLVERSE_AGENTS_URL = 'http://localhost:1';
     await assert.rejects(() => new HttpAgentGateway().simulate({ queue: 'B', extraAdvisors: 1, from: '14:00', to: '16:00' }), AgentDownError);
+  } finally {
+    delete process.env.CALLVERSE_AGENTS_URL;
+    fake.close();
+  }
+});
+
+test('the workforce page shows the routing and allocation plan with its moves', async () => {
+  const html = (await (await client(app, 'sana')).get('/workforce').expect(200)).text;
+  assert.match(html, /Routing and allocation/);
+  assert.match(html, /Move C02/);
+  assert.match(html, /Apply the moves/);
+});
+
+test('the http gateway fetches the routing plan from the Python workforce agent', async () => {
+  const fake = createServer((req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(req.url === '/workforce/routing' ? '{"baselineSla":0.68,"optimizedSla":0.72,"moves":3,"hours":[],"method":"Local search"}' : '{}');
+  });
+  await new Promise<void>((ok) => fake.listen(0, ok));
+  process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
+  try {
+    const plan = await new HttpAgentGateway().routing();
+    assert.equal(plan.optimizedSla, 0.72);
+    assert.equal(plan.moves, 3);
   } finally {
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();

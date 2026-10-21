@@ -23,6 +23,8 @@ export abstract class AgentGateway {
   abstract speak(request: m.SpeakRequest): Promise<Buffer>;
   /** A voice note (16 kHz mono WAV) as text. Throws VoiceUnavailableError or BadAudioError. */
   abstract transcribe(audio: Buffer): Promise<m.Transcript>;
+  /** Skill-based reassignment of advisors between queues for the hours still to come today. */
+  abstract routing(): Promise<m.RoutingPlan>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;

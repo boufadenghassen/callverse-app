@@ -164,3 +164,54 @@ def test_the_workforce_endpoints_validate_their_input():
     for bad in ({"queue": "B", "extraAdvisors": 99, "from": "14:00", "to": "16:00"}, {"queue": "B", "extraAdvisors": 1, "from": "16:00", "to": "14:00"},
                 {"queue": "B", "extraAdvisors": 1, "from": "25:00", "to": "26:00"}, {"queue": "Q", "extraAdvisors": 1, "from": "14:00", "to": "16:00"}):
         assert client.post("/workforce/simulate", json=bad).status_code == 422
+
+
+import routing  # noqa: E402
+
+
+def test_routing_keeps_every_advisor_and_respects_skills_and_the_protected_level():
+    for h in workforce.HOURS:
+        if h <= workforce.NOW_HOUR:
+            continue
+        plan = routing.allocate(h)
+        before = sum(q["advisors"] for q in plan["queues"])
+        assert before == sum(q["recommended"] for q in plan["queues"]) == len(routing.on_duty(h))     # nobody appears or disappears
+        skills = {a["id"]: a["skills"] for a in routing.advisors()}
+        for m in plan["moves"]:
+            assert m["toQueue"] in skills[m["advisor"]] and m["fromQueue"] != m["toQueue"]
+            assert m["gain"] > 0
+        for q in plan["queues"]:                                  # a donor never ends below the protected level (or below where it started)
+            if q["recommended"] < q["advisors"]:
+                assert q["recommendedSla"] >= min(routing.GUARD, q["baselineSla"]) - 0.011
+
+
+def test_routing_never_makes_the_weighted_service_level_worse():
+    for h in (14, 15, 16, 17):
+        plan = routing.allocate(h)
+        calls = {q["queue"]: q["calls"] for q in plan["queues"]}
+        before = routing.objective(calls, {q["queue"]: q["advisors"] for q in plan["queues"]})
+        after = routing.objective(calls, {q["queue"]: q["recommended"] for q in plan["queues"]})
+        assert after >= before - 1e-9
+
+
+def test_the_plan_gains_service_level_and_an_independent_simulation_agrees():
+    p = routing.plan()
+    assert p["moves"] >= 1 and p["optimizedSla"] > p["baselineSla"]
+    assert p["simulated"]["optimizedSla"] > p["simulated"]["baselineSla"]
+    assert abs(p["simulated"]["baselineSla"] - p["baselineSla"]) < 0.06           # the formula and the simulation tell the same story
+    assert routing.plan() is routing.plan()                                       # deterministic and cached
+
+
+def test_the_simulation_matches_erlang_c():
+    for calls, aht, n in ((72, 300, 8), (40, 420, 7), (20, 200, 3)):
+        formula = workforce.stats(calls, aht, n)["sla"]
+        assert abs(routing.simulate_hour(calls, aht, n, reps=150, seed=7) - formula) < 0.05, (calls, aht, n)
+    assert routing.simulate_hour(0, 300, 3, 5, 1) == 1.0 and routing.simulate_hour(50, 300, 0, 5, 1) == 0.0
+
+
+def test_the_routing_endpoint():
+    r = client.get("/workforce/routing")
+    assert r.status_code == 200
+    body = r.json()
+    assert [h["hour"] for h in body["hours"]] == ["14h", "15h", "16h", "17h"] and "method" in body
+    assert all(set(q) >= {"queue", "advisors", "recommended", "baselineSla", "recommendedSla"} for q in body["hours"][0]["queues"])

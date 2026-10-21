@@ -496,3 +496,17 @@ test('voice notes fail kindly: no speech model means a message and typing still 
     await ctx.close();
   } finally { await mic.close(); }
 });
+
+test('workforce routing: a plan with moves and its explanation, readable aloud', async () => {
+  const { ctx, page } = await signIn('sana');
+  await page.goto(`${BASE}/workforce`);
+  const sec = page.locator('section[aria-labelledby=rt]');
+  assert.match(await sec.locator('p.result').innerText(), /Calls answered within 20 s: \d+% becomes \d+%/);
+  assert.ok(await sec.locator('ol li').count() >= 1, 'at least one move');
+  assert.ok(await sec.locator('ol li .listen').count() >= 1, 'a move can be listened to');
+  await sec.locator('details').first().locator('summary').click();
+  assert.equal(await sec.locator('details').first().locator('tbody tr').count(), 5, 'all five queues are listed');
+  await sec.locator('button[data-toast]').click();
+  assert.match(await page.locator('.toast').first().innerText(), /nothing was changed/);
+  await ctx.close();
+});
