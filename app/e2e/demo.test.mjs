@@ -505,7 +505,7 @@ test('workforce routing: a plan with moves and its explanation, readable aloud',
   assert.ok(await sec.locator('ol li').count() >= 1, 'at least one move');
   assert.ok(await sec.locator('ol li .listen').count() >= 1, 'a move can be listened to');
   await sec.locator('details').first().locator('summary').click();
-  assert.equal(await sec.locator('details').first().locator('tbody tr').count(), 5, 'all five queues are listed');
+  assert.equal(await sec.locator('details').first().locator('tbody tr:visible').count(), 5, 'all five queues are listed');
   await sec.locator('button[data-toast]').click();
   assert.match(await page.locator('.toast').first().innerText(), /nothing was changed/);
   await ctx.close();
