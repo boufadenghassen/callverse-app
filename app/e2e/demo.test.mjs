@@ -671,3 +671,24 @@ test('quality: filters narrow the reviews by error and by score', async (t) => {
   await page.waitForURL(/\/quality$/);
   await ctx.close();
 });
+
+test('call review: the emotion answer comes with a map of which parts of the recording it leaned on', async (t) => {
+  let up = false;
+  try { up = (await fetch('http://localhost:8001/health')).ok; } catch { /* not running */ }
+  if (!up) return t.skip('the emotion service is not running');
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/call-review`);
+  assert.equal(await page.locator('#r-why-box').isVisible(), false, 'hidden until there is a result');
+  const n = 16000 * 3, data = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) data.writeInt16LE(Math.round(9000 * Math.sin(i / (i < n / 2 ? 18 : 40)) * (1 + Math.sin(i / 3000)) / 2), i * 2);
+  const head = Buffer.alloc(44);
+  head.write('RIFF', 0); head.writeUInt32LE(36 + data.length, 4); head.write('WAVEfmt ', 8); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(16000, 24); head.writeUInt32LE(32000, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34); head.write('data', 36); head.writeUInt32LE(data.length, 40);
+  await page.setInputFiles('#audio', { name: 'tone.wav', mimeType: 'audio/wav', buffer: Buffer.concat([head, data]) });
+  await page.click('#review-form button[type=submit]');
+  await page.locator('#r-why-box').waitFor({ state: 'visible', timeout: 90000 });
+  assert.ok(await page.locator('#r-why li').count() >= 5, 'one block per half second');
+  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: .* s \(.* points of confidence\)|No single part/);
+  assert.match(await page.locator('#r-why li').first().getAttribute('aria-label'), /s: (supports|argues against|no effect on) /);
+  await ctx.close();
+});

@@ -26,3 +26,6 @@ The raw model is over-confident: on the 1,198 unseen test clips it averaged 80.6
 `src/calibrate.py` fits one temperature (T = 1.228) on the validation actors and `serve.py` applies it. On the test actors the
 calibration error (ECE) fell from 0.081 to 0.030 and the average confidence to 75.2%; accuracy and predicted emotions are unchanged.
 Result and numbers: `emotion_wavlm_ft_full_aug2_calibration.json`. Calibrated on clean acted speech only, so on real, noisy calls the percentages are probably still a bit high.
+
+## Explaining an answer (occlusion)
+`POST /emotion/analyze` also returns an `explanation`: which parts of the recording the model leaned on. `src/explain.py` silences one short block (0.25 s, longer for long calls: at most 48 blocks) at a time, scores the clip again with the same calibrated model, and reports for each block how much the probability of the answer fell (`drop`; negative means the block argued against the answer, `rel` is the same scaled to -1..1) and the three most influential moments. The Call review page draws it as a strip under "Why this answer". It is a sensitivity map, not a proof of cause, and the model was trained on acted speech. If the explanation fails the answer is still returned (`explanation: null`). Tests (fake model, no weights needed): `pytest -q models/tests` from the repo root.
