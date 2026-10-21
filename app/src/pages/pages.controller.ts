@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query, Render } from '@nestjs/common';
 import { AgentGateway } from '../agents/agent.gateway';
 import { Roles } from '../auth/access.guard';
-import { lineChart, qualityView } from './charts';
+import { lineChart } from './charts';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
 
 const CHART_W = 640, CHART_H = 280;
@@ -74,11 +74,6 @@ export class PagesController {
   }
 
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------
-
-  @Roles('QUALITY') @Get('quality') @Render('quality')
-  async quality() {
-    return { reviews: (await this.agents.recentReviews()).map(qualityView) };
-  }
 
   @Roles('COMPLAINT') @Get('complaints') @Render('complaints')
   async complaints() {

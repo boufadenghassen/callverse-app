@@ -27,7 +27,27 @@ export interface SimulationRequest { queue: string; extraAdvisors: number; from:
 export interface SimulationHour { hour: string; calls: number; advisors: number; simulatedAdvisors: number; baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; needed: number }
 export interface SimulationResult { baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; recommendations: string[]; hours?: SimulationHour[]; method?: string }
 export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string }
-export interface QualityReview { callId: string; advisor: string; overall: number; criteria: CriterionScore[]; counterfactual: string }
+export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string }
+export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string }
+export interface QualityCoaching { rule: string; criterion: string; tip: string; scenario: string }
+export interface QualityTurn { speaker: 'advisor' | 'customer'; text: string; start: number; end: number; mood: number | null; emotion: string | null; flags: string[] }
+/** The first five fields are the contract; the rest comes from the real quality agent (the demo data leaves them out). */
+export interface QualityReview {
+  callId: string; advisor: string; overall: number; criteria: CriterionScore[]; counterfactual: string;
+  source?: string; date?: string | null; durationSec?: number; intent?: string; moodSource?: string;
+  errors?: QualityError[]; strengths?: QualityStrength[]; coaching?: QualityCoaching[]; turns?: QualityTurn[]; moodCurve?: [number, number][];
+}
+export interface ErrorStat { rule: string; label: string; calls: number; share: number; cause: string }
+export interface AdvisorStats {
+  advisor: string; calls: number; avgOverall: number; vsTeam: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; trend: number | null;
+  weakest: { criterion: string; avg: number }; strongest: { criterion: string; avg: number }; topErrors: ErrorStat[];
+  coaching: { rule: string; label: string; calls: number; tip: string; scenario: string }[]; lastCalls: string[];
+}
+export interface QualityAnalytics {
+  team: { calls: number; avgOverall: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; topErrors: ErrorStat[];
+          causes: { cause: string; calls: number; share: number }[]; byIntent: { intent: string; calls: number; avg: number }[] } | null;
+  advisors: AdvisorStats[]; method: string;
+}
 export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
 export interface Opportunity { customer: string; offer: string; relevance: number; reason: string }

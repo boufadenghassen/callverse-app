@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { DifficultyKey, IntentKey, MOVES, MoveKey, PersonaKey, PERSONAS, replay } from '../pages/client-simulator';
 import { readAdvisor } from '../pages/customer-llm';
-import { AgentGateway, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
+import { AgentGateway, NeedsRealAgentsError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import * as m from './models';
 
 interface Call { cfg: m.CallConfig; moves: MoveKey[]; said: string[] }
@@ -95,7 +95,36 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
-  async recentReviews(): Promise<m.QualityReview[]> {
+  async qualityReview(callId: string): Promise<m.QualityReview | null> {
+    return (await this.recentReviews()).find((r) => r.callId === callId) ?? null;
+  }
+
+  async qualityAnalytics(): Promise<m.QualityAnalytics> {
+    const crit = { Accuracy: 8.5, Compliance: 7, Communication: 9, Resolution: 7.5 };
+    return {
+      method: 'Demo data: the real quality agent scores every stored call.',
+      team: { calls: 2, avgOverall: 75, avgByCriterion: crit, weeks: [null, null, null, null, null, null, 62, 88], causes: [{ cause: 'Process skipped', calls: 1, share: 1 }], byIntent: [{ intent: 'Billing', calls: 2, avg: 75 }],
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }] },
+      advisors: [{ advisor: 'Karim B.', calls: 1, avgOverall: 62, vsTeam: -13, avgByCriterion: crit, weeks: [null, null, null, null, null, null, null, 62], trend: null,
+        weakest: { criterion: 'Compliance', avg: 4 }, strongest: { criterion: 'Communication', avg: 9 },
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
+        coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }], lastCalls: ['CALL-3381'] }],
+    };
+  }
+
+  async reviewCall(_callId: string, _advisor: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode cannot review live calls');
+  }
+
+  async reviewAudio(_audio: Buffer, _advisor: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode cannot review recordings');
+  }
+
+  async sampleCall(): Promise<Buffer> {
+    throw new NeedsRealAgentsError('demo mode has no sample call');
+  }
+
+  async recentReviews(_advisor?: string): Promise<m.QualityReview[]> {
     return [
       { callId: 'CALL-3381', advisor: 'Karim B.', overall: 62, criteria: [
           { name: 'Accuracy', score: 8, max: 10, evidence: 'Correct refund amount quoted', timestamp: '01:12' },

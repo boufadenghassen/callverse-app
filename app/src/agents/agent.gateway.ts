@@ -8,6 +8,10 @@ export class UnknownCallError extends Error {}
 export class VoiceUnavailableError extends Error {}
 /** The recording cannot be used (unreadable, silent, too short); the message is safe to show. */
 export class BadAudioError extends Error {}
+/** A request the quality agent refused (nothing to review, not two channels...); the message is safe to show. */
+export class RejectedError extends Error {}
+/** The feature needs the real Python agents (AGENTS_MODE=http); the demo data cannot do it. */
+export class NeedsRealAgentsError extends Error {}
 
 /**
  * Single entry point from the web layer to the seven agents. The UI never talks to an agent directly,
@@ -29,7 +33,15 @@ export abstract class AgentGateway {
   abstract schedule(): Promise<m.SchedulePlan>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
-  abstract recentReviews(): Promise<m.QualityReview[]>;
+  abstract recentReviews(advisor?: string): Promise<m.QualityReview[]>;
+  abstract qualityReview(callId: string): Promise<m.QualityReview | null>;
+  abstract qualityAnalytics(): Promise<m.QualityAnalytics>;
+  /** Score a live call (a customer simulator session). Throws UnknownCallError, RejectedError or NeedsRealAgentsError. */
+  abstract reviewCall(callId: string, advisor: string): Promise<m.QualityReview>;
+  /** Score a two-channel recording (advisor left, customer right). Throws BadAudioError, RejectedError, VoiceUnavailableError or NeedsRealAgentsError. */
+  abstract reviewAudio(audio: Buffer, advisor: string): Promise<m.QualityReview>;
+  /** A two-channel example call (WAV). */
+  abstract sampleCall(): Promise<Buffer>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
   abstract scenarios(): Promise<m.Scenario[]>;
   abstract opportunities(): Promise<m.Opportunity[]>;

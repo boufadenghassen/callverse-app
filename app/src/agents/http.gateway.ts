@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AgentDownError, BadAudioError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
+import { AgentDownError, BadAudioError, RejectedError, UnknownCallError, VoiceUnavailableError } from './agent.gateway';
 import { MockAgentGateway } from './mock.gateway';
 import * as m from './models';
 
@@ -61,6 +61,48 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (res.status === 400) throw new BadAudioError(((await res.json().catch(() => ({}))) as { detail?: string }).detail ?? 'Could not use this recording.');
     if (!res.ok) throw new AgentDownError(`/voice/transcribe answered ${res.status}`);
     return (await res.json()) as m.Transcript;
+  }
+  recentReviews(advisor?: string) { return this.call<m.QualityReview[]>(`/quality/reviews?limit=20${advisor ? `&advisor=${encodeURIComponent(advisor)}` : ''}`); }   // not cached: a new review must show at once
+  async qualityReview(callId: string) {
+    try { return await this.call<m.QualityReview>(`/quality/reviews/${encodeURIComponent(callId)}`); } catch (e) { if (e instanceof AgentDownError && /answered 404/.test(e.message)) return null; throw e; }
+  }
+  qualityAnalytics() { return this.call<m.QualityAnalytics>('/quality/analytics'); }
+  async reviewCall(callId: string, advisor: string) {
+    const res = await this.raw('/quality/review-call', { callId, advisor });
+    if (res.status === 404) throw new UnknownCallError(callId);
+    return this.review(res);
+  }
+  async reviewAudio(audio: Buffer, advisor: string) {
+    const res = await this.raw(`/quality/review-audio?advisor=${encodeURIComponent(advisor)}`, audio);
+    if (res.status === 503) throw new VoiceUnavailableError('the speech-to-text model is not installed');
+    return this.review(res);
+  }
+  async sampleCall() {
+    const res = await this.raw('/quality/sample-call.wav');
+    if (res.status === 503) throw new VoiceUnavailableError('the neural voice is not installed');
+    if (!res.ok) throw new AgentDownError(`sample call answered ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
+  /** A request whose answer can be a refusal with a message (400, 422) or a long wait (speech to text on a recording). */
+  private async raw(path: string, body?: unknown): Promise<Response> {
+    const binary = Buffer.isBuffer(body);
+    try {
+      return await fetch(this.base + path, {
+        method: body === undefined ? 'GET' : 'POST', signal: AbortSignal.timeout(180_000),
+        headers: { 'Content-Type': binary ? 'application/octet-stream' : 'application/json' },
+        body: body === undefined ? undefined : binary ? new Uint8Array(body as Buffer) : JSON.stringify(body),
+      });
+    } catch (e) {
+      throw new AgentDownError(String(e));
+    }
+  }
+  private async review(res: Response): Promise<m.QualityReview> {
+    if (res.status === 400 || res.status === 422) {
+      const detail = ((await res.json().catch(() => ({}))) as { detail?: string | unknown[] }).detail;
+      throw new BadAudioError(typeof detail === 'string' ? detail : 'This could not be reviewed.');
+    }
+    if (!res.ok) throw new AgentDownError(`quality agent answered ${res.status}`);
+    return (await res.json()) as m.QualityReview;
   }
   schedule() { return this.call<m.SchedulePlan>('/workforce/schedule', undefined, true); }
   routing() { return this.call<m.RoutingPlan>('/workforce/routing', undefined, true); }

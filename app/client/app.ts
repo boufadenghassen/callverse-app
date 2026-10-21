@@ -390,6 +390,19 @@
     };
     byId('live-say')!.addEventListener('submit', (e) => { e.preventDefault(); void sendAdvisor(text.value.trim()); });
 
+    // send the call to the quality queue (the quality analyst scores it from the transcript)
+    const reviewBtn = byId<HTMLButtonElement>('lv-review');
+    reviewBtn?.addEventListener('click', async () => {
+      if (!callId) return;
+      reviewBtn.disabled = true;
+      status.textContent = 'The quality analyst is reading the call…';
+      try {
+        const d = await post('/advisor/live/review', { id: callId });
+        status.textContent = `Sent: ${d.callId} scored ${d.overall}/100. Nour sees it in Quality reviews.`;
+      } catch (err) { status.textContent = (err as Error).message; }
+      reviewBtn.disabled = false;
+    });
+
     // voice notes: record, turn the recording into a 16 kHz WAV here in the page, let the speech-to-text agent write it down, then send it
     const toWav = async (blob: Blob): Promise<Blob> => {
       const ac = new AudioContext();
@@ -565,6 +578,26 @@
     scrub.value = String(peak);
     scrub.addEventListener('input', show);
     show();
+  }
+
+  // Quality: upload a two-channel recording; the page then opens the new review
+  const audioForm = byId<HTMLFormElement>('audio-form');
+  if (audioForm) {
+    const file = byId<HTMLInputElement>('rec-file')!, who = byId<HTMLInputElement>('rec-advisor')!, status = byId('audio-status')!;
+    audioForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = file.files?.[0];
+      if (!f) return;
+      if (f.size > 10_000_000) { status.textContent = 'This recording is larger than 10 MB. Cut it or compress it first.'; return; }
+      status.textContent = 'Listening to both sides of the call… a minute of speech takes a few seconds.';
+      try {
+        const res = await fetch(`/quality/audio?advisor=${encodeURIComponent(who.value.trim())}`, { method: 'POST', body: f, headers: { 'Content-Type': f.type || 'application/octet-stream', 'X-CSRF-Token': audioForm.dataset.csrf! } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { status.textContent = data.error ?? 'Something went wrong.'; return; }
+        status.textContent = `Scored ${data.overall}/100. Opening the review…`;
+        location.href = `/quality?call=${encodeURIComponent(data.callId)}#${data.callId}`;
+      } catch { status.textContent = 'The app could not be reached. Try again.'; }
+    });
   }
 
   // Quality: pins on the call timeline reveal the evidence and highlight the criterion row

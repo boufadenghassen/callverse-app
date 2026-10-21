@@ -338,6 +338,6 @@ def review(turns: list[dict], advisor_name: str, call_id: str, source: str = "ap
         callId=call_id, advisor=advisor_name, overall=overall(scores), criteria=criteria, counterfactual=counterfactual(issues, scores),
         source=source, date=date, durationSec=round(turns[-1]["end"]), intent=intents[0] if intents else "Other", moodSource=mood_source,
         errors=sorted(({k: v for k, v in f.items()} for f in issues), key=lambda f: (-f["points"], f["turn"])),
-        strengths=[dict(timestamp=g["timestamp"], text=g["text"], rule=g["rule"]) for g in good], coaching=coaching, turns=turns,
+        strengths=[dict(turn=g["turn"], timestamp=g["timestamp"], text=g["text"], rule=g["rule"]) for g in good], coaching=coaching, turns=turns,
         moodCurve=[[t["start"], t["mood"]] for t in turns if t["speaker"] == "customer"],
     )
