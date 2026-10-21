@@ -14,7 +14,8 @@ It scores a call on five criteria (accuracy, compliance, communication, resoluti
 | `seed.py` | Fills an empty store with 84 simulated calls from six advisors, each scored by the real engine |
 | `audio.py` | Two-channel recording (advisor left, customer right) to a scored review: cut at silences, Whisper per segment, emotion model for the customer's mood |
 | `evaluation.py`, `eval_cases*.py` | Measured accuracy on 213 hand-labelled calls (122 development, 91 held-out test) |
-| `tests/test_quality.py` | The agent's tests |
+| `labelling/` | Human-agreement study: blind labelling sheet and the script that scores it (see its README) |
+| `tests/` | The agent's tests |
 | `requirements.txt` | Optional: `sentence-transformers` for the semantic opinion |
 
 ## Endpoints (in `../main.py`)
