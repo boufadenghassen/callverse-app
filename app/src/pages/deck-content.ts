@@ -73,7 +73,7 @@ export const PERSONAS: DeckPersona[] = [
     ['Coaching', 'Coaching recommendations per advisor', 'Strength and weakness detection',
       'Medium', 'Medium', 'High', 'PROTOTYPE', 'LIVE', 'The coaching hint on each review.'],
     ['Quality analytics', 'Advisor history, evolution and benchmarking', 'Frequent errors and root causes',
-      'Medium', 'Medium', 'Medium', 'PROTOTYPE', 'ROADMAP', 'Not built yet.']]),
+      'Medium', 'Medium', 'Medium', 'PROTOTYPE', 'LIVE', 'Team analytics: 8-week trend per advisor, frequent errors, root causes and a coaching plan (simulated history).']]),
   persona({ key: 'training', accent: 'p-training', initials: 'RA', name: 'Rim Ayari', role: 'The Training Lead', agent: 'Training Agent',
       needsRole: 'TRAINER', url: '/training', quote: 'I want new advisors to fail safely in training, not live with a real customer.', topPain: 'Manual role-play',
       hmw: 'How might we let advisors practise any situation safely before facing it live?', techniques: ['LLM scenarios', 'Templates', 'Replay', 'What-if', 'QA links'] }, [
