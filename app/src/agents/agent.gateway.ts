@@ -25,6 +25,8 @@ export abstract class AgentGateway {
   abstract transcribe(audio: Buffer): Promise<m.Transcript>;
   /** Skill-based reassignment of advisors between queues for the hours still to come today. */
   abstract routing(): Promise<m.RoutingPlan>;
+  /** Lunch breaks and overtime for a typical day. */
+  abstract schedule(): Promise<m.SchedulePlan>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;

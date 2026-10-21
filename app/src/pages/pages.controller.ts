@@ -70,7 +70,7 @@ export class PagesController {
 
   private async workforcePage(queue: string, form: object, errors: Record<string, string> = {}, result: object | null = null) {
     const hours = await this.agents.forecast(queue);
-    return { queue, form, errors, result, hours, chart: lineChart(hours, CHART_W, CHART_H), plan: await this.agents.routing() };
+    return { queue, form, errors, result, hours, chart: lineChart(hours, CHART_W, CHART_H), plan: await this.agents.routing(), schedule: await this.agents.schedule() };
   }
 
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------

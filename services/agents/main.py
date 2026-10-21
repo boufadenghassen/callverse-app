@@ -16,6 +16,7 @@ import customer
 import stt
 import voice
 import routing
+import scheduling
 import workforce
 
 
@@ -129,3 +130,9 @@ def workforce_simulate(body: SimulateIn):
 def workforce_routing():
     """Who should work which queue for the rest of the day: ranked moves per hour, checked by a simulation."""
     return routing.plan()
+
+
+@app.get("/workforce/schedule")
+def workforce_schedule():
+    """Lunch plan for a typical day (naive: everybody at noon, against a planned spread) and the overtime still needed."""
+    return scheduling.plan()

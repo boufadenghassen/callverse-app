@@ -510,3 +510,13 @@ test('workforce routing: a plan with moves and its explanation, readable aloud',
   assert.match(await page.locator('.toast').first().innerText(), /nothing was changed/);
   await ctx.close();
 });
+
+test('workforce breaks and shifts: a lunch plan per queue and the overtime still needed', async () => {
+  const { ctx, page } = await signIn('sana');
+  await page.goto(`${BASE}/workforce`);
+  const sec = page.locator('section[aria-labelledby=breaks]');
+  assert.match(await sec.locator('p.result').innerText(), /Everybody at noon: \d+% of calls answered within 20 s\. Lunches spread out: \d+%/);
+  assert.equal(await sec.locator('table tbody tr:visible').count(), 5, 'all five queues');
+  assert.ok(await sec.locator('table thead th').count() >= 7, 'one column per lunch hour');
+  await ctx.close();
+});

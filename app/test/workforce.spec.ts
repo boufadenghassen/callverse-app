@@ -47,19 +47,26 @@ test('the workforce page shows the routing and allocation plan with its moves', 
   assert.match(html, /Routing and allocation/);
   assert.match(html, /Move C02/);
   assert.match(html, /Apply the moves/);
+  assert.match(html, /Breaks and shifts/);
+  assert.match(html, /Lunches spread out/);
 });
 
-test('the http gateway fetches the routing plan from the Python workforce agent', async () => {
+test('the http gateway fetches the routing plan and the lunch schedule from the Python workforce agent', async () => {
+  const seen: string[] = [];
   const fake = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(req.url === '/workforce/routing' ? '{"baselineSla":0.68,"optimizedSla":0.72,"moves":3,"hours":[],"method":"Local search"}' : '{}');
+    seen.push(req.url!);
+    res.end(req.url === '/workforce/routing' ? '{"baselineSla":0.68,"optimizedSla":0.72,"moves":3,"hours":[],"method":"Local search"}' : '{"plannedSla":0.85}');
   });
   await new Promise<void>((ok) => fake.listen(0, ok));
   process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
   try {
-    const plan = await new HttpAgentGateway().routing();
+    const gw = new HttpAgentGateway();
+    const plan = await gw.routing();
     assert.equal(plan.optimizedSla, 0.72);
     assert.equal(plan.moves, 3);
+    assert.equal((await gw.schedule()).plannedSla, 0.85);
+    assert.deepEqual(seen, ['/workforce/routing', '/workforce/schedule']);
   } finally {
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();

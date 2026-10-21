@@ -55,6 +55,15 @@ export class MockAgentGateway extends AgentGateway {
     throw new VoiceUnavailableError('demo mode has no neural voice');
   }
 
+  async schedule(): Promise<m.SchedulePlan> {
+    return {
+      baselineSla: 0.82, plannedSla: 0.85, idealSla: 0.77, overtimeHours: 1, method: 'Demo data: the real workforce agent places lunches with Erlang C.',
+      queues: [{ queue: 'A', name: 'Billing', advisors: 10, onLunch: 8, idealSla: 0.73, baselineSla: 0.81, plannedSla: 0.82, worstBaseline: { hour: '12h', sla: 0.5 }, worstPlanned: { hour: '13h', sla: 0.59 },
+        lunchHours: [{ hour: '11h', naive: 0, planned: 2, onDuty: 8 }, { hour: '12h', naive: 8, planned: 2, onDuty: 9 }, { hour: '13h', naive: 0, planned: 3, onDuty: 10 }, { hour: '14h', naive: 0, planned: 1, onDuty: 10 }] }],
+      overtime: [{ queue: 'A', hour: '13h', advisors: 1, sla: 0.59, calls: 73, text: 'Queue A at 13h: 1 advisor on overtime for that hour (demo data).' }],
+    };
+  }
+
   async routing(): Promise<m.RoutingPlan> {
     const q = (queue: string, name: string, calls: number, advisors: number, recommended: number, b: number, r: number): m.RoutingQueue =>
       ({ queue, name, calls, priority: 1, advisors, recommended, baselineSla: b, recommendedSla: r, baselineWaitSec: 0, recommendedWaitSec: 0 });

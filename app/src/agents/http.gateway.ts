@@ -62,6 +62,7 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (!res.ok) throw new AgentDownError(`/voice/transcribe answered ${res.status}`);
     return (await res.json()) as m.Transcript;
   }
+  schedule() { return this.call<m.SchedulePlan>('/workforce/schedule', undefined, true); }
   routing() { return this.call<m.RoutingPlan>('/workforce/routing', undefined, true); }
   forecast(queue: string) { return this.call<m.ForecastPoint[]>(`/workforce/forecast?queue=${encodeURIComponent(queue)}`, undefined, true); }
   simulate(r: m.SimulationRequest) { return this.call<m.SimulationResult>('/workforce/simulate', r); }

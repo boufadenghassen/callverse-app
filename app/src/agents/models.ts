@@ -9,6 +9,12 @@ export interface RoutingMove { advisor: string; skills: string[]; fromQueue: str
 export interface RoutingHour { hour: string; queues: RoutingQueue[]; moves: RoutingMove[] }
 /** Who should work which queue for the rest of the day. `simulated` is the independent check by a discrete-event simulation. */
 export interface RoutingPlan { baselineSla: number; optimizedSla: number; moves: number; hours: RoutingHour[]; method: string; simulated?: { baselineSla: number; optimizedSla: number; replications: number } }
+export interface LunchHour { hour: string; naive: number; planned: number; onDuty: number }
+export interface WorstHour { hour: string; sla: number }
+export interface ScheduleQueue { queue: string; name: string; advisors: number; onLunch: number; lunchHours: LunchHour[]; idealSla: number; baselineSla: number; plannedSla: number; worstBaseline: WorstHour; worstPlanned: WorstHour }
+export interface Overtime { queue: string; hour: string; advisors: number; sla: number; calls: number; text: string }
+/** Lunch plan for a typical day (everybody at noon against a planned spread) and the overtime still needed. */
+export interface SchedulePlan { baselineSla: number; plannedSla: number; idealSla: number; queues: ScheduleQueue[]; overtime: Overtime[]; overtimeHours: number; method: string }
 /** A live call with the simulated customer: `moveLabel` says how the customer's agent read the advisor's last reply. */
 export interface CallConfig { persona: string; mix: string | null; difficulty: string; intent: string; memory: boolean }
 export interface CallStart { id: string; persona: string; opening: string; mood: number; patience: number }

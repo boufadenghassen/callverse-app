@@ -215,3 +215,37 @@ def test_the_routing_endpoint():
     body = r.json()
     assert [h["hour"] for h in body["hours"]] == ["14h", "15h", "16h", "17h"] and "method" in body
     assert all(set(q) >= {"queue", "advisors", "recommended", "baselineSla", "recommendedSla"} for q in body["hours"][0]["queues"])
+
+
+import scheduling  # noqa: E402
+
+
+def test_every_eligible_advisor_gets_exactly_one_lunch_inside_the_shift():
+    for q in "ABCDE":
+        pq = scheduling.plan_queue(q)
+        lunch = pq["_lunch"]
+        shifts = scheduling.shifts(q)
+        assert set(lunch) == {i for i, s in enumerate(shifts) if len(s) >= scheduling.MIN_SHIFT_HOURS and any(h in s for h in scheduling.LUNCH_HOURS)}
+        assert all(h in scheduling.LUNCH_HOURS and h in shifts[i] for i, h in lunch.items())     # inside the lunch window and the advisor's own shift
+        assert sum(x["planned"] for x in pq["lunchHours"]) == sum(x["naive"] for x in pq["lunchHours"]) == len(lunch)
+        for x in pq["lunchHours"]:
+            assert x["planned"] <= x["onDuty"]
+
+
+def test_the_planned_lunches_beat_everybody_at_noon():
+    p = scheduling.plan()
+    assert p["plannedSla"] >= p["baselineSla"]
+    for q in p["queues"]:
+        assert q["plannedSla"] >= q["baselineSla"] - 1e-9, q["queue"]
+        assert q["worstPlanned"]["sla"] >= q["worstBaseline"]["sla"], q["queue"]                # the worst hour is never worse than with everybody at noon
+    assert max(x["naive"] for q in p["queues"] for x in q["lunchHours"]) > max(x["planned"] for q in p["queues"] for x in q["lunchHours"])   # noon is no longer a stampede
+    assert all(o["advisors"] >= 1 and o["sla"] < 0.8 for o in p["overtime"])
+    assert scheduling.plan() is scheduling.plan()
+
+
+def test_the_schedule_endpoint():
+    r = client.get("/workforce/schedule")
+    assert r.status_code == 200
+    body = r.json()
+    assert {"baselineSla", "plannedSla", "queues", "overtime", "overtimeHours", "method"} <= set(body)
+    assert len(body["queues"]) == 5 and all("_lunch" not in q for q in body["queues"])
