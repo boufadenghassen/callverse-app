@@ -203,3 +203,110 @@ def test_recordings_that_cannot_be_reviewed_are_refused_kindly():
     sf.write(silent, np.zeros((16000, 2), dtype="float32"), 16000, format="WAV")
     assert client.post("/quality/review-audio", content=silent.getvalue(), headers={"Content-Type": "audio/wav"}).status_code == 400
     assert client.post("/quality/review-audio", content=b"").status_code == 400
+
+
+# ---- how accurate is the analyst? (quality_eval.py; the calls are hand-labelled, see quality_eval_cases*.py) ----
+import quality_eval  # noqa: E402
+
+
+def test_the_analyst_stays_accurate_on_calls_it_was_never_tuned_on():
+    test = quality_eval.evaluate("test")
+    assert test["cases"] >= 80 and test["judgements"] >= 85
+    assert test["precision"] >= 0.95 and test["recall"] >= 0.95 and test["f1"] >= 0.95, test["mistakes"]
+    dev = quality_eval.evaluate("dev")
+    assert dev["f1"] >= 0.94, dev["mistakes"]
+    assert abs(dev["f1"] - test["f1"]) < 0.06                          # no sign of fitting the development calls too closely
+
+
+def test_the_keyword_rules_alone_are_still_good_and_the_semantic_second_opinion_is_never_worse_on_recall(monkeypatch):
+    if not quality.SEMANTIC:
+        pytest.skip("the sentence-embedding model is not in the cache")
+    with_sem = quality_eval.evaluate("test")
+    monkeypatch.setattr(quality, "SEMANTIC", False)
+    keywords = quality_eval.evaluate("test")
+    assert keywords["f1"] >= 0.93
+    assert with_sem["recall"] >= keywords["recall"] - 1e-9
+
+
+def test_a_denied_or_conditional_move_does_not_count_but_a_promise_next_to_a_denial_does():
+    flags = quality.turn_flags
+    assert "PROMISE" not in flags("I'm not able to promise a refund before I review the rules.")
+    assert "PROMISE" not in flags("If the check passes, the money will be returned to you.")
+    assert "TRANSFER" not in flags("I can fix this myself, no need to transfer you.")
+    assert "PROMISE" in flags("I will refund you right away, 120 TND, I guarantee it will not happen again.")
+    assert "GUARANTEE" in flags("I guarantee it will not happen again.") and "GUARANTEE" not in flags("I hope this will not happen again.")
+
+
+def test_every_rule_is_judged_by_at_least_three_labelled_calls():
+    judged = {r["rule"]: r["judged"] for r in quality_eval.evaluate()["rules"]}
+    assert set(judged) == set(quality.RULES)
+    assert min(judged.values()) >= 3, judged
+
+
+def test_the_evaluation_endpoint_reports_per_rule_numbers_and_the_known_mistakes():
+    r = client.get("/quality/evaluation").json()
+    assert r["test"]["split"] == "test" and r["dev"]["split"] == "dev" and len(r["journey"]) == 4 and r["limits"]
+    assert r["test"]["f1"] >= 0.95 and {x["rule"] for x in r["test"]["rules"]} <= set(quality.RULES)
+    assert all(m["kind"] in ("missed", "false alarm") and m["text"] for m in r["test"]["mistakes"] + r["dev"]["mistakes"])
+    assert r["semantic"] == quality.SEMANTIC
+
+
+def test_a_human_reviewer_can_confirm_or_dispute_a_finding_and_disputed_findings_stop_counting():
+    r = client.post("/quality/review", json={"advisor": "Karim B.", "turns": [{"speaker": t["speaker"], "text": t["text"], "start": t["start"], "mood": t["mood"]} for t in BAD]}).json()
+    cid, first = r["callId"], r["errors"][0]
+    comp = next(e for e in r["errors"] if e["rule"] == "promise_before_check")
+    post = lambda **kw: client.post("/quality/feedback", json={"callId": cid, "by": "nour", **kw})
+    # agreeing changes nothing in the score
+    ok = post(rule=comp["rule"], turn=comp["turn"], verdict="agree").json()
+    assert ok["overall"] == r["overall"] and next(e for e in ok["errors"] if e["rule"] == comp["rule"])["verdict"] == "agree" and "adjusted" not in ok
+    # disputing leaves the finding out: the compliance score rises by its points and the overall score follows
+    adj = post(rule=comp["rule"], turn=comp["turn"], verdict="disagree").json()
+    lost = sum(e["points"] for e in r["errors"] if e["criterion"] == "Compliance")           # the score is floored at 0, so work from the points
+    assert adj["adjusted"] and adj["originalOverall"] == r["overall"] and adj["overall"] > r["overall"]
+    assert next(c for c in adj["criteria"] if c["name"] == "Compliance")["score"] == max(0, 10 - (lost - comp["points"]))
+    assert client.get(f"/quality/reviews/{cid}").json()["overall"] == adj["overall"]                      # it stays adjusted when read again
+    assert client.get("/quality/reviews").json()[0]["overall"] == adj["overall"]
+    # the verdict can be taken back
+    back = post(rule=comp["rule"], turn=comp["turn"], verdict="clear").json()
+    assert back["overall"] == r["overall"] and "adjusted" not in back
+    # unknown findings and bad input are refused
+    assert post(rule="no_such_rule", turn=0, verdict="agree").status_code == 404
+    assert post(rule=comp["rule"], turn=99, verdict="agree").status_code == 404
+    assert post(rule=comp["rule"], turn=comp["turn"], verdict="maybe").status_code == 422
+    assert client.post("/quality/feedback", json={"callId": "bad", "rule": "x", "turn": 0, "verdict": "agree"}).status_code == 422
+
+
+def test_the_agreement_between_the_reviewer_and_the_analyst_is_counted_per_rule():
+    quality_store.ensure_history()
+    assert client.get("/quality/analytics").json()["agreement"]["judged"] == 0
+    first = quality_store.recent(2)
+    a, b = first[0], first[1]
+    ea, eb = a["errors"][0], b["errors"][0]
+    for call, e, verdict in ((a, ea, "agree"), (b, eb, "disagree")):
+        assert client.post("/quality/feedback", json={"callId": call["callId"], "rule": e["rule"], "turn": e["turn"], "verdict": verdict, "by": "nour"}).status_code == 200
+    ag = client.get("/quality/analytics").json()["agreement"]
+    assert (ag["judged"], ag["agree"], ag["disagree"], ag["rate"]) == (2, 1, 1, 0.5)
+    assert {x["rule"] for x in ag["byRule"]} == {ea["rule"], eb["rule"]}
+
+
+def test_reviews_can_be_filtered_by_advisor_rule_and_score():
+    quality_store.ensure_history()
+    everything = client.get("/quality/reviews", params={"limit": 100}).json()
+    karim = client.get("/quality/reviews", params={"limit": 100, "advisor": "Karim B."}).json()
+    assert len(everything) == 84 and 0 < len(karim) < 84 and all(r["advisor"] == "Karim B." for r in karim)
+    rule = quality.RULES and "no_identity_check"
+    with_rule = client.get("/quality/reviews", params={"limit": 100, "rule": rule}).json()
+    assert with_rule and all(any(e["rule"] == rule for e in r["errors"]) for r in with_rule)
+    low = client.get("/quality/reviews", params={"limit": 100, "below": 70}).json()
+    assert low and all(r["overall"] < 70 for r in low) and len(low) < len(everything)
+    both = client.get("/quality/reviews", params={"limit": 100, "below": 70, "rule": rule, "advisor": "Rania K."}).json()
+    assert all(r["overall"] < 70 and r["advisor"] == "Rania K." for r in both)
+    assert client.get("/quality/reviews", params={"rule": "Robert'); DROP"}).status_code == 422
+    assert client.get("/quality/reviews", params={"below": 0}).status_code == 422
+    assert {x["rule"] for x in client.get("/quality/analytics").json()["rules"]} == set(quality.RULES)
+    # a disputed finding no longer puts the call in the filter
+    c = with_rule[0]
+    e = next(e for e in c["errors"] if e["rule"] == rule)
+    client.post("/quality/feedback", json={"callId": c["callId"], "rule": rule, "turn": e["turn"], "verdict": "disagree", "by": "nour"})
+    again = client.get("/quality/reviews", params={"limit": 100, "rule": rule}).json()
+    assert c["callId"] not in {r["callId"] for r in again} or any(x["rule"] == rule and x["turn"] != e["turn"] for r in again if r["callId"] == c["callId"] for x in r["errors"])

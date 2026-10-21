@@ -16,6 +16,7 @@ import advisor
 import customer
 import quality
 import quality_audio
+import quality_eval
 import quality_store
 import stt
 import voice
@@ -204,8 +205,10 @@ async def quality_review_audio(req: Request, advisor_name: str = Query("Unknown 
 
 
 @app.get("/quality/reviews")
-def quality_reviews(limit: int = Query(20, ge=1, le=100), advisor_name: str | None = Query(None, alias="advisor", max_length=60)):
-    return quality_store.recent(limit, advisor_name)
+def quality_reviews(limit: int = Query(20, ge=1, le=100), advisor_name: str | None = Query(None, alias="advisor", max_length=60),
+                    rule: str | None = Query(None, pattern=r"^[a-z_]{3,30}$"), below: int | None = Query(None, ge=1, le=101)):
+    """Latest reviews. Filters: `advisor`, `rule` (calls where it fired and was not disputed), `below` (overall score under this number)."""
+    return quality_store.recent(limit, advisor_name, rule, below)
 
 
 @app.get("/quality/reviews/{call_id}")
@@ -228,3 +231,27 @@ async def quality_sample_call():
     if not voice.available():
         raise HTTPException(503, "The neural voice is not installed (see services/agents/README.md).")
     return Response(await run_in_threadpool(quality_audio.sample_call), media_type="audio/wav", headers={"Content-Disposition": 'attachment; filename="sample-call.wav"'})
+
+
+@app.get("/quality/evaluation")
+def quality_evaluation():
+    """How accurate the analyst is: precision and recall per rule on hand-labelled calls, development and held-out test."""
+    return quality_eval.report()
+
+
+class FeedbackIn(BaseModel):
+    callId: str = Field(pattern=r"^CALL-\d{4,6}$")
+    rule: str = Field(max_length=40)
+    turn: int = Field(ge=0, le=1000)
+    verdict: Literal["agree", "disagree", "clear"]
+    by: str = Field("reviewer", min_length=1, max_length=40)
+
+
+@app.post("/quality/feedback")
+def quality_feedback(body: FeedbackIn):
+    """A human reviewer's verdict on one finding: it is an error (agree) or not (disagree). Disputed findings stop counting in the score."""
+    found = quality_store.get(body.callId)
+    if not found or not any(e["rule"] == body.rule and e["turn"] == body.turn for e in found["errors"]):
+        raise HTTPException(404, "No such finding.")
+    quality_store.set_feedback(body.callId, body.rule, body.turn, body.verdict, body.by)
+    return quality_store.get(body.callId)

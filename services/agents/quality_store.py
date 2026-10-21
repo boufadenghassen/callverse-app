@@ -25,6 +25,7 @@ def _conn() -> sqlite3.Connection:
     c = sqlite3.connect(db_path())
     c.execute("create table if not exists calls (call_id text primary key, advisor text not null, source text, created text not null, intent text, overall integer, review text not null)")
     c.execute("create index if not exists calls_advisor on calls(advisor)")
+    c.execute("create table if not exists feedback (call_id text not null, rule text not null, turn integer not null, verdict text not null, by text, created text, primary key (call_id, rule, turn))")
     return c
 
 
@@ -42,19 +43,56 @@ def save(review: dict, created: str | None = None) -> dict:
     return review
 
 
+def set_feedback(call_id: str, rule: str, turn: int, verdict: str, by: str) -> None:
+    """A human's verdict on one finding: 'agree' (it is an error) or 'disagree' (it is not); 'clear' removes the verdict."""
+    with _conn() as c:
+        if verdict == "clear":
+            c.execute("delete from feedback where call_id = ? and rule = ? and turn = ?", (call_id, rule, turn))
+        else:
+            c.execute("insert or replace into feedback values (?,?,?,?,?,?)", (call_id, rule, turn, verdict, by, dt.datetime.now().replace(microsecond=0).isoformat()))
+
+
+def _feedback(call_ids: list[str] | None = None) -> dict[str, dict[tuple[str, int], str]]:
+    with _conn() as c:
+        rows = c.execute("select call_id, rule, turn, verdict from feedback").fetchall()
+    out: dict[str, dict[tuple[str, int], str]] = {}
+    for cid, rule, turn, verdict in rows:
+        if call_ids is None or cid in call_ids:
+            out.setdefault(cid, {})[(rule, turn)] = verdict
+    return out
+
+
+def _adjusted(review: dict, fb: dict[tuple[str, int], str] | None) -> dict:
+    """The stored review as the human reviewer left it: each finding shows its verdict, and disputed findings no longer count."""
+    if not fb:
+        return review
+    review = dict(review)
+    review["errors"] = [dict(e, verdict=fb.get((e["rule"], e["turn"]))) for e in review["errors"]]
+    disputed = {k for k, v in fb.items() if v == "disagree"}
+    return q.rescore(review, disputed) if disputed else review
+
+
 def get(call_id: str) -> dict | None:
     with _conn() as c:
         row = c.execute("select review from calls where call_id = ?", (call_id,)).fetchone()
-    return json.loads(row[0]) if row else None
+    return _adjusted(json.loads(row[0]), _feedback([call_id]).get(call_id)) if row else None
 
 
-def recent(limit: int = 20, advisor: str | None = None) -> list[dict]:
+def recent(limit: int = 20, advisor: str | None = None, rule: str | None = None, below: int | None = None) -> list[dict]:
+    """The latest reviews, newest first, as the human reviewer left them. Filters: one advisor, calls where a rule fired, calls scoring below a number."""
     sql, args = "select review from calls", []
     if advisor:
         sql, args = sql + " where advisor = ?", [advisor]
     with _conn() as c:
-        rows = c.execute(sql + " order by created desc, call_id desc limit ?", args + [limit]).fetchall()
-    return [json.loads(r[0]) for r in rows]
+        rows = c.execute(sql + " order by created desc, call_id desc" + ("" if rule or below else " limit ?"), args + ([] if rule or below else [limit])).fetchall()
+    reviews = [json.loads(r[0]) for r in rows]
+    fb = _feedback([r["callId"] for r in reviews])
+    reviews = [_adjusted(r, fb.get(r["callId"])) for r in reviews]
+    if rule:
+        reviews = [r for r in reviews if any(e["rule"] == rule and e.get("verdict") != "disagree" for e in r["errors"])]
+    if below:
+        reviews = [r for r in reviews if r["overall"] < below]
+    return reviews[:limit]
 
 
 def count() -> int:
@@ -64,7 +102,9 @@ def count() -> int:
 
 def _rows() -> list[tuple[str, str, dict]]:
     with _conn() as c:
-        return [(r[0], r[1], json.loads(r[2])) for r in c.execute("select created, advisor, review from calls order by created")]
+        rows = [(r[0], r[1], json.loads(r[2])) for r in c.execute("select created, advisor, review from calls order by created")]
+    fb = _feedback()
+    return [(created, advisor, _adjusted(review, fb.get(review["callId"]))) for created, advisor, review in rows]       # the analytics use the human-checked scores
 
 
 def ensure_history() -> None:
@@ -88,12 +128,24 @@ def _week(created: str, today: dt.date) -> int:
     return min(WEEKS - 1, max(0, (today - dt.date.fromisoformat(created[:10])).days // 7))
 
 
+def agreement() -> dict:
+    """How often the human reviewer agrees with the analyst's findings, overall and per rule (only findings somebody looked at count)."""
+    fb = _feedback()
+    per: dict[str, list[int]] = {}
+    for verdicts in fb.values():
+        for (rule, _turn), v in verdicts.items():
+            per.setdefault(rule, [0, 0])[0 if v == "agree" else 1] += 1
+    agree, disagree = sum(a for a, _ in per.values()), sum(d for _, d in per.values())
+    return dict(judged=agree + disagree, agree=agree, disagree=disagree, rate=round(agree / (agree + disagree), 2) if agree + disagree else None,
+                byRule=sorted((dict(rule=r, label=q.RULE_LABELS[r], agree=a, disagree=d) for r, (a, d) in per.items()), key=lambda x: -x["disagree"]))
+
+
 def analytics(today: dt.date | None = None) -> dict:
     today = today or dt.date.today()
     rows = _rows()
     reviews = [r for _, _, r in rows]
     if not reviews:
-        return dict(team=None, advisors=[], method=METHOD)
+        return dict(team=None, advisors=[], agreement=agreement(), rules=[dict(rule=r, label=q.RULE_LABELS[r]) for r in q.RULES], method=METHOD)
     team_avg = _avg(r["overall"] for r in reviews)
 
     def by_criterion(rs):
@@ -136,7 +188,7 @@ def analytics(today: dt.date | None = None) -> dict:
             strongest=dict(criterion=strongest[0], avg=strongest[1]), topErrors=errs, coaching=coaching, lastCalls=[r["callId"] for r in rs[-3:]][::-1],
         ))
     advisors.sort(key=lambda a: a["avgOverall"])
-    return dict(team=team, advisors=advisors, method=METHOD)
+    return dict(team=team, advisors=advisors, agreement=agreement(), rules=[dict(rule=r, label=q.RULE_LABELS[r]) for r in q.RULES], method=METHOD)
 
 
 METHOD = ("Every call is scored by the rule-based quality analyst; the averages here are over the stored calls. Root cause = the kind of rule that fired "

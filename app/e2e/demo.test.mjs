@@ -606,3 +606,68 @@ test('quality: a mono recording is refused with a clear message', async (t) => {
   assert.match(page.url(), /\/quality$/, 'the page stays where it is');
   await ctx.close();
 });
+
+test('quality: the page says how accurate the analyst is, rule by rule, with its known mistakes', async (t) => {
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  const acc = page.locator('section[aria-labelledby=acc]');
+  if (!(await acc.count())) { await ctx.close(); return t.skip('the demo data has no accuracy report'); }
+  assert.match(await acc.locator('.result').innerText(), /hand-labelled calls that were never used to tune it/);
+  assert.match(await acc.locator('.result').innerText(), /\d+%\s*of the time \(precision\)/);
+  await acc.locator('summary', { hasText: 'Rule by rule' }).click();
+  assert.ok(await acc.locator('table tbody tr:visible').count() >= 15, 'every rule has a row');
+  await acc.locator('summary', { hasText: 'How it was measured' }).click();
+  assert.match(await acc.innerText(), /never looked at/);
+  await acc.locator('summary', { hasText: 'Known mistakes' }).click();
+  assert.ok(await acc.locator('details').last().locator('li').count() >= 1, 'the mistakes are listed, not hidden');
+  await ctx.close();
+});
+
+test('quality: a reviewer can dispute a finding (the score follows) and take the verdict back', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  // a call where "no closing question" cost a point in a criterion that is not at its floor, so removing it must raise the score
+  const all = await (await fetch('http://localhost:8000/quality/reviews?limit=100')).json();
+  const pick = all.find((r) => !r.adjusted && r.errors.some((e) => e.rule === 'no_closing')
+    && r.errors.filter((e) => e.criterion === 'Resolution').reduce((n, e) => n + e.points, 0) <= 8);
+  assert.ok(pick, 'a suitable call exists in the history');
+  const id = pick.callId;
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality?call=${id}`);
+  const scoreOf = async () => Number((await page.locator(`article#${id} .score`).innerText()).split('/')[0]);
+  const before = await scoreOf();
+  const card = page.locator(`article#${id}`);
+  await card.locator('summary', { hasText: 'points were lost' }).click();
+  await card.locator('.lost li', { hasText: 'without a closing question' }).locator('button.fb[data-verdict="disagree"]').click();
+  await page.waitForSelector(`article#${id} .lost li.disputed`);                       // the page reloaded with the verdict applied...
+  assert.ok(await page.locator(`article#${id} details.lost`).first().evaluate((d) => d.open), '...and the list is open again')
+  assert.ok((await scoreOf()) > before, 'the disputed finding no longer costs points');
+  assert.match(await page.locator(`article#${id} .meta`).innerText(), /adjusted after review \(was \d+\)/);
+  const disputed = page.locator(`article#${id} .lost li.disputed`);
+  assert.equal(await disputed.count(), 1);
+  assert.match(await disputed.innerText(), /Left out of the score/);
+  assert.match(await page.locator('.agreement').innerText(), /checked \d+ findings/);
+  await disputed.locator('button.fb[data-verdict="disagree"]').click();          // the pressed button again takes the verdict back
+  await page.waitForFunction((i) => !document.querySelector(`#${i} .lost li.disputed`), id);
+  assert.equal(await scoreOf(), before);
+  await ctx.close();
+});
+
+test('quality: filters narrow the reviews by error and by score', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('nour');
+  await page.goto(`${BASE}/quality`);
+  await page.selectOption('#byrule', 'no_identity_check');
+  await page.selectOption('#below', '70');
+  await page.click('.filters-form button[type=submit]');
+  await page.waitForURL(/rule=no_identity_check&below=70/);
+  const cards = page.locator('article.review');
+  assert.ok(await cards.count() >= 1, 'some calls match');
+  for (const card of await cards.all()) {
+    assert.ok(Number((await card.locator('.score').innerText()).split('/')[0]) < 70);
+    assert.match(await card.locator('details.lost').first().textContent(), /before verifying the customer's identity/);
+  }
+  assert.equal(await page.locator('#byrule').inputValue(), 'no_identity_check');
+  await page.click('.filters-form a.btn-quiet');
+  await page.waitForURL(/\/quality$/);
+  await ctx.close();
+});

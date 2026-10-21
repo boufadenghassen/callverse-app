@@ -124,7 +124,15 @@ export class MockAgentGateway extends AgentGateway {
     throw new NeedsRealAgentsError('demo mode has no sample call');
   }
 
-  async recentReviews(_advisor?: string): Promise<m.QualityReview[]> {
+  async qualityEvaluation(): Promise<m.QualityEvaluation | null> {
+    return null;
+  }
+
+  async qualityFeedback(_callId: string, _rule: string, _turn: number, _verdict: 'agree' | 'disagree' | 'clear', _by: string): Promise<m.QualityReview> {
+    throw new NeedsRealAgentsError('demo mode keeps no verdicts');
+  }
+
+  async recentReviews(_filter?: m.ReviewFilter): Promise<m.QualityReview[]> {
     return [
       { callId: 'CALL-3381', advisor: 'Karim B.', overall: 62, criteria: [
           { name: 'Accuracy', score: 8, max: 10, evidence: 'Correct refund amount quoted', timestamp: '01:12' },

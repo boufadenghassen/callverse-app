@@ -1037,3 +1037,16 @@ table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4
 .qturn .qwho { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .qflag { font-size: .8125rem; font-weight: 600; } .qflag.lost-flag { color: var(--danger); } .qflag.good-flag { color: var(--ok); }
 .empty-state { text-align: center; color: var(--muted); padding: var(--s6) var(--s4); }
+
+/* Quality: verdicts, accuracy, print */
+.agreement { margin: 0 0 var(--s4); }
+.fb-group { display: inline-flex; gap: .35rem; margin-left: .5rem; vertical-align: baseline; }
+.fb { font-size: .8125rem; padding: .15rem .6rem; }
+.fb[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
+.lost li.disputed { opacity: .65; } .lost li.disputed q { text-decoration: line-through; }
+.filters-form label { font-weight: 600; }
+@media print {
+  .audio-form, #audio-status, .filters-form, .fb-group, .listen, .btn-quiet { display: none !important; }
+  .review, .panel { break-inside: avoid; box-shadow: none; }
+  details.lost, details.transcript { break-inside: avoid; }
+}

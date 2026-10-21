@@ -600,6 +600,28 @@
     });
   }
 
+  // Quality: Correct / Not an error on a finding (a second click takes the verdict back); the page reloads so the score and the criteria follow
+  const reopen = store.sget('qopen');
+  if (reopen) {
+    store.sdel('qopen');
+    const box = document.getElementById(reopen);
+    box?.querySelector('details.lost')?.setAttribute('open', '');
+    box?.scrollIntoView();
+  }
+  document.addEventListener('click', async (e) => {
+    const b = hit<HTMLButtonElement>(e, 'button.fb');
+    if (!b) return;
+    const verdict = b.getAttribute('aria-pressed') === 'true' ? 'clear' : b.dataset.verdict;
+    b.disabled = true;
+    try {
+      const res = await fetch('/quality/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({ callId: b.dataset.call, rule: b.dataset.rule, turn: Number(b.dataset.turn), verdict }) });
+      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Could not save the verdict.');
+      store.sset('qopen', b.dataset.call!);
+      location.reload();
+    } catch (err) { b.disabled = false; toast((err as Error).message); }
+  });
+
   // Quality: pins on the call timeline reveal the evidence and highlight the criterion row
   $$('.review').forEach((review) => {
     const read = $('.pin-read', review)!;

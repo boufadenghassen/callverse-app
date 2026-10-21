@@ -23,6 +23,10 @@
         {% if analytics.team.topErrors | length %}<p><strong>{{ (analytics.team.topErrors[0].share * 100) | round }}%</strong><span>of calls: {{ analytics.team.topErrors[0].label | lower }}</span></p>{% endif %}
         {% if analytics.team.causes | length %}<p><strong>{{ (analytics.team.causes[0].share * 100) | round }}%</strong><span>of errors: {{ analytics.team.causes[0].cause | lower }}</span></p>{% endif %}
       </div>
+      {% if analytics.agreement %}
+      <p class="muted agreement">{% if analytics.agreement.judged %}Nour checked <strong>{{ analytics.agreement.judged }}</strong> findings: <strong>{{ (analytics.agreement.rate * 100) | round }}%</strong> were right{% if analytics.agreement.byRule | length and analytics.agreement.byRule[0].disagree %}; the most disputed is “{{ analytics.agreement.byRule[0].label | lower }}”{% endif %}.
+        {% else %}No finding has been checked yet. Open “reasons points were lost” in a review and mark each one Correct or Not an error: the score follows your verdict, and the analyst’s agreement rate appears here.{% endif %}</p>
+      {% endif %}
       <div class="qa-grid">
         <div>
           <h3>Team average, last 8 weeks</h3>
@@ -88,10 +92,14 @@
 
     {% if names | length %}
     <form class="filters-form" method="get" action="/quality">
-      <label for="who">Show the calls of</label>
-      <select id="who" name="advisor"><option value="">Everybody</option>{% for n in names %}<option value="{{ n }}"{% if n == filter %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+      <label for="who">Calls of</label>
+      <select id="who" name="advisor"><option value="">everybody</option>{% for n in names %}<option value="{{ n }}"{% if n == filter %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+      <label for="byrule">with the error</label>
+      <select id="byrule" name="rule"><option value="">any</option>{% for r in analytics.rules %}<option value="{{ r.rule }}"{% if r.rule == rule %} selected{% endif %}>{{ r.label }}</option>{% endfor %}</select>
+      <label for="below">scoring</label>
+      <select id="below" name="below"><option value="">any score</option><option value="70"{% if below == 70 %} selected{% endif %}>below 70</option><option value="50"{% if below == 50 %} selected{% endif %}>below 50</option></select>
       <button type="submit" class="btn-line">Show</button>
-      {% if filter %}<a class="btn-quiet" href="/quality">Reset</a>{% endif %}
+      {% if filter or rule or below %}<a class="btn-quiet" href="/quality">Reset</a>{% endif %}
     </form>
     {% endif %}
 
@@ -100,7 +108,7 @@
     <article class="panel review{% if r.callId == focus %} focus{% endif %}" id="{{ r.callId }}">
       <header class="review-head">
         <h2><span>{{ r.callId }}</span> · <span>{{ r.advisor }}</span></h2>
-        <p class="meta muted">{% if r.source %}<span class="badge">{{ r.source }}</span> {% endif %}{{ r.date }}{% if r.intent %} · {{ r.intent }}{% endif %}</p>
+        <p class="meta muted">{% if r.source %}<span class="badge">{{ r.source }}</span> {% endif %}{{ r.date }}{% if r.intent %} · {{ r.intent }}{% endif %}{% if r.adjusted %} · adjusted after review (was {{ r.originalOverall }}){% endif %}</p>
         <p class="score{% if r.overall < 70 %} low{% endif %}">{{ r.overall }}/100</p>
       </header>
 
@@ -149,7 +157,11 @@
       <details class="lost">
         <summary>{{ r.errors | length }} reason{{ '' if r.errors | length == 1 else 's' }} points were lost</summary>
         <ul>{% for e in r.errors %}
-          <li><strong>-{{ e.points }}</strong> {{ e.criterion }} at {{ e.timestamp }}: {{ e.reason }}.{% if e.quote %} <q>{{ e.quote }}</q>{% endif %}</li>
+          <li{% if e.verdict == 'disagree' %} class="disputed"{% endif %}><strong>-{{ e.points }}</strong> {{ e.criterion }} at {{ e.timestamp }}: {{ e.reason }}.{% if e.quote %} <q>{{ e.quote }}</q>{% endif %}
+            <span class="fb-group" role="group" aria-label="Your verdict on this finding">
+              <button type="button" class="btn-quiet fb" data-call="{{ r.callId }}" data-rule="{{ e.rule }}" data-turn="{{ e.turn }}" data-verdict="agree" aria-pressed="{{ 'true' if e.verdict == 'agree' else 'false' }}">Correct</button>
+              <button type="button" class="btn-quiet fb" data-call="{{ r.callId }}" data-rule="{{ e.rule }}" data-turn="{{ e.turn }}" data-verdict="disagree" aria-pressed="{{ 'true' if e.verdict == 'disagree' else 'false' }}">Not an error</button>
+            </span>{% if e.verdict == 'disagree' %} <span class="muted">Left out of the score.</span>{% endif %}</li>
         {% endfor %}</ul>
       </details>
       {% endif %}
@@ -180,4 +192,28 @@
     <p class="empty-state" role="status">No calls to show{% if filter %} for {{ filter }}{% endif %}.</p>
     {% endfor %}
     {% if total > reviews | length %}<p class="muted">Showing the {{ reviews | length }} latest of {{ total }} calls. Pick an advisor above to see theirs.</p>{% endif %}
+    {% if evaluation %}
+    <section class="panel" aria-labelledby="acc">
+      <h2 id="acc">How accurate is the analyst?</h2>
+      <p class="result" role="status">On <strong>{{ evaluation.test.cases }}</strong> hand-labelled calls that were never used to tune it: when it flags something it is right
+        <strong>{{ (evaluation.test.precision * 100) | round }}%</strong> of the time (precision), and it finds <strong>{{ (evaluation.test.recall * 100) | round }}%</strong> of what a person finds (recall).
+        On the {{ evaluation.dev.cases }} development calls: {{ (evaluation.dev.f1 * 100) | round }}%.{% if not evaluation.semantic %} The semantic second opinion is off (keyword rules only).{% endif %}</p>
+      <details>
+        <summary>Rule by rule (held-out test calls)</summary>
+        <table class="data" aria-label="Accuracy of each rule on the test calls">
+          <thead><tr><th scope="col">Rule</th><th scope="col">Calls judged</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
+          <tbody>{% for r in evaluation.test.rules %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.judged }}</td><td>{{ (r.precision * 100) | round if r.precision !== null else 'n/a' }}{{ '%' if r.precision !== null }}</td><td>{{ (r.recall * 100) | round if r.recall !== null else 'n/a' }}{{ '%' if r.recall !== null }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </details>
+      <details>
+        <summary>How it was measured, and what it does not prove</summary>
+        <ol>{% for j in evaluation.journey %}<li>{{ j }}</li>{% endfor %}</ol>
+        <p class="muted">{{ evaluation.limits }}</p>
+      </details>
+      <details>
+        <summary>Known mistakes</summary>
+        <ul>{% for m in evaluation.test.mistakes.concat(evaluation.dev.mistakes) %}<li>{{ 'Missed' if m.kind == 'missed' else 'False alarm' }}: {{ m.rule | replace('_', ' ') }}. <q>{{ m.text }}</q></li>{% endfor %}</ul>
+      </details>
+    </section>
+    {% endif %}
 {% endblock %}

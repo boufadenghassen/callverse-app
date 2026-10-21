@@ -33,7 +33,11 @@ export abstract class AgentGateway {
   abstract schedule(): Promise<m.SchedulePlan>;
   abstract forecast(queue: string): Promise<m.ForecastPoint[]>;
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
-  abstract recentReviews(advisor?: string): Promise<m.QualityReview[]>;
+  abstract recentReviews(filter?: m.ReviewFilter): Promise<m.QualityReview[]>;
+  /** How accurate the analyst is on labelled calls; null when the demo data is used. */
+  abstract qualityEvaluation(): Promise<m.QualityEvaluation | null>;
+  /** A reviewer's verdict on one finding. Throws RejectedError (no such finding) or NeedsRealAgentsError. */
+  abstract qualityFeedback(callId: string, rule: string, turn: number, verdict: 'agree' | 'disagree' | 'clear', by: string): Promise<m.QualityReview>;
   abstract qualityReview(callId: string): Promise<m.QualityReview | null>;
   abstract qualityAnalytics(): Promise<m.QualityAnalytics>;
   /** Score a live call (a customer simulator session). Throws UnknownCallError, RejectedError or NeedsRealAgentsError. */

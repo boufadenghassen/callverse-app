@@ -2,7 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, BadAudioError, UnknownCallError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { AgentDownError, BadAudioError, RejectedError, UnknownCallError, VoiceUnavailableError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { qualityView, sparkline } from '../src/pages/charts';
 import { QualityReview } from '../src/agents/models';
@@ -51,6 +51,29 @@ test('demo mode cannot review recordings or live calls and says so (503), with t
   await nour.get('/quality/sample-call.wav').expect(503);
 });
 
+test('a verdict on a finding is validated and guarded; demo mode keeps no verdicts', async () => {
+  const nour = await client(app, 'nour'), token = await tokenOf(nour);
+  const post = (body: object) => nour.post('/quality/feedback').set('X-CSRF-Token', token).send(body);
+  const ok = { callId: 'CALL-3381', rule: 'promise_before_check', turn: 3, verdict: 'disagree' };
+  assert.match((await post(ok).expect(503)).body.error, /real agents/);
+  await post({ ...ok, callId: '../x' }).expect(400);
+  await post({ ...ok, rule: 'Robert); DROP' }).expect(400);
+  await post({ ...ok, turn: -1 }).expect(400);
+  await post({ ...ok, turn: 1.5 }).expect(400);
+  await post({ ...ok, verdict: 'maybe' }).expect(400);
+  await nour.post('/quality/feedback').send(ok).expect(403);                                            // no CSRF token
+  const karim = await client(app, 'karim');
+  const kt = await tokenOf(karim, '/advisor');
+  await karim.post('/quality/feedback').set('X-CSRF-Token', kt).send(ok).expect(403);   // advisors do not judge the analyst
+});
+
+test('the quality page validates its filters and shows no accuracy section in demo mode', async () => {
+  const nour = await client(app, 'nour');
+  const html = (await nour.get('/quality').query({ rule: 'no_empathy', below: '70', advisor: 'Karim B.' }).expect(200)).text;
+  assert.doesNotMatch(html, /How accurate is the analyst/);
+  await nour.get('/quality').query({ rule: "x'; drop", below: '999' }).expect(200);                    // ignored, not trusted
+});
+
 test('the review view builds a timeline, a mood curve and a transcript with its flags', () => {
   const review: QualityReview = {
     callId: 'CALL-1', advisor: 'A.', overall: 50, counterfactual: '', durationSec: 95, moodSource: 'given', source: 'recording',
@@ -90,6 +113,8 @@ test('the http gateway talks to the Python quality agent and maps its answers', 
       const json = (status: number, data: unknown) => { res.statusCode = status; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(data)); };
       if (req.url!.startsWith('/quality/reviews/CALL-0000')) return json(404, {});
       if (req.url!.startsWith('/quality/reviews/')) return json(200, { callId: 'CALL-3385', advisor: 'A.', overall: 70, criteria: [], counterfactual: '' });
+      if (req.url === '/quality/evaluation') return json(200, { semantic: true, dev: {}, test: {}, journey: [], limits: 'l' });
+      if (req.url === '/quality/feedback') return body.includes('nosuch') ? json(404, {}) : json(200, { callId: 'CALL-3385', advisor: 'A.', overall: 80, criteria: [], counterfactual: '', adjusted: true });
       if (req.url!.startsWith('/quality/reviews')) return json(200, []);
       if (req.url === '/quality/analytics') return json(200, { team: null, advisors: [], method: 'm' });
       if (req.url === '/quality/review-call') return body.includes('gone') ? json(404, {}) : body.includes('empty') ? json(400, { detail: 'Say something first.' }) : json(200, { callId: 'CALL-3386', overall: 61 });
@@ -102,13 +127,19 @@ test('the http gateway talks to the Python quality agent and maps its answers', 
   process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
   try {
     const gw = new HttpAgentGateway();
-    await gw.recentReviews('Karim B.');
-    assert.equal(seen.at(-1), 'GET /quality/reviews?limit=20&advisor=Karim%20B.');
-    await gw.recentReviews('a&limit=999');
+    await gw.recentReviews();
+    assert.equal(seen.at(-1), 'GET /quality/reviews?limit=20');
+    await gw.recentReviews({ advisor: 'Karim B.', rule: 'no_empathy', below: 70 });
+    assert.equal(seen.at(-1), 'GET /quality/reviews?limit=100&advisor=Karim%20B.&rule=no_empathy&below=70');
+    await gw.recentReviews({ advisor: 'a&limit=999' });
     assert.match(seen.at(-1)!, /advisor=a%26limit%3D999$/, 'an advisor name cannot add query parameters');
     assert.equal(await gw.qualityReview('CALL-0000'), null);
     assert.equal((await gw.qualityReview('CALL-3385'))?.overall, 70);
     assert.equal((await gw.qualityAnalytics()).team, null);
+    assert.equal((await gw.qualityEvaluation())?.semantic, true);
+    assert.equal((await gw.qualityFeedback('CALL-3385', 'no_empathy', 1, 'disagree', 'nour')).overall, 80);
+    assert.match(seen.at(-1)!, /POST \/quality\/feedback/);
+    await assert.rejects(() => gw.qualityFeedback('CALL-3385', 'nosuch', 1, 'agree', 'nour'), (e: Error) => e instanceof RejectedError);
     assert.equal((await gw.reviewCall('abc', 'A.')).overall, 61);
     await assert.rejects(() => gw.reviewCall('gone', 'A.'), UnknownCallError);
     await assert.rejects(() => gw.reviewCall('empty', 'A.'), (e: Error) => e instanceof BadAudioError && /Say something/.test(e.message));

@@ -27,7 +27,7 @@ export interface SimulationRequest { queue: string; extraAdvisors: number; from:
 export interface SimulationHour { hour: string; calls: number; advisors: number; simulatedAdvisors: number; baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; needed: number }
 export interface SimulationResult { baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; recommendations: string[]; hours?: SimulationHour[]; method?: string }
 export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string }
-export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string }
+export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string; verdict?: 'agree' | 'disagree' | null }
 export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string }
 export interface QualityCoaching { rule: string; criterion: string; tip: string; scenario: string }
 export interface QualityTurn { speaker: 'advisor' | 'customer'; text: string; start: number; end: number; mood: number | null; emotion: string | null; flags: string[] }
@@ -35,6 +35,7 @@ export interface QualityTurn { speaker: 'advisor' | 'customer'; text: string; st
 export interface QualityReview {
   callId: string; advisor: string; overall: number; criteria: CriterionScore[]; counterfactual: string;
   source?: string; date?: string | null; durationSec?: number; intent?: string; moodSource?: string;
+  adjusted?: boolean; originalOverall?: number;
   errors?: QualityError[]; strengths?: QualityStrength[]; coaching?: QualityCoaching[]; turns?: QualityTurn[]; moodCurve?: [number, number][];
 }
 export interface ErrorStat { rule: string; label: string; calls: number; share: number; cause: string }
@@ -43,7 +44,15 @@ export interface AdvisorStats {
   weakest: { criterion: string; avg: number }; strongest: { criterion: string; avg: number }; topErrors: ErrorStat[];
   coaching: { rule: string; label: string; calls: number; tip: string; scenario: string }[]; lastCalls: string[];
 }
+/** What the reviewer checks of the analyst's findings: `agree` = it is an error, `disagree` = it is not (and stops counting). */
+export interface Agreement { judged: number; agree: number; disagree: number; rate: number | null; byRule: { rule: string; label: string; agree: number; disagree: number }[] }
+export interface ReviewFilter { advisor?: string; rule?: string; below?: number }
+export interface EvalRule { rule: string; label: string; tp: number; fn: number; fp: number; tn: number; judged: number; precision: number | null; recall: number | null; f1: number | null }
+export interface EvalSet { split: string; cases: number; judgements: number; precision: number; recall: number; f1: number; accuracy: number; rules: EvalRule[]; mistakes: { case: string; rule: string; kind: string; text?: string }[] }
+/** How accurate the quality analyst is, measured on hand-labelled calls (development and held-out test). */
+export interface QualityEvaluation { semantic: boolean; dev: EvalSet; test: EvalSet; journey: string[]; limits: string }
 export interface QualityAnalytics {
+  agreement?: Agreement; rules?: { rule: string; label: string }[];
   team: { calls: number; avgOverall: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; topErrors: ErrorStat[];
           causes: { cause: string; calls: number; share: number }[]; byIntent: { intent: string; calls: number; avg: number }[] } | null;
   advisors: AdvisorStats[]; method: string;

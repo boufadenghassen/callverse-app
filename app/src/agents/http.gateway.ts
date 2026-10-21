@@ -62,7 +62,17 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (!res.ok) throw new AgentDownError(`/voice/transcribe answered ${res.status}`);
     return (await res.json()) as m.Transcript;
   }
-  recentReviews(advisor?: string) { return this.call<m.QualityReview[]>(`/quality/reviews?limit=20${advisor ? `&advisor=${encodeURIComponent(advisor)}` : ''}`); }   // not cached: a new review must show at once
+  recentReviews(f: m.ReviewFilter = {}) {   // not cached: a new review or a verdict must show at once
+    const q = [f.advisor && `advisor=${encodeURIComponent(f.advisor)}`, f.rule && `rule=${encodeURIComponent(f.rule)}`, f.below && `below=${f.below}`].filter(Boolean).join('&');
+    return this.call<m.QualityReview[]>(`/quality/reviews?limit=${f.advisor || f.rule || f.below ? 100 : 20}${q ? `&${q}` : ''}`);
+  }
+  qualityEvaluation() { return this.call<m.QualityEvaluation>('/quality/evaluation', undefined, true); }
+  async qualityFeedback(callId: string, rule: string, turn: number, verdict: 'agree' | 'disagree' | 'clear', by: string) {
+    const res = await this.raw('/quality/feedback', { callId, rule, turn, verdict, by });
+    if (res.status === 404 || res.status === 422) throw new RejectedError('There is no such finding to check.');
+    if (!res.ok) throw new AgentDownError(`quality feedback answered ${res.status}`);
+    return (await res.json()) as m.QualityReview;
+  }
   async qualityReview(callId: string) {
     try { return await this.call<m.QualityReview>(`/quality/reviews/${encodeURIComponent(callId)}`); } catch (e) { if (e instanceof AgentDownError && /answered 404/.test(e.message)) return null; throw e; }
   }
