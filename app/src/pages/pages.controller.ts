@@ -5,6 +5,7 @@ import { lineChart, qualityView } from './charts';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
 
 const CHART_W = 640, CHART_H = 280;
+const EARLY_WARNING_RISK = 65;   // same value as EARLY_WARNING_RISK in services/agents/complaints.py
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
@@ -23,7 +24,7 @@ export class PagesController {
       advisor: async () => `${(await this.agents.customerContext('YT-1042')).openTickets} open ticket`,
       workforce: async () => `peak ${Math.max(0, ...(await this.agents.forecast('B')).map((f) => f.forecast))} calls/h`,
       quality: async () => `${Math.min(...(await this.agents.recentReviews()).map((r) => r.overall))} lowest score`,
-      complaints: async () => `${(await this.agents.openComplaints()).filter((c) => c.escalationRisk >= 80).length} need a supervisor`,
+      complaints: async () => `${(await this.agents.openComplaints()).filter((c) => c.severity === 'Critical').length} need a supervisor`,
       training: async () => `${(await this.agents.scenarios()).length} scenarios ready`,
       sales: async () => `${(await this.agents.opportunities()).length} open offers`,
     };
@@ -82,11 +83,20 @@ export class PagesController {
 
   @Roles('COMPLAINT') @Get('complaints') @Render('complaints')
   async complaints() {
-    const cases = await this.agents.openComplaints();
+    const [cases, causes] = await Promise.all([this.agents.openComplaints(), this.agents.complaintClusters()]);
     const lanes: Record<string, typeof cases> = {};
     for (const severity of ['Critical', 'High', 'Medium']) lanes[severity] = cases.filter((c) => c.severity === severity);
     const avgRisk = cases.length ? Math.round(cases.reduce((sum, c) => sum + c.escalationRisk, 0) / cases.length) : 0;
-    return { cases, lanes, critical: lanes.Critical.length, avgRisk };
+    const alerts = cases.filter((c) => c.escalationRisk >= EARLY_WARNING_RISK || (c.overdue && c.severity !== 'Medium'));
+    return {
+      cases,
+      lanes,
+      critical: lanes.Critical.length,
+      avgRisk,
+      warnings: alerts.slice(0, 3),
+      moreWarnings: Math.max(0, alerts.length - 3),
+      topics: causes.topics.filter((topic) => topic.topic !== 'Other').slice(0, 6),
+    };
   }
 
   @Roles('TRAINER') @Get('training') @Render('training')

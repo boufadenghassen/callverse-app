@@ -27,6 +27,8 @@ export abstract class AgentGateway {
   abstract simulate(request: m.SimulationRequest): Promise<m.SimulationResult>;
   abstract recentReviews(): Promise<m.QualityReview[]>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
+  /** Recurring root causes of the complaints (volume, trend, hotspots). */
+  abstract complaintClusters(): Promise<m.ComplaintClusters>;
   abstract scenarios(): Promise<m.Scenario[]>;
   abstract opportunities(): Promise<m.Opportunity[]>;
 }

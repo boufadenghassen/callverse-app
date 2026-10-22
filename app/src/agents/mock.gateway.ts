@@ -101,6 +101,20 @@ export class MockAgentGateway extends AgentGateway {
     ];
   }
 
+  async complaintClusters(): Promise<m.ComplaintClusters> {
+    return {
+      topics: [
+        { topic: 'Billing duplicates', cases: 18, open: 6, share: 40, unresolvedPct: 33, byMonth: { '2015-05': 7, '2015-06': 11 }, trendPct: 57,
+          hotspots: [{ state: 'Tunis', cases: 9 }], keywords: ['double charge', 'bill'], example: 'Charged twice, third contact this month' },
+        { topic: 'Roaming activation', cases: 14, open: 4, share: 31, unresolvedPct: 29, byMonth: { '2015-05': 8, '2015-06': 6 }, trendPct: -25,
+          hotspots: [{ state: 'Sfax', cases: 5 }], keywords: ['roaming', 'abroad'], example: 'Roaming bundle not applied abroad' },
+        { topic: 'Contract terms', cases: 13, open: 3, share: 29, unresolvedPct: 23, byMonth: { '2015-05': 6, '2015-06': 7 }, trendPct: 17,
+          hotspots: [{ state: 'Sousse', cases: 4 }], keywords: ['cancellation fee'], example: 'Contract cancellation fee disputed' },
+      ],
+      discovered: [],
+    };
+  }
+
   async scenarios(): Promise<m.Scenario[]> {
     return [
       { id: 'SC-31', title: 'Double charge, customer threatens to post online', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'QA weakness: compliance' },

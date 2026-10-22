@@ -10,19 +10,36 @@
       <p class="lede">Sorted into severity lanes, with the escalation risk and the root-cause cluster each case belongs to. Drag a card to another lane, or press Escalate to move it up one.</p>
     </header>
 
-    {% for c in cases %}{% if c.escalationRisk >= 80 %}
+    {% for c in warnings %}
     <div class="early-warning" role="alert">
       <span class="pulse" aria-hidden="true"></span>
-      <p><strong>Early warning:</strong> <span>{{ c.id }}</span> may escalate within
-        <span>{{ c.hoursLeft }}</span> h. Alert a supervisor now.</p>
+      <p><strong>Early warning:</strong> <span>{{ c.id }}</span>
+        {% if c.overdue %}is past its deadline.{% else %}may escalate within <span>{{ c.hoursLeft }}</span> h.{% endif %}
+        {% if c.reasons and c.reasons.length %}Why: {{ c.reasons[0] }}.{% endif %} Alert a supervisor now.</p>
       <button type="button" class="btn-line" data-toast="Supervisor alerted about {{ c.id }} (demo, nothing was sent)">Alert supervisor</button>
     </div>
-    {% endif %}{% endfor %}
+    {% endfor %}
+    {% if moreWarnings %}<p class="muted small">+ {{ moreWarnings }} more cases need attention.</p>{% endif %}
 
     <section class="stats" aria-label="Summary">
       <div class="stat"><strong>{{ cases.length }}</strong><span>open cases</span></div>
       <div class="stat prod"><strong>{{ critical }}</strong><span>critical</span></div>
       <div class="stat"><strong>{{ avgRisk }}%</strong><span>average escalation risk</span></div>
+    </section>
+
+    <section aria-label="Root causes">
+      <h2>Recurring root causes</h2>
+      <p class="muted small">Every complaint grouped by cause, with its share of the volume, how many are still unresolved and the trend against the previous month.</p>
+      <table class="table">
+        <thead><tr><th>Root cause</th><th>Cases</th><th>Share</th><th>Unresolved</th><th>Trend</th><th>Typical words</th></tr></thead>
+        <tbody>
+        {% for t in topics %}
+          <tr><td>{{ t.topic }}</td><td>{{ t.cases }}</td><td>{{ t.share }}%</td><td>{{ t.unresolvedPct }}%</td>
+            <td>{% if t.trendPct == none %}n/a{% elif t.trendPct > 0 %}+{{ t.trendPct }}%{% else %}{{ t.trendPct }}%{% endif %}</td>
+            <td class="muted">{{ t.keywords | join(', ') }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </section>
 
     <div class="lanes">
@@ -35,6 +52,11 @@
           <div class="case-top"><span class="case-id">{{ c.id }}</span>
             <span class="muted small">{{ c.cluster }}</span></div>
           <p class="case-sum">{{ c.summary }}</p>
+          {% if c.reasons and c.reasons.length %}
+          <details class="small muted"><summary>Why this risk{% if c.route %} · {{ c.route }}{% endif %}</summary>
+            <ul>{% for r in c.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+          </details>
+          {% endif %}
           <div class="case-mid">
             <div class="risk">{{ m.ring(c.escalationRisk) }}<span class="small muted">Escalation risk</span></div>
             <div class="deadline">

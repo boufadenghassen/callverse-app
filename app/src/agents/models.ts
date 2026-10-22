@@ -17,6 +17,12 @@ export interface SimulationHour { hour: string; calls: number; advisors: number;
 export interface SimulationResult { baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; recommendations: string[]; hours?: SimulationHour[]; method?: string }
 export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string }
 export interface QualityReview { callId: string; advisor: string; overall: number; criteria: CriterionScore[]; counterfactual: string }
-export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
+/** `reasons`, `route` and the rest come from the real complaint agent; the demo data leaves them out. `escalationRisk` is a rule-based priority 0-100, not a probability. */
+export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number;
+  overdue?: boolean; reasons?: string[]; route?: string; status?: string; channel?: string; state?: string; onBehalf?: boolean; owner?: string | null }
+export interface ComplaintTopic { topic: string; cases: number; open: number; share: number; unresolvedPct: number; trendPct: number | null;
+  byMonth: Record<string, number>; hotspots: { state: string; cases: number }[]; keywords: string[]; example: string }
+export interface ComplaintDiscovered { cluster: number; cases: number; keywords: string[]; closestTopic: string; agreementPct: number }
+export interface ComplaintClusters { topics: ComplaintTopic[]; discovered: ComplaintDiscovered[] }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
 export interface Opportunity { customer: string; offer: string; relevance: number; reason: string }
