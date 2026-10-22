@@ -2,7 +2,11 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, BadAudioError, RejectedError, UnknownCallError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { Test } from '@nestjs/testing';
+import { AgentDownError, AgentGateway, BadAudioError, RejectedError, UnknownCallError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { MockAgentGateway } from '../src/agents/mock.gateway';
+import { AppModule } from '../src/app.module';
+import { setup } from '../src/setup';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { qualityView, sparkline } from '../src/pages/charts';
 import { QualityReview } from '../src/agents/models';
@@ -21,6 +25,9 @@ test('the quality page shows team analytics, a way to review a call and the revi
   assert.match(html, /Review a call/);
   assert.match(html, /Download a sample call/);
   assert.match(html, /CALL-3381/);
+  assert.match(html, /What the team does well/);
+  assert.match(html, /<th scope="col">Does well<\/th>/);
+  assert.match(html, /Keep doing:/);
   assert.doesNotMatch(html, /style="/, 'no inline styles: the content security policy would block them');
 });
 
@@ -155,3 +162,44 @@ test('the http gateway talks to the Python quality agent and maps its answers', 
     fake.close();
   }
 });
+
+test('a review reports the good as clearly as the bad: what went well first, why it matters, what to keep doing', async () => {
+  const review: QualityReview = {
+    callId: 'CALL-9', advisor: 'Karim B.', overall: 62, counterfactual: 'If the policy had been checked first, compliance would rise.', durationSec: 60, moodSource: 'given', source: 'recording',
+    criteria: [
+      { name: 'Compliance', score: 4, max: 10, evidence: 'Promised a refund before checking the approval policy', timestamp: '00:35', good: ["Verified the customer's identity"] },
+      { name: 'Communication', score: 10, max: 10, evidence: 'Greeted the customer', timestamp: '00:00', good: ['Greeted the customer', "Acknowledged the customer's feelings"] },
+      { name: 'Accuracy', score: 10, max: 10, evidence: 'No error found', timestamp: '00:00', good: [] },
+    ],
+    turns: [{ speaker: 'customer', text: 'I was charged twice', start: 0, end: 3, mood: 40, emotion: 'sad', flags: [] }, { speaker: 'advisor', text: 'I am sorry, let me refund you', start: 5, end: 8, mood: null, emotion: null, flags: [] }],
+    errors: [{ rule: 'promise_before_check', criterion: 'Compliance', points: 6, turn: 1, timestamp: '00:35', quote: 'let me refund you', reason: 'Promised a refund before checking the approval policy', fix: 'x', cause: 'Process skipped' }],
+    strengths: [{ turn: 1, timestamp: '00:05', text: "Acknowledged the customer's feelings", rule: 'empathy', effect: 5, prevents: ['No empathy'], why: 'Naming the feeling lowers the tension and keeps the customer talking.' }],
+    coaching: [{ rule: 'promise_before_check', criterion: 'Compliance', tip: 'Check the policy before promising anything.', scenario: 'Double charge' }],
+    drivers: {
+      hurt: [{ turn: 1, timestamp: '00:35', rule: 'promise_before_check', label: 'Promised a refund before checking the approval policy', effect: -7, quote: 'let me refund you' }],
+      helped: [{ turn: 1, timestamp: '00:05', rule: 'empathy', label: "Acknowledged the customer's feelings", effect: 5, quote: 'I am sorry', prevents: ['No empathy'], why: 'Naming the feeling lowers the tension and keeps the customer talking.' }],
+    },
+    moodCurve: [[0, 40]],
+  };
+  class Fake extends MockAgentGateway { async recentReviews() { return [review]; } }
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).overrideProvider(AgentGateway).useValue(new Fake()).compile();
+  const fake = moduleRef.createNestApplication<NestExpressApplication>();
+  setup(fake);
+  await fake.init();
+  try {
+    const html = (await (await client(fake, 'nour')).get('/quality').expect(200)).text;
+    assert.match(html, /✓ 1 done well/);
+    assert.match(html, /✗ 1 lost points/);
+    assert.ok(html.indexOf('<h3>What went well</h3>') < html.indexOf('<h3>What lowered the score</h3>'), 'the good comes first');
+    assert.match(html, /Why it matters: Naming the feeling lowers the tension/);
+    assert.match(html, /It protected the call: without it this would have been flagged \(No empathy\)/);
+    assert.match(html, /✓ Done well: Verified the customer&#39;s identity/);                           // a criterion that lost points still says what went right in it
+    assert.match(html, /<span class="good-note">✓ Greeted the customer; Acknowledged the customer&#39;s feelings<\/span>/);   // a full-mark one lists the good moves
+    assert.match(html, /<h4>Keep doing<\/h4>/);
+    assert.match(html, /<h4>To improve<\/h4>/);
+    assert.doesNotMatch(html, /<p class="strengths">/, 'the chips only appear when the explanation is missing');
+  } finally {
+    await fake.close();
+  }
+});
+

@@ -310,3 +310,30 @@ def test_reviews_can_be_filtered_by_advisor_rule_and_score():
     client.post("/quality/feedback", json={"callId": c["callId"], "rule": rule, "turn": e["turn"], "verdict": "disagree", "by": "nour"})
     again = client.get("/quality/reviews", params={"limit": 100, "rule": rule}).json()
     assert c["callId"] not in {r["callId"] for r in again} or any(x["rule"] == rule and x["turn"] != e["turn"] for r in again if r["callId"] == c["callId"] for x in r["errors"])
+
+
+def test_the_good_is_reported_as_clearly_as_the_bad_in_a_review():
+    good, bad = quality.review(GOOD, "A.", "CALL-1"), quality.review(BAD, "B.", "CALL-2")
+    for review in (good, bad):
+        for s in review["strengths"]:
+            assert s["why"] and s["why"] == quality.POSITIVE_WHY[s["rule"]]                  # every strength says why it matters
+        assert all(d["why"] for d in review["drivers"]["helped"])
+    comp = next(c for c in good["criteria"] if c["name"] == "Compliance")
+    assert comp["good"] == ["Verified the customer's identity", "Checked the policy before promising"]  # what was done well, not only what cost points
+    assert next(c for c in good["criteria"] if c["name"] == "Accuracy")["good"] == []
+    bad_comp = next(c for c in bad["criteria"] if c["name"] == "Compliance")
+    assert "Promised a refund" in bad_comp["evidence"] and isinstance(bad_comp["good"], list)  # a criterion that lost points still lists what went right in it
+
+
+def test_the_team_view_shows_what_each_advisor_does_well():
+    quality_store.ensure_history()
+    a = quality_store.analytics(dt.date.today())
+    team = a["team"]["topStrengths"]
+    assert team and all(s["rule"] in quality.HABITS and s["label"] == quality.HABITS[s["rule"]] and s["why"] and 0 < s["share"] <= 1 for s in team)
+    assert [s["share"] for s in team] == sorted((s["share"] for s in team), reverse=True)
+    for adv in a["advisors"]:
+        assert 1 <= len(adv["topStrengths"]) <= 3 and all(s["calls"] <= adv["calls"] for s in adv["topStrengths"])
+    by = {x["advisor"]: x for x in a["advisors"]}
+    assert client.get("/quality/analytics").json()["team"]["topStrengths"] == team                     # the endpoint serves the same numbers
+    assert by["Rania K."]["topStrengths"][0]["rule"] == "empathy"                             # she is warm: empathy in every call
+

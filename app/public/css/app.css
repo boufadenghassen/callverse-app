@@ -1089,3 +1089,10 @@ table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4
 .conv { width: 100%; border-collapse: collapse; font-size: .875rem; }
 .conv caption { text-align: left; font-weight: 700; padding-bottom: var(--s1); }
 .conv th, .conv td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid var(--line); } .conv td { font-variant-numeric: tabular-nums; }
+
+/* Quality: the good is reported as clearly as the bad */
+.balance { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 var(--s3); }
+.chip.good-chip { background: var(--ok-soft); color: var(--ok); } .chip.bad-chip { background: var(--danger-soft); color: var(--danger); }
+.good-note { color: var(--ok); font-weight: 600; }
+.keep { margin: var(--s2) 0; } .keep-list { margin: 0 0 var(--s3); padding-left: 1.2rem; }
+.lost h4 { margin: var(--s3) 0 var(--s1); font-size: .9375rem; }

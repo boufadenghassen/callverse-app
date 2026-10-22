@@ -91,9 +91,9 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 
 | Suite | Command | Count | What it covers |
 |---|---|---|---|
-| Agents (Python) | `cd services/agents; pytest -q` | 93 | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst (rules, store, XAI, labelling, robustness), sales agent |
+| Agents (Python) | `cd services/agents; pytest -q` | 95 | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst (rules, store, XAI, labelling, robustness), sales agent |
 | Emotion explanation (Python) | `pytest -q models/tests` | 4 | the occlusion map, with a fake model |
-| Web app (Node) | `cd app; npm test` | 88 | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
+| Web app (Node) | `cd app; npm test` | 89 | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
 | Browser (Playwright) | `cd app/e2e; npm test` | 40 | the real app against the real agents, in Edge |
 | Accessibility | `cd app/e2e; npm run audit` | the app's pages, light and dark | axe-core: no violation |
 | Continuous integration | GitHub Actions | web build and tests, agents tests (Python 3.11, without the heavy models) | every push and pull request |
