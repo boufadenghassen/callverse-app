@@ -1117,3 +1117,11 @@ html[data-theme="dark"] .lane-low { --lane: #9fd0b0; } html[data-theme="dark"] .
 .history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
 .history-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
 .inline-form { display: inline; margin: 0; }
+
+
+/* Quality: the good is reported as clearly as the bad */
+.balance { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 var(--s3); }
+.chip.good-chip { background: var(--ok-soft); color: var(--ok); } .chip.bad-chip { background: var(--danger-soft); color: var(--danger); }
+.good-note { color: var(--ok); font-weight: 600; }
+.keep { margin: var(--s2) 0; } .keep-list { margin: 0 0 var(--s3); padding-left: 1.2rem; }
+.lost h4 { margin: var(--s3) 0 var(--s1); font-size: .9375rem; }

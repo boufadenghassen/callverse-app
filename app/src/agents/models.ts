@@ -28,11 +28,11 @@ export interface SimulationRequest { queue: string; extraAdvisors: number; from:
 /** One hour of a simulation, so the numbers can be checked (the real workforce agent fills `hours` and `method`). */
 export interface SimulationHour { hour: string; calls: number; advisors: number; simulatedAdvisors: number; baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; needed: number }
 export interface SimulationResult { baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; recommendations: string[]; hours?: SimulationHour[]; method?: string }
-export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string }
+export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string; good?: string[] }
 export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string; verdict?: 'agree' | 'disagree' | null; effect?: number; floored?: boolean }
-export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string; effect?: number; prevents?: string[] }
+export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string; effect?: number; prevents?: string[]; why?: string }
 /** One reason the overall score is what it is: `effect` is a what-if on the 0-100 score (negative = the advisor's words lowered it, positive = they protected it). */
-export interface QualityDriver { turn: number; timestamp: string; rule: string; label: string; effect: number; quote: string; criterion?: string; points?: number; floored?: boolean; prevents?: string[] }
+export interface QualityDriver { turn: number; timestamp: string; rule: string; label: string; effect: number; quote: string; criterion?: string; points?: number; floored?: boolean; prevents?: string[]; why?: string }
 export interface QualityCoaching { rule: string; criterion: string; tip: string; scenario: string }
 export interface QualityTurn { speaker: 'advisor' | 'customer'; text: string; start: number; end: number; mood: number | null; emotion: string | null; flags: string[] }
 /** The first five fields are the contract; the rest comes from the real quality agent (the demo data leaves them out). */
@@ -44,9 +44,11 @@ export interface QualityReview {
   drivers?: { hurt: QualityDriver[]; helped: QualityDriver[] };
 }
 export interface ErrorStat { rule: string; label: string; calls: number; share: number; cause: string }
+/** A good behaviour and how often it was seen: the share of calls where it showed at least once. */
+export interface StrengthStat { rule: string; label: string; calls: number; share: number; why: string }
 export interface AdvisorStats {
   advisor: string; calls: number; avgOverall: number; vsTeam: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; trend: number | null;
-  weakest: { criterion: string; avg: number }; strongest: { criterion: string; avg: number }; topErrors: ErrorStat[];
+  weakest: { criterion: string; avg: number }; strongest: { criterion: string; avg: number }; topErrors: ErrorStat[]; topStrengths?: StrengthStat[];
   coaching: { rule: string; label: string; calls: number; tip: string; scenario: string }[]; lastCalls: string[];
 }
 /** What the reviewer checks of the analyst's findings: `agree` = it is an error, `disagree` = it is not (and stops counting). */
@@ -58,7 +60,7 @@ export interface EvalSet { split: string; cases: number; judgements: number; pre
 export interface QualityEvaluation { semantic: boolean; dev: EvalSet; test: EvalSet; journey: string[]; limits: string }
 export interface QualityAnalytics {
   agreement?: Agreement; rules?: { rule: string; label: string }[];
-  team: { calls: number; avgOverall: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; topErrors: ErrorStat[];
+  team: { calls: number; avgOverall: number; avgByCriterion: Record<string, number>; weeks: (number | null)[]; topErrors: ErrorStat[]; topStrengths?: StrengthStat[];
           causes: { cause: string; calls: number; share: number }[]; byIntent: { intent: string; calls: number; avg: number }[] } | null;
   advisors: AdvisorStats[]; method: string;
 }

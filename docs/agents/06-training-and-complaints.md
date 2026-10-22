@@ -1,6 +1,6 @@
-# 6. Training agent (Rim, real) and Complaint agent (Amine, demo)
+# 6. Training agent (Rim) and Complaint agent (Amine)
 
-The **Training agent is real** (the Scenario Generation package by Selim Selmi, integrated and fixed). The **Complaint agent is still a demonstration**: its page exists and works in the browser, but the data comes from the demo gateway, not from the Python service. This document says exactly what exists, what is simulated, what the ideation promised and how to build the Complaint agent the way the others were built.
+**Both agents are real.** The Training agent is Scenario Generation, built by Selim Selmi and integrated and fixed in this project; the Complaint agent was built here. This document says exactly what exists, what is simulated, what the ideation promised and what is still missing.
 
 ## Training agent (Rim Ayari, `rim`): REAL, built by Selim Selmi (Scenario Generation)
 
@@ -94,7 +94,7 @@ Python (14): money read from text, the root-cause clusters, severity as a sum an
 Patterns and hand-weighted factors, not a language model or a trained model: a paraphrase can be missed, a loose phrase over-read, and the weights are judgements, not measurements. Everything is invented or simulated (customers, policies, deadlines, the history behind the trends). The escalation risk says how likely a case is to escalate; it does not predict when. There is no link yet to a real ticketing system, e-mail or chat, and no notification is sent when a supervisor is alerted (it is recorded in the log). A call can open a case, but the customer on a call is not identified, so the repeat-contact count does not apply to it. **Not built**: a learned prediction of escalation or churn from real data, deadlines that depend on opening hours, automatic assignment to an agent.
 
 ## Honest status
-The Training agent runs in the Python service and is tested; it is not yet wired into the live call. The Complaint page is a **demonstration**: three fixed rows and interactions that run in the browser, with no machine learning behind it.
+The Training agent runs in the Python service and is tested; it is **not yet wired into the live call** (its scenarios follow the team's Customer Sim schema, not our simulator's inputs). The Complaint agent runs in the Python service and is tested; its rules and weights are judgements, the cases and customers are invented and its history is simulated. Neither uses a language model unless the Training agent's optional text enrichment is switched on.
 
 ## Files
-Training: `services/agents/scenario_gen/` (with its own README), `services/agents/tests/` (its tests), `app/src/pages/pages.controller.ts` (the `/training` routes), `app/views/training.njk` and `training-scenario.njk`, `app/src/agents/*gateway.ts` (scenario methods), `app/test/training.spec.ts`, `app/test/workforce.spec.ts`. Complaints: `app/src/agents/mock.gateway.ts` (`openComplaints`), `app/views/complaints.njk`, `app/src/pages/pages.controller.ts`, `app/client/app.ts` (escalate, drag and drop), `app/src/pages/deck-content.ts`.
+Training: `services/agents/scenario_gen/` (with its own README), `services/agents/tests/` (its tests), `app/src/pages/pages.controller.ts` (the `/training` routes), `app/views/training.njk` and `training-scenario.njk`, `app/src/agents/*gateway.ts` (scenario methods), `app/test/training.spec.ts`, `app/test/workforce.spec.ts`. Complaints: `services/agents/complaints_agent/` (engine, store, api, tests, own README), `services/agents/knowledge/complaints.json`, `app/src/pages/complaints.controller.ts`, `app/views/complaints.njk` and `complaint.njk`, `app/test/complaints.spec.ts`, `app/src/agents/*gateway.ts` (complaint methods).

@@ -174,6 +174,11 @@ def analytics(today: dt.date | None = None) -> dict:
             buckets[_week(created, today)].append(r["overall"])
         return [_avg(buckets[w]) for w in range(WEEKS - 1, -1, -1)]          # oldest first
 
+    def top_strengths(rs, n=5):
+        """The good behaviours that show up most: in how many calls each was seen at least once."""
+        cnt = Counter(rule for r in rs for rule in {s["rule"] for s in r.get("strengths", [])})
+        return [dict(rule=rule, label=q.HABITS[rule], calls=k, share=round(k / len(rs), 2), why=q.POSITIVE_WHY[rule]) for rule, k in cnt.most_common(n) if rule in q.HABITS]
+
     causes = Counter(q.RULES[e["rule"]]["cause"] for r in reviews for e in {e["rule"]: e for e in r["errors"]}.values())
     total_causes = sum(causes.values()) or 1
     intents = defaultdict(list)
@@ -181,6 +186,7 @@ def analytics(today: dt.date | None = None) -> dict:
         intents[r["intent"]].append(r["overall"])
     team = dict(
         calls=len(reviews), avgOverall=team_avg, avgByCriterion=by_criterion(reviews), weeks=weekly([(c, r) for c, _, r in rows]), topErrors=top_errors(reviews, 6),
+        topStrengths=top_strengths(reviews, 6),
         causes=[dict(cause=c, calls=k, share=round(k / total_causes, 2)) for c, k in causes.most_common()],
         byIntent=sorted((dict(intent=i, calls=len(v), avg=_avg(v)) for i, v in intents.items()), key=lambda x: x["avg"]),
     )
@@ -198,7 +204,7 @@ def analytics(today: dt.date | None = None) -> dict:
         advisors.append(dict(
             advisor=name, calls=len(rs), avgOverall=_avg(r["overall"] for r in rs), vsTeam=round(_avg(r["overall"] for r in rs) - team_avg, 1), avgByCriterion=crit, weeks=weeks,
             trend=None if early is None or late is None else round(late - early, 1), weakest=dict(criterion=weakest[0], avg=weakest[1]),
-            strongest=dict(criterion=strongest[0], avg=strongest[1]), topErrors=errs, coaching=coaching, lastCalls=[r["callId"] for r in rs[-3:]][::-1],
+            strongest=dict(criterion=strongest[0], avg=strongest[1]), topErrors=errs, topStrengths=top_strengths(rs, 3), coaching=coaching, lastCalls=[r["callId"] for r in rs[-3:]][::-1],
         ))
     advisors.sort(key=lambda a: a["avgOverall"])
     return dict(team=team, advisors=advisors, agreement=agreement(), rules=[dict(rule=r, label=q.RULE_LABELS[r]) for r in q.RULES], method=METHOD)

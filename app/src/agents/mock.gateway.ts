@@ -109,12 +109,14 @@ export class MockAgentGateway extends AgentGateway {
       topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
       coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }],
       lastCalls: ['CALL-3381'],
+      topStrengths: [{ rule: 'empathy', label: "Acknowledges the customer's feelings", calls: 1, share: 1, why: 'Naming the feeling lowers the tension and keeps the customer talking.' }],
     };
     const names = ['Karim B.', 'Hela M.', 'Sami R.', 'Rania K.', 'Mehdi T.', 'Ines F.'];
     return {
       method: 'Demo data: the real quality agent scores every stored call.',
       team: { calls: 2, avgOverall: 75, avgByCriterion: crit, weeks: [null, null, null, null, null, null, 62, 88], causes: [{ cause: 'Process skipped', calls: 1, share: 1 }], byIntent: [{ intent: 'Billing', calls: 2, avg: 75 }],
-        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }] },
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }],
+        topStrengths: [{ rule: 'empathy', label: "Acknowledges the customer's feelings", calls: 2, share: 1, why: 'Naming the feeling lowers the tension and keeps the customer talking.' }, { rule: 'greeting', label: 'Greets the customer', calls: 1, share: 0.5, why: 'A clear opening sets a calm tone and shows who is speaking.' }] },
       advisors: names.map((advisor, index) => ({
         ...base,
         advisor,
