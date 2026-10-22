@@ -33,17 +33,25 @@ Five invented customers, each with `id`, `name`, `profile`, `intents`, `contract
 | WF-3391 | Walid Ferjani | Unsatisfied customer, repeated contact | Mobile Plus 40 GB | 2 | Frustrated |
 | SH-5520 | Salma Hammami | At-risk customer, usage dropping | Mobile Basic 20 GB | 1 | Angry |
 
+### The advisor agent talking by itself (`auto_reply`)
+For the automatic call, the advisor agent writes its own replies, one **step** per turn, from the same sourced answer the console suggests: **acknowledge** ("I'm sorry about this, I understand how frustrating it is" and the first sentence of the answer), **check the policy** ("Let me check the policy in *Billing policy §4.2* before I commit to anything", with the policy warning when an amount is above the 50 TND limit), **give the solution** (the next sentences of the answer) and **follow up in writing** (a confirmation by e-mail with a reference number and a call back; this closes the call). These are the good practices the quality analyst looks for, so the call is the advisor agent's knowledge wrapped in a fixed routine: **it is not a language model and it does not read the customer's mood**. Against the customer simulator it resolves all 45 combinations of customer, difficulty and reason for the call (tested).
+A second style, **rushed**, exists for demonstrations only: it promises a refund at once, asks the customer to repeat, then passes the customer on. It makes the call end badly (the customer hangs up or the call is left open), which is what the quality analyst and the complaint agent are there for.
+
 ## API (agents service)
 | Endpoint | Input | Answer |
 |---|---|---|
 | `POST /advisor/suggest` | `customer_id` (two capital letters, a dash, four digits), `query` (3 to 500 characters) | `{text, sources[], policyWarning, confidence, intents[], evidence[{source, score, excerpt}]}` |
 | `GET /advisor/customers/{id}` | id as above | the customer's record; unknown id: 404; badly formed id: 422 |
 
-## In the web app (`/advisor`, role `karim`)
+`POST /advisor/auto` `{topic (3 to 300 characters), turn (0 to 10), style (careful or rushed), customer_id (optional)}` answers `{text (at most 300 characters), step, turn, last, sources, intents, policyWarning, style}`; a wrong value is 422, an unknown customer 404.
+
+## In the web app (`/advisor`, role `karim`; the trainer `rim` and the admin may use the console too)
 * **Customer 360° card**: name, profile, intent chips, contract, open tickets and transfers, mood. The customer is chosen with `?customer=ID` (default YT-1042) and the search with `?q=` (3 to 200 characters, control characters removed; default "double charge on monthly bill"); anything else is refused with a 400.
 * **Knowledge assistant**: a search box; the suggested answer with its **Sources**, the list of passages it comes from, and the policy warning (yellow). **Listen** reads the answer aloud ([07-voice.md](07-voice.md)). Buttons *Use answer*, *Edit*, *Escalate* show a confirmation (nothing is sent anywhere).
 * **Live call**: after every message of the simulated customer ([01-customer-simulator.md](01-customer-simulator.md)) the agent suggests the next answer from the call's topic (the customer's opening line) plus what she just said, so a short "okay" keeps the suggestion on topic; each suggestion comes with its sources and intents; the advisor can use it, type (1 to 300 characters), or record a voice note.
-* Demo mode serves the same screens with fixed answers.
+* **Let the advisor agent talk / Show a rushed advisor**: starts a call with the chosen settings and plays it by itself, one reply about every second (no voice), until the call ends or after six replies. Then **What the agents did on this call** lists: the customer simulator's outcome, the steps the advisor agent took, the sales agent's offer and its timing, the quality analyst's score with what lowered it and what went well, and whether the complaint agent will list the call (the customer hung up, left upset or nothing was agreed).
+* **Practise a training scenario**: with `?scenario=ID` the console chooses the simulator's settings from a training scenario and shows how it was read ([06-training-and-complaints.md](06-training-and-complaints.md)).
+* Demo mode serves the same screens with fixed answers; the automatic call needs the real agents.
 
 ## Explainability
 Nothing the agent says comes from nowhere: each answer is one passage's text, its source is shown and the other candidate passages are listed as evidence. The policy warning states the rule (and the amount that triggered it). The score of the match exists in the data but is not shown to users.

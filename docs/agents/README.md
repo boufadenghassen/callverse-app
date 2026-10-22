@@ -32,9 +32,14 @@ flowchart LR
   A --> Q[quality_analyst/]
   A --> S[sales_agent/]
   A --> CM[complaints_agent/]
+  A --> T["scenario_gen/<br/>training agent"]
   A --> VO["voice.py (Kokoro) and stt.py (Whisper)"]
   Q -->|"mood of the customer's voice"| E["Emotion service<br/>FastAPI, port 8001<br/>WavLM"]
   W -->|"Call review page"| E
+  Q -.->|"scored calls become cases"| CM
+  Q -.->|"weak criteria become scenarios"| T
+  T -.->|"a scenario is played in the console"| C
+  S -.->|"churn risk"| CM
   A --- D[("SQLite files<br/>quality.db, sales.db, complaints.db")]
 ```
 
@@ -93,9 +98,10 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 
 | Suite | Command | Count | What it covers |
 |---|---|---|---|
-| Agents (Python) | `cd services/agents; pytest -q` | see the per-branch table below | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst, sales agent, complaint agent, scenario generation |
+| Agents (Python) | `cd services/agents; pytest -q` | 205 | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst, sales agent, complaint agent, scenario generation |
 | Emotion explanation (Python) | `pytest -q models/tests` | 4 | the occlusion map, with a fake model |
-| Web app (Node) | `cd app; npm test` | see the per-branch table below | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
+| Web app (Node) | `cd app; npm test` | 117 | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
+| Browser (Playwright) | `cd app/e2e; npm test` | 46 (45 pass; 1 demo-only test is skipped when the real agents run) | the real app against the real agents, in Edge |
 | Accessibility | `cd app/e2e; npm run audit` | the app's pages, light and dark | axe-core: no violation |
 | Continuous integration | GitHub Actions | web build and tests, agents tests (Python 3.11, without the heavy models) | every push and pull request |
 
@@ -104,7 +110,7 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 * **No language model anywhere.** The customer's words, the advisor's suggestions, the quality rules, the needs found by the sales agent are rules, patterns, retrieval and small models. Each document says where an LLM would plug in.
 * **Invented or simulated data.** The knowledge base (12 passages), the offers, the five customers, the call history of the workforce agent, the 84 past calls of the quality analytics and the history behind "which offers convert" are invented or simulated. The emotion model is trained on acted speech.
 * **Measured, not guaranteed.** The numbers quoted (F1 99 % on held-out calls, 74 % emotion accuracy) are measured on data we wrote or on acted corpora, so they are rough scores.
-* **Not built**: the link from the Training agent's scenarios to the live call, reinforcement-learning routing, learned (not hand-weighted) purchase, churn and escalation models, real sign-in (a shared demo password is used).
+* **Not built**: reinforcement-learning routing, learned (not hand-weighted) purchase, churn and escalation models, real sign-in (a shared demo password is used).
 
 ## Related documents
 
