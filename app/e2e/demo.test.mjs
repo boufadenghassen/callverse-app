@@ -692,7 +692,7 @@ test('call review: the emotion answer comes with a map of which parts of the rec
   await page.click('#review-form button[type=submit]');
   await page.locator('#r-why-box').waitFor({ state: 'visible', timeout: 90000 });
   assert.ok(await page.locator('#r-why li').count() >= 5, 'one block per half second');
-  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: .* s \(.* points of confidence\)|No single part/);
+  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: [\d.]+ to [\d.]+ s|No single part/);
   assert.match(await page.locator('#r-why li').first().getAttribute('aria-label'), /s: (supports|argues against|no effect on) /);
   await ctx.close();
 });

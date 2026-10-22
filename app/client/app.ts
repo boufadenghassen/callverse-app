@@ -290,34 +290,24 @@
         if (!res.ok) { status.textContent = d.error ?? 'Something went wrong.'; return; }
         status.textContent = '';
         byId('r-emotion')!.textContent = d.emotion;
-        byId('r-detail')!.textContent = `${Math.round(d.confidence * 100)}% sure · mood ${d.mood}/100 · ${d.durationSec}s of speech`;
-        const rows = Object.entries<number>(d.probabilities).sort((a, b) => b[1] - a[1]);
-        byId('r-bars')!.replaceChildren(...rows.map(([name, p]) => {
-          const li = make('li'), fill = make('span', { className: 'fill' });
-          fill.style.width = `${Math.round(p * 100)}%`;
-          const track = make('span', { className: 'track' });
-          track.append(fill);
-          li.append(make('span', { textContent: name }), track, make('span', { textContent: `${Math.round(p * 100)}%` }));
-          return li;
-        }));
+        byId('r-detail')!.textContent = `mood ${d.mood}/100 · ${d.durationSec}s of speech`;
         byId('r-timeline')!.replaceChildren(...d.timeline.map((t: { startSec: number; emotion: string }) =>
           make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
         // why: which blocks of the recording the model leaned on (occlusion, see models/src/explain.py)
         const why = d.explanation as { target: string; blockSec: number; blocks: { startSec: number; endSec: number; drop: number; rel: number }[]; top: { startSec: number; endSec: number; drop: number }[] } | null;
         byId('r-why-box')!.hidden = !why;
         if (why) {
-          const pts = (x: number) => `${Math.abs(x * 100).toFixed(1)} points`;
           byId('r-why-lead')!.textContent = `Each block is ${why.blockSec} s of the recording. The darker the block, the more it mattered to the answer “${why.target}”.`;
           byId('r-why')!.replaceChildren(...why.blocks.map((b) => {
             const li = make('li', { className: b.drop > 0 ? 'for' : b.drop < 0 ? 'against' : '' }), bar = make('span', { className: 'bar' });
             bar.style.opacity = String(0.25 + 0.75 * Math.abs(b.rel));
-            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}${b.drop ? `, ${pts(b.drop)}` : ''}`);
+            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}`);
             li.append(bar);
             return li;
           }));
           byId('r-why-end')!.textContent = `${d.durationSec} s`;
           byId('r-why-top')!.textContent = why.top.length
-            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s (${pts(t.drop)} of confidence)`).join(', ')}.`
+            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s`).join(', ')}.`
             : 'No single part of the recording stands out.';
         }
         out.hidden = false;
@@ -449,7 +439,7 @@
       useBtn.disabled = !s;
       if (!s) return;
       byId('lv-s-text')!.textContent = s.text;
-      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'} · match ${s.confidence}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
+      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
       const w = byId('lv-s-warn')!;
       w.hidden = !s.policyWarning;
       w.textContent = s.policyWarning ?? '';
