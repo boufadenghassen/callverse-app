@@ -11,7 +11,7 @@ orqestra is a digital twin of a customer service center. Seven human roles each 
 | 3 | **Workforce manager** | Sana Gharbi, workforce (`sana`) | Real (forecast, simulation, routing, breaks) | `workforce.py`, `routing.py`, `scheduling.py` | [03-workforce-manager.md](03-workforce-manager.md) |
 | 4 | **Quality analyst** | Nour Chaabane, quality (`nour`) | Real | `services/agents/quality_analyst/` | [04-quality-analyst.md](04-quality-analyst.md) |
 | 5 | **Sales agent** | Leila Mansour, sales (`leila`) | Real | `services/agents/sales_agent/` | [05-sales-agent.md](05-sales-agent.md) |
-| 6 | **Training agent** and **Complaint agent** | Rim Ayari (`rim`), Amine Jebali (`amine`) | Demo data only | `app/src/agents/mock.gateway.ts` | [06-training-and-complaints.md](06-training-and-complaints.md) |
+| 6 | **Training agent** (Rim Ayari, `rim`) and **Complaint agent** (Amine Jebali, `amine`) | see the document | Training: demo here (real in Selim's branch); **Complaints: real** | `services/agents/complaints_agent/` | [06-training-and-complaints.md](06-training-and-complaints.md) |
 | shared | **Voice** (speech out and in) | used by agents 1, 2, 4 | Real | `voice.py`, `stt.py` | [07-voice.md](07-voice.md) |
 | shared | **Emotion model** | used by the Call review page and agent 4 | Real | `models/` | [08-emotion-model.md](08-emotion-model.md) |
 | platform | **Web app and gateway** | all roles | Real | `app/` | [09-web-app-and-gateway.md](09-web-app-and-gateway.md) |
@@ -30,10 +30,11 @@ flowchart LR
   A --> K[workforce.py, routing.py, scheduling.py]
   A --> Q[quality_analyst/]
   A --> S[sales_agent/]
+  A --> CM[complaints_agent/]
   A --> VO["voice.py (Kokoro) and stt.py (Whisper)"]
   Q -->|"mood of the customer's voice"| E["Emotion service<br/>FastAPI, port 8001<br/>WavLM"]
   W -->|"Call review page"| E
-  A --- D[("SQLite files<br/>quality.db, sales.db")]
+  A --- D[("SQLite files<br/>quality.db, sales.db, complaints.db")]
 ```
 
 * The web app never contains machine learning. It asks one interface, the **AgentGateway**, for data. With `AGENTS_MODE` unset it gets demo data (`MockAgentGateway`); with `AGENTS_MODE=http` the `HttpAgentGateway` calls the Python service for every agent that exists there and keeps demo data for the rest. Replacing a demo agent by a real one is therefore one environment variable, not a page change.
@@ -79,7 +80,7 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 | `PORT`, `SESSION_SECRET` | web app | port, session signing secret (random at each start if unset) | 8080 |
 | `EMOTION_URL` | agents (recording review) | emotion service seen from the agents | `http://localhost:8001` |
 | `EMOTION_WEIGHTS` | emotion service | weights file | `models/registry/emotion_wavlm_ft_full_aug2.pt` |
-| `QUALITY_DB`, `SALES_DB` | agents | SQLite files | `services/agents/data/quality.db`, `sales.db` |
+| `QUALITY_DB`, `SALES_DB`, `COMPLAINTS_DB` | agents | SQLite files | `services/agents/data/quality.db`, `sales.db`, `complaints.db` |
 | `QUALITY_SEMANTIC` | quality analyst | `0` turns the semantic second opinion off | on when the model is cached |
 | `QUALITY_EMBEDDER` | quality analyst | embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
 | `QUALITY_EVAL_FINAL` | quality analyst | `0` hides the final test calls while developing | on |
@@ -91,10 +92,10 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 
 | Suite | Command | Count | What it covers |
 |---|---|---|---|
-| Agents (Python) | `cd services/agents; pytest -q` | 98 | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst (rules, store, XAI, labelling, robustness), sales agent |
+| Agents (Python) | `cd services/agents; pytest -q` | 112 | customer parity and endpoints, advisor, workforce, routing, breaks, voice, quality analyst (rules, store, XAI, labelling, robustness), sales agent |
 | Emotion explanation (Python) | `pytest -q models/tests` | 4 | the occlusion map, with a fake model |
-| Web app (Node) | `cd app; npm test` | 92 | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
-| Browser (Playwright) | `cd app/e2e; npm test` | 41 | the real app against the real agents, in Edge |
+| Web app (Node) | `cd app; npm test` | 98 | pages, roles, CSRF, security headers, gateway mapping, each agent's routes |
+| Browser (Playwright) | `cd app/e2e; npm test` | 43 | the real app against the real agents, in Edge |
 | Accessibility | `cd app/e2e; npm run audit` | the app's pages, light and dark | axe-core: no violation |
 | Continuous integration | GitHub Actions | web build and tests, agents tests (Python 3.11, without the heavy models) | every push and pull request |
 
@@ -103,7 +104,7 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 * **No language model anywhere.** The customer's words, the advisor's suggestions, the quality rules, the needs found by the sales agent are rules, patterns, retrieval and small models. Each document says where an LLM would plug in.
 * **Invented or simulated data.** The knowledge base (12 passages), the offers, the five customers, the call history of the workforce agent, the 84 past calls of the quality analytics and the history behind "which offers convert" are invented or simulated. The emotion model is trained on acted speech.
 * **Measured, not guaranteed.** The numbers quoted (F1 99 % on held-out calls, 74 % emotion accuracy) are measured on data we wrote or on acted corpora, so they are rough scores.
-* **Not built**: Training and Complaint agents (demo only), reinforcement-learning routing, purchase and churn propensity, commercial simulation, real sign-in (a shared demo password is used).
+* **Not built**: the Training agent in this branch (a demo here; the real one is Selim's `scenario_gen`, merged separately), reinforcement-learning routing, purchase and churn propensity, commercial simulation, real sign-in (a shared demo password is used).
 
 ## Related documents
 

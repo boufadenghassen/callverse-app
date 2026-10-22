@@ -1,0 +1,115 @@
+{% extends "app.njk" %}
+{% import "macros.njk" as m %}
+{% set title = c.id ~ " · complaint" %}
+{% set active = "complaints" %}
+{% set bodyClass = "p-complaint" %}
+{% macro factors(list) %}<ul class="driver-list">{% for f in list %}
+  <li><span class="eff {{ 'pos' if f.points >= 0 else 'neg' }}">{{ '+' ~ f.points if f.points > 0 else ('−' ~ (0 - f.points) if f.points < 0 else '0') }}</span>
+    <span><strong>{{ f.name }}</strong>: {{ f.why }}</span></li>
+{% endfor %}</ul>{% endmacro %}
+{% macro form(action, label, cls) %}<form method="post" action="/complaints/{{ c.id }}/{{ action }}" class="inline-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><button type="submit" class="{{ cls }}">{{ label }}</button></form>{% endmacro %}
+{% block content %}
+    <header class="page-head">
+      <p class="eyebrow">Amine · Complaint manager agent</p>
+      <h1>{{ c.id }}: {{ c.summary }}</h1>
+      <p class="lede"><a href="/complaints">All open complaints</a> · <span class="badge">{{ c.cluster }}</span> <span class="badge">{{ c.status }}{% if c.assigned %} by {{ c.assigned }}{% endif %}</span>
+        {% if c.severity == 'Critical' or c.severity == 'High' %}{% set tone = 'high' %}{% elif c.severity == 'Medium' %}{% set tone = 'medium' %}{% else %}{% set tone = 'low' %}{% endif %}
+        <span class="risk {{ tone }}">{{ c.severity }}{% if c.overridden %} (set by hand){% endif %}</span></p>
+    </header>
+
+    {% if error %}<p class="warning" role="alert">{{ error }}</p>{% endif %}
+
+    {% if c.warning %}
+    <div class="early-warning" role="alert"><span class="pulse" aria-hidden="true"></span>
+      <p><strong>Early warning:</strong> {{ c.warning.why }}. {% if c.warning.alerted %}A supervisor was alerted.{% else %}Alert a supervisor now.{% endif %}</p>
+      {% if not c.warning.alerted %}{{ form('alert', 'Alert supervisor', 'btn-line') }}{% endif %}</div>
+    {% endif %}
+
+    <section class="panel" aria-labelledby="words">
+      <h2 id="words">What the customer said</h2>
+      <blockquote class="heard">{{ c.text }}</blockquote>
+      <p class="muted small">{{ c.channel }} · opened {{ c.opened }}{% if c.customer %} · {{ c.customer }}{% else %} · customer not on file{% endif %}{% if c.source == 'quality' %} · from the call <a href="/quality?call={{ c.callId }}">{{ c.callId }}</a>{% endif %}
+        {% if c.otherClusters | length %} · also reads as: {{ c.otherClusters | join(', ') }}{% endif %}</p>
+      <div class="case-mid">
+        <div class="risk">{{ m.ring(c.escalationRisk) }}<span class="small muted">Escalation risk</span></div>
+        <div class="deadline">
+          <meter min="0" max="{{ c.deadline.slaHours }}" low="{{ c.deadline.slaHours * 0.25 }}" high="{{ c.deadline.slaHours * 0.5 }}" optimum="{{ c.deadline.slaHours }}" value="{{ c.hoursLeft if c.hoursLeft > 0 else 0 }}"></meter>
+          <span class="small">{% if c.hoursLeft < 0 %}<strong class="late">{{ 0 - c.hoursLeft }} h late</strong>{% else %}{{ c.hoursLeft }} h left{% endif %} of {{ c.deadline.slaHours }} h ({{ c.severity | lower }})</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="why">
+      <h2 id="why">Why this level and this risk</h2>
+      <div class="driver-cols">
+        <div><h3>How serious: {{ c.severityScore }}/100</h3>{% if c.severityFactors | length %}{{ factors(c.severityFactors) }}{% else %}<p class="muted">Nothing at stake that the agent can see.</p>{% endif %}</div>
+        <div><h3>How likely to escalate: {{ c.escalationRisk }}/100</h3>{{ factors(c.riskFactors) }}</div>
+      </div>
+      <p class="muted small">Both are sums of named parts read from the customer's words, the customer file and the other cases; nothing is learned. The level sets the deadline ({{ c.deadline.slaHours }} h).</p>
+    </section>
+
+    <section class="panel" aria-labelledby="todo">
+      <h2 id="todo">What to do first</h2>
+      <ol class="todo">{% for a in c.actions %}<li><strong>{{ a.action }}</strong> <span class="muted">{{ a.why }}. {{ a.who }}.</span></li>{% endfor %}</ol>
+      {% if c.worked %}<p class="muted">On similar cases ({{ c.cluster | lower }}) the usual outcome was <strong>{{ c.worked.label | lower }}</strong>: {{ c.worked.count }} of {{ c.worked.of }} resolved cases.</p>{% endif %}
+      {% if c.similar | length %}<ul class="history-list">{% for s in c.similar %}<li><span class="case-id"><a href="/complaints/{{ s.id }}">{{ s.id }}</a></span> {{ s.summary }} <span class="muted small">{{ s.resolution }}</span></li>{% endfor %}</ul>{% endif %}
+    </section>
+
+    {% if c.customerFile or c.earlier | length %}
+    <section class="panel" aria-labelledby="hist">
+      <h2 id="hist">The customer's history with us</h2>
+      {% if c.customerFile %}
+      <p><strong>{{ c.customerFile.name }}</strong> · {{ c.customerFile.profile }} · {{ c.customerFile.contract }}{% if c.customerFile.monthlyTnd %} · {{ c.customerFile.monthlyTnd }} TND a month{% endif %}</p>
+      <p class="muted small">{{ c.customerFile.openTickets }} open ticket{{ '' if c.customerFile.openTickets == 1 else 's' }} · transferred {{ c.customerFile.transfers }} time{{ '' if c.customerFile.transfers == 1 else 's' }} · mood {{ c.customerFile.mood | lower }}{% if c.customerFile.usageTrend is defined and c.customerFile.usageTrend !== null %} · usage {{ c.customerFile.usageTrend }}% in two months{% endif %}</p>
+      {% endif %}
+      {% if c.earlier | length %}<h3>Earlier cases</h3><ul class="history-list">{% for e in c.earlier %}<li><span class="case-id"><a href="/complaints/{{ e.id }}">{{ e.id }}</a></span> {{ e.summary }} <span class="muted small">{{ e.opened }} · {{ e.status }}</span></li>{% endfor %}</ul>{% endif %}
+    </section>
+    {% endif %}
+
+    <section class="panel" aria-labelledby="log">
+      <h2 id="log">What happened</h2>
+      <ol class="timeline-log">{% for e in c.events %}<li><span class="muted small">{{ e.at }}</span> <strong>{{ e.kind }}</strong> by {{ e.who }}{% if e.note %}: {{ e.note }}{% endif %}</li>{% endfor %}</ol>
+    </section>
+
+    <section class="panel" aria-labelledby="move">
+      <h2 id="move">Your move</h2>
+      {% if c.status == 'open' or c.status == 'taken' %}
+      <div class="actions">
+        {% if c.status == 'open' %}{{ form('take', 'Take case', 'btn') }}{% endif %}
+        {% if c.severity != 'Critical' %}{{ form('escalate', 'Escalate one level', 'btn-quiet') }}{% endif %}
+        {% if not c.warning or not c.warning.alerted %}{{ form('alert', 'Alert supervisor', 'btn-line') }}{% endif %}
+      </div>
+      <form method="post" action="/complaints/{{ c.id }}/severity" class="move-form">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label for="lvl">Set the level by hand</label>
+        <select id="lvl" name="level">{% for l in levels %}<option{% if l == c.severity %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+        <label for="lvl-note">Why</label><input id="lvl-note" name="note" maxlength="300" placeholder="optional">
+        <button type="submit" class="btn-line">Set level</button>
+      </form>
+      <form method="post" action="/complaints/{{ c.id }}/resolve" class="move-form">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label for="res">How was it resolved?</label>
+        <select id="res" name="resolution" required>
+          <option value="">Choose…</option>
+          <option value="refunded">Refund or credit given</option><option value="fixed">Fault fixed</option><option value="explained">Explained and the customer accepted</option>
+          <option value="goodwill">Goodwill gesture</option><option value="supervisor">Handled by a supervisor</option><option value="no_action">Nothing could be done</option>
+        </select>
+        <label for="res-note">Note</label><input id="res-note" name="note" maxlength="300" placeholder="what was done">
+        <button type="submit" class="btn">Resolve</button>
+      </form>
+      {% elif c.status == 'resolved' %}
+      <p>Resolved: <strong>{{ c.resolution }}</strong>. It closes when the customer says they trust us again.</p>
+      <form method="post" action="/complaints/{{ c.id }}/close" class="move-form">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label for="tr">Follow-up call: is the customer satisfied?</label>
+        <select id="tr" name="trusted" required><option value="">Choose…</option><option value="yes">Yes, the customer trusts us again</option><option value="no">No, still unhappy (reopen the case)</option></select>
+        <label for="tr-note">Note</label><input id="tr-note" name="note" maxlength="300" placeholder="what the customer said">
+        <button type="submit" class="btn">Close the follow-up</button>
+      </form>
+      {{ form('reopen', 'Reopen', 'btn-quiet') }}
+      {% else %}
+      <p>Closed{% if c.trusted == 0 %} (the customer was still unhappy){% else %}: the customer is satisfied{% endif %}.</p>
+      {{ form('reopen', 'Reopen', 'btn-quiet') }}
+      {% endif %}
+    </section>
+{% endblock %}

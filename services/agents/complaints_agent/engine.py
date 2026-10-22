@@ -72,7 +72,7 @@ def quote(rx: re.Pattern, text: str) -> str | None:
 def short(text: str, n: int = 90) -> str:
     one = " ".join(text.split())
     first = re.split(r"(?<=[.!?])\s", one, maxsplit=1)[0]
-    return first if len(first) <= n else first[: n - 1].rstrip() + "…"
+    return first if len(first) <= n else first[: n - 1].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"      # cut at a word, not in the middle of one
 
 
 def contacts_of(case: dict, others: list[dict], now: dt.datetime) -> int:

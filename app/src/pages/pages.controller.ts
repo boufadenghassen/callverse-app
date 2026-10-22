@@ -75,15 +75,6 @@ export class PagesController {
 
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------
 
-  @Roles('COMPLAINT') @Get('complaints') @Render('complaints')
-  async complaints() {
-    const cases = await this.agents.openComplaints();
-    const lanes: Record<string, typeof cases> = {};
-    for (const severity of ['Critical', 'High', 'Medium']) lanes[severity] = cases.filter((c) => c.severity === severity);
-    const avgRisk = cases.length ? Math.round(cases.reduce((sum, c) => sum + c.escalationRisk, 0) / cases.length) : 0;
-    return { cases, lanes, critical: lanes.Critical.length, avgRisk };
-  }
-
   @Roles('TRAINER') @Get('training') @Render('training')
   async training() {
     return { scenarios: await this.agents.scenarios() };

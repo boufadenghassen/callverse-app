@@ -139,6 +139,27 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (res.status === 404 || res.status === 422) throw new RejectedError('This offer or customer is not valid.');
     if (!res.ok) throw new AgentDownError(`sales outcome answered ${res.status}`);
   }
+  openComplaints() { return this.call<m.ComplaintCase[]>('/complaints/open'); }
+  complaintInsights() { return this.call<m.ComplaintInsights>('/complaints/insights'); }
+  complaintFollowUps() { return this.call<m.ComplaintFollowUp[]>('/complaints/follow-ups'); }
+  complaintCandidates() { return this.call<m.ComplaintCandidate[]>('/complaints/from-calls'); }
+  complaint(id: string) { return this.complaintCall<m.ComplaintDetail>(`/complaints/${encodeURIComponent(id)}`); }
+  complaintTriage(text: string, customerId: string | null) { return this.complaintCall<m.ComplaintCase>('/complaints/triage', { text, customer_id: customerId }); }
+  complaintCreate(text: string, customerId: string | null, channel: string) { return this.complaintCall<m.ComplaintDetail>('/complaints', { text, customer_id: customerId, channel }); }
+  complaintFromCall(callId: string) { return this.complaintCall<m.ComplaintDetail>('/complaints/from-call', { call_id: callId }); }
+  complaintAct(id: string, a: m.ComplaintAct) {
+    return this.complaintCall<m.ComplaintDetail>(`/complaints/${encodeURIComponent(id)}/${a.action}`, { by: a.by, note: a.note ?? '', resolution: a.resolution ?? null, level: a.level ?? null, trusted: a.trusted ?? null });
+  }
+  /** A complaint request whose refusal (no such case, a wrong move, not enough words) carries a message the page can show. */
+  private async complaintCall<T>(path: string, body?: unknown): Promise<T> {
+    const res = await this.raw(path, body);
+    if ([404, 409, 422].includes(res.status)) {
+      const detail = ((await res.json().catch(() => ({}))) as { detail?: string | unknown[] }).detail;
+      throw new RejectedError(typeof detail === 'string' ? detail : 'This could not be done.');
+    }
+    if (!res.ok) throw new AgentDownError(`${path} answered ${res.status}`);
+    return (await res.json()) as T;
+  }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
 }
