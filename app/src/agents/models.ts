@@ -71,12 +71,23 @@ export interface Opportunity {
   customer: string; offer: string; relevance: number; reason: string;
   customerId?: string; offerId?: string; price?: string; kind?: string; pitch?: string; need?: { key: string; label: string };
   factors?: SalesFactor[]; timing?: SalesTiming; counterfactual?: string | null; alternatives?: { offer: string; relevance: number }[];
+  acceptance?: SalesAcceptance | null; expected?: SalesExpected; churn?: SalesChurn;
 }
+/** Risk (0-100) that the customer leaves, as a sum of named factors. */
+export interface SalesChurn { score: number; level: 'Low' | 'Medium' | 'High'; factors: SalesFactor[] }
+/** Chance of a yes, from what happened to similar offers in the history (null when there is no history yet). */
+export interface SalesAcceptance { probability: number; similar: number; similarAccepted: number; basis: string }
+/** What a yes is worth over twelve months (TND, revenue) and the expected value (chance x worth). */
+export interface SalesExpected { ifYes: number; chance: number | null; tnd: number | null; how: string }
 export interface SalesTurn { speaker: 'advisor' | 'customer'; text: string; start?: number; mood?: number }
 /** A need the customer voiced (or their file shows), with the words that show it. */
 export interface SalesSignal { need: string; label: string; quote: string; turn: number | null; time: string | null; mentions: number; strength: number; source: 'conversation' | 'file' }
-export interface SalesDetection { customerId: string | null; customer: string | null; mood: number; signals: SalesSignal[]; offers: Opportunity[]; skipped: { offerId: string; offer: string; why: string }[] }
+export interface SalesDetection { customerId: string | null; customer: string | null; mood: number; churn?: SalesChurn; signals: SalesSignal[]; offers: Opportunity[]; skipped: { offerId: string; offer: string; why: string }[] }
 export interface SalesOutcome { customerId: string | null; offerId: string; outcome: 'accepted' | 'declined'; relevance: number; cue: string; need: string }
 export interface SalesStatRow { label: string; key: string; offered: number; accepted: number; rate: number | null }
 /** Which offers convert. The history is simulated until real outcomes are logged. */
+/** A selling rule to replay on the history: how many calls, the share with a chance to offer, the lowest relevance to offer at, only at a good moment. */
+export interface SalesSimulationRequest { calls: number; share: number; minRelevance: number; goodMomentOnly: boolean }
+export interface SalesPolicy { label: string; minRelevance: number; goodMomentOnly: boolean; offers: number; accepted: number; declined: number; rate: number | null; revenue: number; perCall: number }
+export interface SalesSimulation { calls: number; share: number; opportunities: number; simulated: number; history: number; policies: SalesPolicy[]; yours: SalesPolicy; method: string }
 export interface SalesAnalytics { total: number; accepted: number; rate: number | null; simulated: number; byOffer: SalesStatRow[]; byRelevance: SalesStatRow[]; byMoment: SalesStatRow[]; byNeed: SalesStatRow[]; method: string }

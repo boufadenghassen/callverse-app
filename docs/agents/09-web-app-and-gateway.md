@@ -28,12 +28,13 @@ Open to **every signed-in user**: the home page `/` (cards for the workspaces yo
 | `/login`, `/logout` | GET, POST | public / any | sign in (new session id on sign-in), sign out |
 | `/` | GET | any | home, with a live figure per agent (a failing agent only hides its figure) |
 | `/advisor?customer=&q=` | GET | ADVISOR | customer 360 and the suggested answer; customer id must look like `YT-1042`, search 3 to 200 characters |
-| `/advisor/live/start`, `/advisor/live/say` | POST (JSON) | ADVISOR | start a call with the customer simulator (persona, optional mix, difficulty, intent, memory) and send a reply (1 to 300 characters; call id is 16 hex characters); each answer comes with the advisor agent's next suggestion |
+| `/advisor/live/start`, `/advisor/live/say`, `/advisor/live/offers` | POST (JSON) | ADVISOR | start a call with the customer simulator (persona, optional mix, difficulty, intent, memory) and send a reply (1 to 300 characters; call id is 16 hex characters); each answer comes with the advisor agent's next suggestion |
 | `/advisor/live/review` | POST | ADVISOR | score the finished live call |
 | `/workforce`, `/workforce/simulate` | GET, POST | WORKFORCE | forecast chart, routing plan, breaks; what-if form validated (queue A to E, -5 to +10 advisors, `HH:mm` times, end after start) |
 | `/quality`, `/quality/audio`, `/quality/sample-call.wav`, `/quality/feedback` | GET, POST | QUALITY | reviews, analytics, upload of a two-channel recording (up to 11 MB), a sample call, reviewer verdicts |
 | `/call-review`, `/call-review/analyze` | GET, POST | QUALITY | emotion of an uploaded recording through the emotion service (up to 15 MB) |
-| `/sales`, `/sales/detect`, `/sales/outcome` | GET, POST | SALES | see [05-sales-agent.md](05-sales-agent.md) |
+| `/sales`, `/sales/detect`, `/sales/simulate` | GET, POST | SALES | see [05-sales-agent.md](05-sales-agent.md) |
+| `/sales/outcome` | POST | SALES, ADVISOR | what the customer did with an offer (the advisor reports it from the live call) |
 | `/complaints`, `/training` | GET | COMPLAINT, TRAINER | demo pages ([06-training-and-complaints.md](06-training-and-complaints.md)) |
 | `/client`, `/client/say` | GET, POST | CLIENT | the client simulator (see below) |
 | `/voice/speak`, `/voice/transcribe` | POST | any signed in | text to speech, voice note to text ([07-voice.md](07-voice.md)) |
@@ -100,8 +101,8 @@ node dist/main.js                                       # http://localhost:8080
 With the agents (port 8000) and the emotion service (port 8001) running as described in the [index](README.md). `PORT` and `SESSION_SECRET` are optional. Details on the contract are in `app/README.md`.
 
 ## Tests
-* **Unit and HTTP tests** (`npm test`, Node's test runner and supertest, **88 tests** in 11 files): `security-and-pages` (sign-in, lock, CSRF, roles, headers, error pages), `deck-and-simulator` (client simulator, presentation pages), `insights`, `customer` (customer 360, suggestions), `polish` (pages, validation, accessibility landmarks), `call-review`, `live-call`, `voice` (6), `workforce`, `quality`, `sales` (6). They run in demo mode, with a fake or the mock gateway, so they need no Python.
-* **Browser tests** (`app/e2e`, Playwright on Edge, **40 tests**): the real app against the real agents: sign-in per role, every page, live call with spoken replies, voice note, the quality flow (sample call, recording upload, verdicts, filters, "what moved this score"), the sales flow, call review with the emotion service, the command palette, the tour, presentation mode, dark mode, particles, keyboard shortcuts, phone width. A separate **axe audit** reports "NO PROBLEMS FOUND".
+* **Unit and HTTP tests** (`npm test`, Node's test runner and supertest, **92 tests** in 11 files): `security-and-pages` (sign-in, lock, CSRF, roles, headers, error pages), `deck-and-simulator` (client simulator, presentation pages), `insights`, `customer` (customer 360, suggestions), `polish` (pages, validation, accessibility landmarks), `call-review`, `live-call`, `voice` (6), `workforce`, `quality`, `sales` (10). They run in demo mode, with a fake or the mock gateway, so they need no Python.
+* **Browser tests** (`app/e2e`, Playwright on Edge, **41 tests**): the real app against the real agents: sign-in per role, every page, live call with spoken replies, voice note, the quality flow (sample call, recording upload, verdicts, filters, "what moved this score"), the sales flow, call review with the emotion service, the command palette, the tour, presentation mode, dark mode, particles, keyboard shortcuts, phone width. A separate **axe audit** reports "NO PROBLEMS FOUND".
 * **Continuous integration** (`.github/workflows/ci.yml`, on every push to main and every pull request): job *web* (Node 24, `npm ci`, `npm run build`, `npm test`) and job *agents* (Python 3.11, `pip install -r requirements.txt`, `pytest -q`, without the heavy speech and emotion models, whose tests skip). The browser tests run on a developer machine, not in CI.
 
 ## Honest limits

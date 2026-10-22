@@ -18,7 +18,7 @@ Leila's agent: it spots what a customer needs, in the conversation or in their f
 | `../knowledge/sales_profiles.json` | Invented sales facts about the five demo customers (tenure, usage trend, add-ons) |
 
 ## Endpoints (in `../main.py`)
-`GET /sales/opportunities` (the contract's `Opportunity[]`, with extra fields: `customerId`, `offerId`, `price`, `factors`, `timing`, `counterfactual`, `alternatives`); `POST /sales/detect` `{customer_id?, turns}`; `POST /sales/outcome` `{customer_id?, offer_id, outcome, relevance, cue, need}`; `GET /sales/analytics`. The web app side: `app/src/pages/sales.controller.ts`, `app/views/sales.njk`.
+`GET /sales/opportunities` (the contract's `Opportunity[]`, with extra fields: `customerId`, `offerId`, `price`, `factors`, `timing`, `counterfactual`, `alternatives`); `POST /sales/detect` `{customer_id?, turns}`; `POST /sales/outcome` `{customer_id?, offer_id, outcome, relevance, cue, need}`; `GET /sales/analytics`; `POST /sales/simulate` `{calls, share, min_relevance, good_moment_only}`. Offers also carry `acceptance`, `expected` and the customer `churn` (churn risk as a sum of named factors, the chance of a yes from similar offers in the history, what a yes is worth over 12 months). Details in `docs/agents/05-sales-agent.md`. The web app side: `app/src/pages/sales.controller.ts`, `app/views/sales.njk`.
 
 ## Honest limits
 * Not a language model: the needs come from phrase patterns, so a paraphrase can be missed and a loose phrase can be over-read ("I need to call my wife" also reads as a family need). The detector is where an LLM or an embedding model would go.

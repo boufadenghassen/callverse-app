@@ -86,6 +86,22 @@
           <p class="muted" id="lv-s-meta"></p>
           <p class="warning" id="lv-s-warn" role="note" hidden></p>
         </article>
+        <article class="answer offer-box" id="live-offer" hidden aria-live="polite">
+          <h3>Offer to keep in mind</h3>
+          <p class="risk" id="lv-o-risk"></p>
+          <p class="muted small" id="lv-o-heard"></p>
+          <div id="lv-o-top" hidden>
+            <p class="offer" id="lv-o-name"></p>
+            <p class="timing" id="lv-o-timing"></p>
+            <p class="figures" id="lv-o-figures"></p>
+            <details class="why"><summary>Why this offer</summary><div id="lv-o-why"></div></details>
+            <div class="actions" id="lv-o-actions">
+              <button type="button" class="btn" data-outcome="accepted">Customer accepted</button>
+              <button type="button" class="btn-quiet" data-outcome="declined">Declined</button>
+            </div>
+          </div>
+          <p class="muted" id="lv-o-none" hidden>No offer fits yet. Solve the customer's problem first.</p>
+        </article>
       </div>
     </section>
 {% endblock %}

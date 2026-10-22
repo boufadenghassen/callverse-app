@@ -704,8 +704,9 @@ test('sales: offers come with their reasons in points, a conversation is read, a
   assert.ok(await page.locator('#opps .opp').count() >= 3, 'an offer for each customer on file');
   const first = page.locator('#opps .opp').first();
   await first.locator('summary', { hasText: 'Why this offer' }).click();
-  assert.match(await first.locator('.driver-list').innerText(), /What the file says[\s\S]*Fit with the contract/);
-  assert.ok(await first.locator('.driver-list .eff').count() >= 3, 'every factor has its points');
+  const whyOffer = first.locator('details:has(summary:text("Why this offer")) .driver-list');
+  assert.match(await whyOffer.innerText(), /What the file says[\s\S]*Fit with the contract/);
+  assert.ok(await whyOffer.locator('.eff').count() >= 3, 'every factor has its points');
   // a conversation: the customer says she is travelling, the agent finds the need and the roaming offer
   await page.click('button[data-sample-customer="YT-1042"]');
   assert.match(await page.inputValue('#sales-text'), /travelling to Paris/);
@@ -719,5 +720,50 @@ test('sales: offers come with their reasons in points, a conversation is read, a
   await page.locator('.toast', { hasText: 'Recorded: accepted' }).waitFor({ timeout: 10000 });
   assert.equal(await offers.first().locator('button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
   assert.ok(await page.locator('table.conv').count() >= 4, 'what converts');
+  // propensity: churn risk, the chance of a yes and what it is worth, on the card and in the conversation reader
+  assert.match(await first.locator('.risk').innerText(), /Churn risk \d+ · (Low|Medium|High)/);
+  assert.match(await first.locator('.figures').innerText(), /Chance of a yes \d+% · worth -?\d+ TND over 12 months if yes · expected -?\d+ TND/);
+  await first.locator('summary', { hasText: 'Why this churn risk' }).click();
+  assert.match(await first.locator('details:has(summary:text("Why this churn risk")) .driver-list').innerText(), /Starting point/);
+  assert.match(await offers.first().locator('.figures').innerText(), /Chance of a yes \d+%/);
+  assert.match(await page.locator('#sales-churn').innerText(), /Risk of losing this customer: \d+ · /);
+  // commercial simulation: a stricter rule makes fewer offers, then redraws the table
+  const rows = page.locator('#sim-body tr');
+  assert.equal(await rows.count(), 5, 'four rules and yours');
+  const offersBefore = Number((await rows.last().locator('td').first().innerText()).trim());
+  await page.fill('#sim-min', '70');
+  await page.check('#sim-good');
+  await page.click('#sim-form button[type=submit]');
+  await page.waitForFunction(() => /relevance 70 or more, at a good moment/i.test(document.querySelector('#sim-body tr.yours th')?.textContent ?? ''), null, { timeout: 15000 });
+  const offersAfter = Number((await rows.last().locator('td').first().innerText()).trim());
+  assert.ok(offersAfter < offersBefore, 'fewer offers under a stricter rule');
+  await page.fill('#sim-calls', '2000');
+  await page.click('#sim-form button[type=submit]');
+  await page.waitForFunction(() => /2000 calls/.test(document.querySelector('#sim-caption')?.textContent ?? ''), null, { timeout: 15000 });
+  await ctx.close();
+});
+
+test('sales in the live call: an offer to keep in mind appears with its timing and the advisor reports the outcome', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('karim');
+  await page.goto(`${BASE}/advisor`);
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
+  assert.equal(await page.locator('#live-offer').isVisible(), false, 'no offer before a call');
+  await page.click('#live-setup button[type=submit]');
+  await page.locator('#live-offer').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#lv-o-name').innerText(), /Upgrade to Premium Unlimited \(\d+\/100\)/);
+  assert.match(await page.locator('#lv-o-timing').innerText(), /Wait: solve the problem first/);   // the customer file has an open ticket
+  assert.match(await page.locator('#lv-o-risk').innerText(), /Risk of losing this customer: \d+ · (Low|Medium|High)/);
+  assert.match(await page.locator('#lv-o-figures').innerText(), /Chance of a yes \d+% · worth \d+ TND over 12 months if yes · expected \d+ TND/);
+  await page.locator('#live-offer summary', { hasText: 'Why this offer' }).click();
+  assert.match(await page.locator('#lv-o-why').innerText(), /What the file says[\s\S]*The moment/);
+  // the advisor answers; the panel follows the conversation and the outcome can be reported once
+  await page.fill('#lv-text', 'I am sorry about this. Let me check the refund policy before I promise anything.');
+  await page.click('#live-say button[type=submit]');
+  await page.locator('.live-msg.client').nth(1).waitFor({ timeout: 20000 });
+  await page.locator('#lv-o-name').waitFor({ state: 'visible' });
+  await page.click('#lv-o-actions button[data-outcome=declined]');
+  await page.locator('.toast', { hasText: 'Recorded: declined' }).waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#lv-o-actions button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
   await ctx.close();
 });

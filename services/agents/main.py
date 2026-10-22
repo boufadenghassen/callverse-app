@@ -294,10 +294,17 @@ class OutcomeIn(BaseModel):
     need: str = Field("", max_length=30)
 
 
+class SimulateIn(BaseModel):
+    calls: int = Field(1000, ge=1, le=100000)
+    share: int = Field(30, ge=1, le=100)                 # percent of calls where an offer could be made
+    min_relevance: int = Field(0, ge=0, le=100)
+    good_moment_only: bool = False
+
+
 @app.get("/sales/opportunities")
 def sales_opportunities():
     """The best offer for each customer on file today, with the reasons in points."""
-    return sales.opportunities(sales_store.rates())
+    return sales.opportunities(sales_store.rates(), sales_store.cells())
 
 
 @app.post("/sales/detect")
@@ -305,7 +312,7 @@ def sales_detect(body: DetectIn):
     """The needs the customer voiced (and what their file says) and the offers that answer them, ranked, with timing advice."""
     if body.customer_id and advisor.get_customer(body.customer_id) is None:
         raise HTTPException(404, f"No customer with id {body.customer_id}.")
-    return sales.detect([t.model_dump() for t in body.turns], body.customer_id, sales_store.rates())
+    return sales.detect([t.model_dump() for t in body.turns], body.customer_id, sales_store.rates(), cells=sales_store.cells())
 
 
 @app.post("/sales/outcome")
@@ -323,3 +330,9 @@ def sales_outcome(body: OutcomeIn):
 def sales_analytics():
     """Which offers convert, and under which conditions (relevance, moment, need)."""
     return sales_store.analytics()
+
+
+@app.post("/sales/simulate")
+def sales_simulate(body: SimulateIn):
+    """What a month of calls would earn under a selling rule (minimum relevance, only at a good moment), replayed on the history of offers."""
+    return sales_store.simulate(body.calls, body.share, body.min_relevance, body.good_moment_only)

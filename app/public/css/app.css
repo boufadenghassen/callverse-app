@@ -1014,7 +1014,7 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .live-msg strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
 .live-say textarea { width: 100%; display: block; margin: var(--s2) 0 var(--s3); }
 .evidence { margin: var(--s3) 0; padding-left: var(--s4); font-size: .875rem; }
-#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden] { display: none; }
+#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden], #live-offer[hidden], #lv-o-top[hidden], #lv-o-none[hidden], #lv-o-risk[hidden] { display: none; }
 .live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
 .listen { margin-left: var(--s2); font-size: .8125rem; }
 .listen.speaking { color: var(--accent-ink); font-weight: 700; }
@@ -1089,3 +1089,10 @@ table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4
 .conv { width: 100%; border-collapse: collapse; font-size: .875rem; }
 .conv caption { text-align: left; font-weight: 700; padding-bottom: var(--s1); }
 .conv th, .conv td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid var(--line); } .conv td { font-variant-numeric: tabular-nums; }
+.risk { display: inline-block; margin: var(--s1) 0 0; padding: .1rem .6rem; border-radius: 999px; font: 650 .8125rem var(--sans); }
+.risk.low { background: var(--ok-soft); color: var(--ok); } .risk.medium { background: var(--warn-soft); color: var(--warn); } .risk.high { background: var(--danger-soft); color: var(--danger); }
+.figures { margin: var(--s2) 0; font-size: .875rem; font-variant-numeric: tabular-nums; }
+.sim-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s3); margin: var(--s3) 0; }
+.sim-form input[type=number] { width: 9rem; max-width: 100%; }
+.sim-form .check { display: flex; align-items: center; min-height: 2.5rem; } .sim-form .check input { width: auto; margin-right: .4rem; }
+.sim .yours th, .sim .yours td { font-weight: 700; background: var(--accent-soft); }

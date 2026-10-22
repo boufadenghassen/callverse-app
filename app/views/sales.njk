@@ -3,6 +3,10 @@
 {% set title = "Sales opportunities" %}
 {% set active = "sales" %}
 {% set bodyClass = "p-sales" %}
+{% macro factors(list) %}<ul class="driver-list">{% for f in list %}
+            <li><span class="eff {{ 'pos' if f.points >= 0 else 'neg' }}">{{ '+' ~ f.points if f.points > 0 else ('−' ~ (0 - f.points) if f.points < 0 else '0') }}</span>
+              <span><strong>{{ f.name }}</strong>: {{ f.why }}</span></li>
+          {% endfor %}</ul>{% endmacro %}
 {% block content %}
     <header class="page-head">
       <p class="eyebrow">Leila · Sales agent</p>
@@ -17,23 +21,24 @@
       <li class="opp">
         <div class="opp-top">
           <span class="avatar" aria-hidden="true">{{ o.initials }}</span>
-          <div><h2>{{ o.customer }}</h2><p class="muted small">{% if real %}From the customer file{% else %}Live conversation{% endif %}</p></div>
+          <div><h2>{{ o.customer }}</h2><p class="muted small">{% if real %}From the customer file{% else %}Live conversation{% endif %}</p>
+            {% if o.churn %}<p class="risk {{ o.churn.level | lower }}">Churn risk {{ o.churn.score }} · {{ o.churn.level }}</p>{% endif %}</div>
           <div class="relevance">{{ m.ring(o.relevance) }}<span class="small muted">Relevance</span></div>
         </div>
         <p class="offer-label small muted">Suggested offer</p>
         <p class="offer">{{ o.offer }}{% if o.price %} <span class="price">{{ o.price }}</span>{% endif %}</p>
         <blockquote class="heard">{{ o.reason }}</blockquote>
         {% if o.timing %}<p class="timing {{ 'wait' if o.timing.cue == 'after_resolution' else 'go' }}"><strong>{{ 'Wait: solve the problem first' if o.timing.cue == 'after_resolution' else 'Good moment to offer' }}.</strong> <span class="muted">{{ o.timing.why }}</span></p>{% endif %}
+        {% if o.acceptance and o.expected %}<p class="figures">Chance of a yes <strong>{{ (o.acceptance.probability * 100) | round }}%</strong> · worth <strong>{{ o.expected.ifYes }} TND</strong> over 12 months if yes · expected <strong>{{ o.expected.tnd }} TND</strong></p>{% endif %}
         {% if o.factors %}
         <details class="why">
           <summary>Why this offer</summary>
-          <ul class="driver-list">{% for f in o.factors %}
-            <li><span class="eff {{ 'pos' if f.points >= 0 else 'neg' }}">{{ '+' ~ f.points if f.points > 0 else ('−' ~ (0 - f.points) if f.points < 0 else '0') }}</span>
-              <span><strong>{{ f.name }}</strong>: {{ f.why }}</span></li>
-          {% endfor %}</ul>
+          {{ factors(o.factors) }}
+          {% if o.acceptance %}<p class="muted small">Chance of a yes: {{ o.acceptance.basis }}. Worth: {{ o.expected.how }}.</p>{% endif %}
           {% if o.counterfactual %}<p class="muted small">{{ o.counterfactual }}</p>{% endif %}
           {% if o.alternatives | length %}<p class="muted small">Next best: {% for a in o.alternatives %}{{ a.offer }} ({{ a.relevance }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
         </details>
+        {% if o.churn %}<details class="why"><summary>Why this churn risk</summary>{{ factors(o.churn.factors) }}<p class="muted small">A sum of named parts read from the file and the conversation; nothing is learned.</p></details>{% endif %}
         <div class="actions">
           <button type="button" class="btn" data-outcome="accepted" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Customer accepted</button>
           <button type="button" class="btn-quiet" data-outcome="declined" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Declined</button>
@@ -62,12 +67,35 @@
       </form>
       <p id="sales-status" role="status" class="muted"></p>
       <div id="sales-result" hidden>
+        <details class="why" id="sales-churn-box"><summary id="sales-churn"></summary><ul class="driver-list" id="sales-churn-factors"></ul></details>
         <h3>What the customer needs</h3>
         <ul class="driver-list" id="sales-signals"></ul>
         <h3>Offers, most relevant first</h3>
         <ol class="sales-offers" id="sales-offers"></ol>
         <p class="muted small" id="sales-skipped"></p>
       </div>
+    </section>
+    {% endif %}
+
+    {% if simulation %}
+    <section class="panel" aria-labelledby="sim">
+      <h2 id="sim">What a selling rule would earn</h2>
+      <p class="muted">Replays the history of offers under a rule: offer at every chance, or only when the offer is relevant, or only at a good moment. It shows the trade between more sales and fewer refusals.</p>
+      <form id="sim-form" class="sim-form">
+        <div><label for="sim-calls">Calls per month</label><input id="sim-calls" type="number" min="1" max="100000" step="1" value="{{ simulation.calls }}" required></div>
+        <div><label for="sim-share">Calls with a chance to offer (%)</label><input id="sim-share" type="number" min="1" max="100" step="1" value="{{ simulation.share }}" required></div>
+        <div><label for="sim-min">Offer only from relevance</label><input id="sim-min" type="number" min="0" max="100" step="1" value="{{ simulation.yours.minRelevance }}" required></div>
+        <div class="check"><label><input id="sim-good" type="checkbox"> Only at a good moment</label></div>
+        <button type="submit" class="btn">Simulate</button>
+      </form>
+      <p id="sim-status" role="status" class="muted"></p>
+      <table class="conv sim" id="sim-table">
+        <caption id="sim-caption">One month: {{ simulation.calls }} calls, {{ simulation.opportunities }} with a chance to offer</caption>
+        <thead><tr><th scope="col">Rule</th><th scope="col">Offers</th><th scope="col">Yes</th><th scope="col">Refused</th><th scope="col">Yes rate</th><th scope="col">Revenue, TND (12 months)</th></tr></thead>
+        <tbody id="sim-body">{% for p in simulation.policies %}<tr><th scope="row">{{ p.label }}</th><td>{{ p.offers }}</td><td>{{ p.accepted }}</td><td>{{ p.declined }}</td><td>{% if p.rate !== null %}{{ (p.rate * 100) | round }}%{% endif %}</td><td>{{ p.revenue }}</td></tr>{% endfor %}
+          <tr class="yours"><th scope="row">{{ simulation.yours.label }}</th><td>{{ simulation.yours.offers }}</td><td>{{ simulation.yours.accepted }}</td><td>{{ simulation.yours.declined }}</td><td>{% if simulation.yours.rate !== null %}{{ (simulation.yours.rate * 100) | round }}%{% endif %}</td><td>{{ simulation.yours.revenue }}</td></tr></tbody>
+      </table>
+      <details class="how"><summary>How this was computed</summary><p class="muted" id="sim-method">{{ simulation.method }}</p></details>
     </section>
     {% endif %}
 

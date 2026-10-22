@@ -3,6 +3,7 @@
 SQLite in services/agents/data/sales.db (git-ignored; SALES_DB moves it). An empty store is filled with 240 SIMULATED offers over eight weeks, so the
 analytics have something to show: in the simulation an offer is accepted more often when it is relevant and made at a good moment, which is how the
 history was written, so it shows the loop works, not that real customers behave this way. Rows made by people carry source "advisor".
+The same log answers "what if we only offered when...": `simulate` replays it under a policy (a minimum relevance, only at a good moment).
 """
 import datetime as dt
 import os
@@ -44,6 +45,17 @@ def rates() -> dict[str, tuple[int, int]]:
     return {r[0]: (r[1], r[2] or 0) for r in rows}
 
 
+def cells() -> dict[tuple[str, str, str], tuple[int, int]]:
+    """(offer id, relevance band, moment) -> (offers made, accepted): what happened to similar offers."""
+    with _conn() as c:
+        rows = c.execute("select offer_id, relevance, cue, outcome from offers_log").fetchall()
+    out: dict[tuple[str, str, str], tuple[int, int]] = {}
+    for offer, relevance, cue, outcome in rows:
+        n, a = out.get((offer, engine.band(relevance), cue), (0, 0))
+        out[(offer, engine.band(relevance), cue)] = (n + 1, a + (outcome == "accepted"))
+    return out
+
+
 BASE = {"roaming-pass": 0.45, "data-booster": 0.35, "plan-upgrade": 0.2, "family-line": 0.3, "home-fiber": 0.25, "loyalty-discount": 0.5,
         "autopay": 0.55, "premium-care": 0.15, "device-plan": 0.2, "intl-calls": 0.3}
 
@@ -81,7 +93,7 @@ def analytics() -> dict:
                 out.append(_row(label, len(mine), sum(r[4] == "accepted" for r in mine), key=k))
         return out
 
-    band = lambda r: "70+" if r[1] >= 70 else "50-69" if r[1] >= 50 else "under 50"      # noqa: E731
+    band = lambda r: engine.band(r[1])      # noqa: E731
     return dict(
         total=total, accepted=accepted, rate=round(accepted / total, 2) if total else None, simulated=sum(r[5] == "simulated" for r in rows),
         byOffer=sorted(group(lambda r: r[0], [(o["id"], engine.OFFERS[o["id"]]["name"]) for o in engine.CATALOG["offers"]]), key=lambda r: -(r["rate"] or 0)),
@@ -91,3 +103,32 @@ def analytics() -> dict:
         method="Each offer made is logged with its relevance, the moment and the need behind it, then marked accepted or declined. The track record factor of the "
                "ranking is the smoothed acceptance rate of the offer, worth -10 to +10 points. The history shown here is simulated: it shows the loop works, "
                "not how real customers behave.")
+
+
+PRESETS = [("Offer at every opportunity", 0, False), ("Only relevance 50 or more", 50, False), ("Only relevance 70 or more", 70, False),
+           ("Relevance 70 or more, at a good moment", 70, True)]
+
+
+def simulate(calls: int = 1000, share: int = 30, min_relevance: int = 0, good_moment_only: bool = False) -> dict:
+    """Replay the log under a policy. The log holds the offers that were made when anyone could be offered anything, so it stands for the opportunities:
+    the policy keeps some of them. Per month: opportunities = calls x share; offers = opportunities x the share of the log the policy keeps; accepted =
+    offers x the acceptance rate of the kept rows; revenue = opportunities x (twelve-month value of the accepted kept rows / all rows)."""
+    with _conn() as c:
+        rows = c.execute("select offer_id, relevance, cue, outcome, source from offers_log").fetchall()
+    opportunities = calls * share / 100
+
+    def run(label, minimum, good):
+        kept = [r for r in rows if r[1] >= minimum and (r[2] == "now" or not good)]
+        won = [r for r in kept if r[3] == "accepted"]
+        offers = opportunities * len(kept) / len(rows) if rows else 0
+        accepted = offers * len(won) / len(kept) if kept else 0
+        revenue = opportunities * sum(engine.VALUES[r[0]]["tnd_year"] for r in won) / len(rows) if rows else 0
+        return dict(label=label, minRelevance=minimum, goodMomentOnly=good, offers=round(offers), accepted=round(accepted), declined=round(offers - accepted),
+                    rate=round(len(won) / len(kept), 2) if kept else None, revenue=round(revenue), perCall=round(revenue / calls, 2) if calls else 0)
+
+    label = f"Yours: relevance {min_relevance} or more" + (", at a good moment" if good_moment_only else "")
+    return dict(calls=calls, share=share, opportunities=round(opportunities), simulated=sum(r[4] == "simulated" for r in rows), history=len(rows),
+                policies=[run(*p) for p in PRESETS], yours=run(label, min_relevance, good_moment_only),
+                method="Replays the history of offers (simulated, unless people logged outcomes) under each rule. Revenue is what the company books in the twelve "
+                       "months after each yes (invented prices, retention offers at a typical value). A stricter rule makes fewer offers with a higher acceptance rate "
+                       "and fewer refusals; it earns less in total unless the refusals cost something, which this simulation does not price.")

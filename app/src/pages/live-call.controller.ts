@@ -1,8 +1,9 @@
 import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { AgentDownError, AgentGateway, UnknownCallError } from '../agents/agent.gateway';
+import { AgentDownError, AgentGateway, NeedsRealAgentsError, RejectedError, UnknownCallError } from '../agents/agent.gateway';
 import { Roles } from '../auth/access.guard';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
+import { cleanTurns } from './sales.controller';
 
 const CUSTOMER_ID = 'YT-1042'; // the demo customer the advisor console shows
 
@@ -42,11 +43,24 @@ export class LiveCallController {
     });
   }
 
+  /** The offers worth keeping in mind, read from the conversation so far (the console asks after each customer message). */
+  @Roles('ADVISOR') @HttpCode(200) @Post('offers')
+  async offers(@Body() b: Record<string, unknown>, @Res() res: Response) {
+    const turns = cleanTurns(b.turns);
+    if (!turns.length) return res.status(400).json({ error: 'There is no conversation yet.' });
+    return this.run(res, async () => {
+      const detection = await this.agents.salesDetect(CUSTOMER_ID, turns);
+      return { ...detection, offers: detection.offers.slice(0, 2) };
+    });
+  }
+
   private async run(res: Response, work: () => Promise<object>) {
     try {
       return res.json(await work());
     } catch (e) {
       if (e instanceof UnknownCallError) return res.status(404).json({ error: 'This call was lost (the agents restarted). Start a new one.' });
+      if (e instanceof RejectedError) return res.status(400).json({ error: e.message });
+      if (e instanceof NeedsRealAgentsError) return res.status(503).json({ error: 'Offers need the real agents (AGENTS_MODE=http).' });
       if (e instanceof AgentDownError) return res.status(503).json({ error: 'The agents are not responding. Start them (see app/README.md), then try again.' });
       throw e;
     }

@@ -57,4 +57,6 @@ export abstract class AgentGateway {
   /** What happened to an offer that was made. Throws NeedsRealAgentsError or RejectedError. */
   abstract salesOutcome(outcome: m.SalesOutcome): Promise<void>;
   abstract salesAnalytics(): Promise<m.SalesAnalytics | null>;
+  /** What a month of calls would earn under a selling rule, replayed on the history. Throws NeedsRealAgentsError (demo mode) or RejectedError. */
+  abstract salesSimulate(request: m.SalesSimulationRequest): Promise<m.SalesSimulation>;
 }
