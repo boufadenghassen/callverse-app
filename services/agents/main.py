@@ -21,6 +21,8 @@ from quality_analyst import semantic as quality_semantic
 from quality_analyst import store as quality_store
 from sales_agent import engine as sales
 from sales_agent import store as sales_store
+from complaints_agent import store as complaints_store
+from complaints_agent.api import router as complaints_router
 import stt
 import voice
 import routing
@@ -33,6 +35,7 @@ async def lifespan(_app):
     # load the voice model in the background, so the first spoken line does not wait for it
     quality_store.ensure_history()
     sales_store.ensure_history()
+    complaints_store.ensure_history()
     if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
         threading.Thread(target=lambda: (quality_semantic.scores('Ready.'), quality_eval.report()), daemon=True).start()
     if voice.available():
@@ -43,6 +46,7 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="orqestra agents", lifespan=lifespan)
+app.include_router(complaints_router)
 
 Persona = Literal["IMPATIENT", "ANXIOUS", "ANGRY_PREMIUM", "LOYAL_AT_RISK", "NEW_SUBSCRIBER"]
 
@@ -73,7 +77,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality"], "voice": voice.available(), "listen": stt.available()}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints"], "voice": voice.available(), "listen": stt.available()}
 
 
 @app.post("/voice/speak")
