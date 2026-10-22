@@ -51,6 +51,12 @@ export abstract class AgentGateway {
   abstract sampleCall(): Promise<Buffer>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
   abstract scenarios(): Promise<m.Scenario[]>;
+  abstract scenario(id: string): Promise<m.ScenarioDetail>;
+  abstract scenarioLineage(id: string): Promise<m.ScenarioDetail[]>;
+  abstract replayScenario(id: string): Promise<m.ScenarioDetail>;
+  abstract mutateScenario(id: string, operation: 'harder' | 'easier' | 'add_second_problem'): Promise<m.ScenarioDetail>;
+  abstract deleteScenario(id: string): Promise<void>;
+  abstract trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan>;
   abstract opportunities(): Promise<m.Opportunity[]>;
   /** The needs a customer voiced in a conversation and the offers that answer them, with the reasons. Throws NeedsRealAgentsError (demo mode) or RejectedError (unknown customer). */
   abstract salesDetect(customerId: string | null, turns: m.SalesTurn[]): Promise<m.SalesDetection>;

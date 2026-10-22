@@ -62,6 +62,20 @@ export interface QualityAnalytics {
 }
 export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
+export interface ScenarioDetail extends Scenario {
+  kind?: string;
+  parent_id?: string | null;
+  mutation_log?: string[];
+  spec?: { segment: string; difficulty: number };
+}
+export interface TrainingWeakness { criterion: string; score: number }
+export interface TrainingPlan {
+  advisor_id: string;
+  needs_training: boolean;
+  focus: { skill: string; gap: number; criteria: string[] }[];
+  scenarios: Scenario[];
+  rationale: string[];
+}
 /** One reason an offer is suggested, in points of its 0-100 relevance (the sales agent's explanation). */
 export interface SalesFactor { name: string; points: number; why: string }
 /** Say it now, or wait until the customer's problem is solved. */

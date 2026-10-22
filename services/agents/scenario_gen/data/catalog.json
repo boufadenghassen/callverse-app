@@ -1,0 +1,429 @@
+{
+  "languages": ["en", "fr", "derja"],
+  "segments": ["new", "loyal", "dissatisfied", "premium", "at_risk"],
+  "skills": {
+    "empathy": "Recognises and names the customer's feelings and responds with care.",
+    "active_listening": "Lets the customer speak, asks targeted questions, reformulates.",
+    "de_escalation": "Lowers tension and keeps control of an angry or pressing customer.",
+    "accuracy": "Gives correct, verified information and figures.",
+    "procedure_compliance": "Follows the mandatory steps (identity check, ticket, scripts).",
+    "resolution": "Brings the issue to a clear outcome with a next step and a delay.",
+    "escalation_handling": "Escalates at the right moment, to the right team, with a clean handover."
+  },
+  "criteria": {
+    "compliance": [["procedure_compliance", 1.0]],
+    "procedure": [["procedure_compliance", 1.0], ["escalation_handling", 0.5]],
+    "accuracy": [["accuracy", 1.0]],
+    "relevance": [["active_listening", 0.8], ["accuracy", 0.4]],
+    "satisfaction": [["empathy", 0.6], ["resolution", 0.8]],
+    "sentiment": [["empathy", 1.0], ["de_escalation", 0.8]]
+  },
+  "intents": [
+    {
+      "key": "double_billing",
+      "category": "billing",
+      "title": "Double billing",
+      "base_difficulty": 2,
+      "opening_emotion": "anger",
+      "skills": ["accuracy", "empathy", "procedure_compliance"],
+      "typical_segments": ["loyal", "dissatisfied"],
+      "success_criteria": [
+        "Checks the billing history before answering",
+        "Acknowledges that this is a repeated problem",
+        "Opens a correction or refund ticket and gives a delay"
+      ],
+      "card": {
+        "en": "You were charged twice for the same invoice. This is the third time you call this month and nobody has fixed it.",
+        "fr": "On vous a facturé deux fois la même facture. C'est la troisième fois que vous appelez ce mois-ci et personne n'a réglé le problème.",
+        "derja": "خلّصت الفاتورة مرتين على نفس الشهر، وهاذي تالت مرة نعيّط فيها هالشهر وحتى واحد ما حلّ المشكل."
+      }
+    },
+    {
+      "key": "roaming_bill_shock",
+      "category": "billing",
+      "title": "Roaming bill shock",
+      "base_difficulty": 3,
+      "opening_emotion": "fear",
+      "skills": ["accuracy", "empathy", "resolution"],
+      "typical_segments": ["premium", "new"],
+      "success_criteria": [
+        "Reassures the customer before explaining figures",
+        "Explains what has been charged and how to stop further charges",
+        "Offers a roaming pack or a limit when relevant"
+      ],
+      "card": {
+        "en": "You are travelling abroad and fear a huge data-roaming bill. You want to know what you have been charged and how to stop it.",
+        "fr": "Vous voyagez à l'étranger et vous craignez une énorme facture d'itinérance data. Vous voulez savoir ce qui a été facturé et comment l'arrêter.",
+        "derja": "أنا مسافر برّا وخايف تجيني فاتورة غالية على الإنترنت متاع الروومينغ. نحب نعرف شنوة تخلّص عليّ وكيفاش نوقّفها."
+      }
+    },
+    {
+      "key": "line_cut",
+      "category": "technical",
+      "title": "Line cut",
+      "base_difficulty": 2,
+      "opening_emotion": "anger",
+      "skills": ["resolution", "procedure_compliance", "empathy"],
+      "typical_segments": ["loyal", "premium"],
+      "success_criteria": [
+        "Verifies identity and the line status",
+        "Finds the cause (unpaid invoice, network, SIM) before promising anything",
+        "Gives a restoration delay and a way to follow up"
+      ],
+      "card": {
+        "en": "Your line was cut while you are abroad and you cannot make calls any more.",
+        "fr": "Votre ligne a été coupée alors que vous êtes à l'étranger et vous ne pouvez plus appeler.",
+        "derja": "الخط متاعي تقطع وأنا برّا تونس وما عادش نجّم نعيّط."
+      }
+    },
+    {
+      "key": "slow_internet",
+      "category": "technical",
+      "title": "Slow internet",
+      "base_difficulty": 2,
+      "opening_emotion": "anger",
+      "skills": ["procedure_compliance", "resolution", "active_listening"],
+      "typical_segments": ["dissatisfied", "loyal"],
+      "success_criteria": [
+        "Runs the standard diagnostic steps in order",
+        "Explains each step in plain words",
+        "Schedules a technician if the diagnostic fails"
+      ],
+      "card": {
+        "en": "Your home internet has been very slow for a week and you can no longer work from home.",
+        "fr": "Votre connexion internet est très lente depuis une semaine et vous ne pouvez plus télétravailler.",
+        "derja": "الإنترنت في الدار بطيئة برشا من أسبوع وما عادش نجّم نخدم."
+      }
+    },
+    {
+      "key": "cancellation_request",
+      "category": "retention",
+      "title": "Cancellation request",
+      "base_difficulty": 4,
+      "opening_emotion": "sad",
+      "skills": ["empathy", "de_escalation", "resolution"],
+      "typical_segments": ["loyal", "at_risk"],
+      "success_criteria": [
+        "Explores the reason before offering anything",
+        "Offers a relevant retention option without pressure",
+        "Respects the decision and explains the cancellation steps if the customer insists"
+      ],
+      "card": {
+        "en": "You want to cancel after six years. You really did not want to, but the prices keep going up.",
+        "fr": "Vous voulez résilier après six ans. Vous n'en avez pas vraiment envie, mais les prix n'arrêtent pas d'augmenter.",
+        "derja": "نحب نلغي الاشتراك بعد ستّ سنين. والله ما حبّيتش نعملها، أما الأسعار ديما تزيد."
+      }
+    },
+    {
+      "key": "refund_status",
+      "category": "billing",
+      "title": "Refund follow-up",
+      "base_difficulty": 2,
+      "opening_emotion": "neutral",
+      "skills": ["accuracy", "resolution"],
+      "typical_segments": ["loyal", "dissatisfied"],
+      "success_criteria": [
+        "Finds the refund request in the system",
+        "Gives a precise status and expected date",
+        "Offers a follow-up channel if the date is missed"
+      ],
+      "card": {
+        "en": "You are waiting for a refund promised two weeks ago and want to know where it is.",
+        "fr": "Vous attendez un remboursement promis il y a deux semaines et vous voulez savoir où il en est.",
+        "derja": "استنّيت رجوع الفلوس اللي وعدوني بيه من جوج أسابيع ونحب نعرف وين وصل."
+      }
+    },
+    {
+      "key": "data_allowance_question",
+      "category": "information",
+      "title": "Data allowance question",
+      "base_difficulty": 1,
+      "opening_emotion": "neutral",
+      "skills": ["accuracy"],
+      "typical_segments": ["new", "loyal"],
+      "success_criteria": [
+        "Gives the remaining data and the renewal date correctly",
+        "Keeps the answer short and clear",
+        "Checks whether the customer needs anything else"
+      ],
+      "card": {
+        "en": "You calmly ask how much data is left on your plan and when it renews.",
+        "fr": "Vous demandez calmement combien de data il vous reste et quand votre forfait se renouvelle.",
+        "derja": "نحب نعرف قدّاش باقي عندي ميغا في الباقة وإمتى تتجدّد."
+      }
+    },
+    {
+      "key": "plan_change",
+      "category": "sales",
+      "title": "Plan change",
+      "base_difficulty": 2,
+      "opening_emotion": "neutral",
+      "skills": ["accuracy", "resolution", "active_listening"],
+      "typical_segments": ["new", "loyal"],
+      "success_criteria": [
+        "Asks about real usage before recommending a plan",
+        "States the price and the conditions of the new plan",
+        "Confirms the change and its start date"
+      ],
+      "card": {
+        "en": "You want a cheaper plan but you do not want to lose your current number or benefits.",
+        "fr": "Vous voulez un forfait moins cher sans perdre votre numéro ni vos avantages.",
+        "derja": "نحب نبدّل الباقة متاعي بوحدة أرخص أما من غير ما نخسر نمرتي ولا الامتيازات."
+      }
+    },
+    {
+      "key": "fee_dispute",
+      "category": "billing",
+      "title": "Unexplained fee",
+      "base_difficulty": 3,
+      "opening_emotion": "disgust",
+      "skills": ["de_escalation", "empathy", "accuracy"],
+      "typical_segments": ["dissatisfied", "premium"],
+      "success_criteria": [
+        "Never calls the fee 'normal' without explaining it",
+        "Explains the origin of the fee and where it was disclosed",
+        "Offers a gesture or an escalation if the customer's complaint is justified"
+      ],
+      "card": {
+        "en": "You were charged a fee nobody explained to you, and you were told it was 'normal'. You find that insulting.",
+        "fr": "On vous a prélevé des frais que personne ne vous a expliqués, et on vous a dit que c'était « normal ». Vous trouvez cela insultant.",
+        "derja": "خصموا عليّ رسوم ما شرحهالي حتى واحد، وقالولي هاذي عادية. نشوفها إهانة."
+      }
+    },
+    {
+      "key": "lost_sim_or_phone",
+      "category": "security",
+      "title": "Lost phone or SIM",
+      "base_difficulty": 3,
+      "opening_emotion": "fear",
+      "skills": ["procedure_compliance", "resolution", "empathy"],
+      "typical_segments": ["new", "premium"],
+      "success_criteria": [
+        "Blocks the line quickly after a proper identity check",
+        "Explains the replacement SIM steps and delay",
+        "Reassures the customer about charges made after the loss"
+      ],
+      "card": {
+        "en": "You lost your phone with your SIM card and want the line blocked immediately and a replacement.",
+        "fr": "Vous avez perdu votre téléphone avec la carte SIM et vous voulez bloquer la ligne tout de suite et obtenir un remplacement.",
+        "derja": "ضاع منّي التليفون بالشريحة وحاب نبلوكي الخط توّا ونطلب وحدة جديدة."
+      }
+    },
+    {
+      "key": "installation_delay",
+      "category": "technical",
+      "title": "Missed installation",
+      "base_difficulty": 3,
+      "opening_emotion": "anger",
+      "skills": ["de_escalation", "resolution", "empathy"],
+      "typical_segments": ["new", "dissatisfied"],
+      "success_criteria": [
+        "Apologises sincerely without blaming the technician team",
+        "Gives a new appointment with a time window",
+        "Offers compensation if the policy allows it"
+      ],
+      "card": {
+        "en": "A technician was supposed to come on Monday and did not show up. You waited at home all day.",
+        "fr": "Un technicien devait venir lundi et ne s'est pas présenté. Vous avez attendu chez vous toute la journée.",
+        "derja": "الفنّي كان لازم يجي نهار الإثنين وما جاش، وأنا قعدت نستنّى في الدار النهار كامل."
+      }
+    },
+    {
+      "key": "unrecognized_charge",
+      "category": "security",
+      "title": "Unrecognized charge",
+      "base_difficulty": 4,
+      "opening_emotion": "fear",
+      "skills": ["procedure_compliance", "accuracy", "escalation_handling"],
+      "typical_segments": ["loyal", "premium"],
+      "success_criteria": [
+        "Verifies identity before discussing the charge",
+        "Identifies the charge from the billing detail",
+        "Escalates to the fraud team if the charge is not explained"
+      ],
+      "card": {
+        "en": "There is a charge on your bill you do not recognize and you fear someone used your number.",
+        "fr": "Il y a sur votre facture un prélèvement que vous ne reconnaissez pas et vous craignez que quelqu'un ait utilisé votre numéro.",
+        "derja": "لقيت في الفاتورة خصم ما نعرفوش وخايف يكون حد استعمل نمرتي."
+      }
+    },
+    {
+      "key": "contract_renewal_offer",
+      "category": "sales",
+      "title": "Contract renewal offer",
+      "base_difficulty": 2,
+      "opening_emotion": "neutral",
+      "skills": ["accuracy", "active_listening"],
+      "typical_segments": ["loyal", "premium"],
+      "success_criteria": [
+        "Presents offers that match the customer's usage",
+        "Does not pressure the customer to decide during the call",
+        "Summarises the conditions before closing"
+      ],
+      "card": {
+        "en": "You received a message about renewing your contract and want to know the offers before deciding.",
+        "fr": "Vous avez reçu un message sur le renouvellement de votre contrat et vous voulez connaître les offres avant de décider.",
+        "derja": "جاتني رسالة على تجديد العقد ونحب نعرف شنوّة العروض قبل ما نقرّر."
+      }
+    },
+    {
+      "key": "refund_received",
+      "category": "feedback",
+      "title": "Thank-you call",
+      "base_difficulty": 1,
+      "opening_emotion": "happy",
+      "skills": ["empathy", "resolution"],
+      "typical_segments": ["loyal", "new"],
+      "success_criteria": [
+        "Receives the thanks warmly and briefly",
+        "Answers the small follow-up question correctly",
+        "Closes the call positively"
+      ],
+      "card": {
+        "en": "Your refund just arrived and the advisor who handled it was very kind. You call to thank them and to check the date of your next invoice.",
+        "fr": "Votre remboursement vient d'arriver et le conseiller qui s'en est occupé a été très aimable. Vous appelez pour le remercier et vérifier la date de votre prochaine facture.",
+        "derja": "الفلوس رجعوهالي توّا والمستشار اللي تكفّل بيا كان لطيف برشا. عيّطت نشكرو ونتأكّد من تاريخ الفاتورة الجاية."
+      }
+    },
+    {
+      "key": "formal_complaint",
+      "category": "complaint",
+      "title": "Formal complaint",
+      "base_difficulty": 4,
+      "opening_emotion": "disgust",
+      "skills": ["escalation_handling", "empathy", "procedure_compliance"],
+      "typical_segments": ["dissatisfied", "at_risk"],
+      "success_criteria": [
+        "Listens to the whole story without interrupting",
+        "Records the complaint with the mandatory details",
+        "Explains the handling process, the delay and the written answer"
+      ],
+      "card": {
+        "en": "You want to file a formal complaint about the way you were treated in a shop and you want a written answer.",
+        "fr": "Vous voulez déposer une réclamation formelle sur la façon dont vous avez été reçu en boutique et vous exigez une réponse écrite.",
+        "derja": "نحب نقدّم شكاية رسمية على كيفاش عاملوني في الفرع وحاب جواب مكتوب."
+      }
+    }
+  ],
+  "events": [
+    {
+      "key": "customer_interrupts",
+      "rare": false,
+      "text": "The customer interrupts the advisor and talks over explanations.",
+      "expect": "Stays calm, lets the customer finish, then summarises.",
+      "stresses": ["active_listening", "de_escalation"]
+    },
+    {
+      "key": "vague_description",
+      "rare": false,
+      "text": "The customer describes the problem vaguely and needs guiding questions.",
+      "expect": "Asks targeted questions instead of guessing.",
+      "stresses": ["active_listening", "resolution"]
+    },
+    {
+      "key": "second_problem",
+      "rare": false,
+      "text": "Midway through the call, the customer raises a second, unrelated problem.",
+      "expect": "Brings the first issue to closure, then logs and handles the second.",
+      "stresses": ["resolution", "procedure_compliance"]
+    },
+    {
+      "key": "asks_for_supervisor",
+      "rare": false,
+      "text": "The customer demands to speak to a supervisor.",
+      "expect": "Follows the escalation rules without being defensive.",
+      "stresses": ["escalation_handling", "de_escalation"]
+    },
+    {
+      "key": "threatens_to_leave",
+      "rare": false,
+      "text": "The customer threatens to switch to a competitor.",
+      "expect": "Acknowledges the feeling and offers real options without over-promising.",
+      "stresses": ["empathy", "de_escalation"]
+    },
+    {
+      "key": "misinformed_by_previous_agent",
+      "rare": false,
+      "text": "A previous advisor gave the customer wrong information.",
+      "expect": "Corrects the information politely and takes ownership.",
+      "stresses": ["accuracy", "empathy"]
+    },
+    {
+      "key": "hidden_intent",
+      "rare": false,
+      "text": "The real reason for the call is not stated at first.",
+      "expect": "Probes for the underlying need.",
+      "stresses": ["active_listening", "empathy"]
+    },
+    {
+      "key": "repeat_caller",
+      "rare": false,
+      "text": "The customer has already called about this several times.",
+      "expect": "Reads the history and does not ask for everything again.",
+      "stresses": ["empathy", "resolution"]
+    },
+    {
+      "key": "time_pressure",
+      "rare": false,
+      "text": "The customer is in a hurry and has only a few minutes.",
+      "expect": "Prioritises the fix and keeps the call short.",
+      "stresses": ["resolution"]
+    },
+    {
+      "key": "contradicts_self",
+      "rare": false,
+      "text": "The customer gives details that contradict each other.",
+      "expect": "Clarifies politely and verifies before acting.",
+      "stresses": ["accuracy", "active_listening"]
+    },
+    {
+      "key": "poor_line_quality",
+      "rare": false,
+      "text": "The line is poor and the customer is hard to hear.",
+      "expect": "Confirms understanding and repeats the key details.",
+      "stresses": ["active_listening"]
+    },
+    {
+      "key": "system_outage",
+      "rare": true,
+      "text": "A network outage is affecting many customers at the same time.",
+      "expect": "Gives honest information and follows the incident procedure.",
+      "stresses": ["escalation_handling", "procedure_compliance"]
+    },
+    {
+      "key": "fraud_suspected",
+      "rare": true,
+      "text": "Signs suggest that the account may be compromised or that the caller is not the account holder.",
+      "expect": "Applies identity verification and the security procedure.",
+      "stresses": ["procedure_compliance", "accuracy"]
+    },
+    {
+      "key": "bereavement",
+      "rare": true,
+      "text": "The customer is calling about the account of a relative who has just died.",
+      "expect": "Shows sensitivity and follows the bereavement procedure.",
+      "stresses": ["empathy", "procedure_compliance"]
+    },
+    {
+      "key": "legal_threat",
+      "rare": true,
+      "text": "The customer threatens legal action.",
+      "expect": "Stays factual, does not admit liability and escalates per procedure.",
+      "stresses": ["escalation_handling", "procedure_compliance", "de_escalation"]
+    },
+    {
+      "key": "social_media_threat",
+      "rare": true,
+      "text": "The customer threatens to post about the problem publicly.",
+      "expect": "De-escalates and involves the right team if needed.",
+      "stresses": ["de_escalation", "escalation_handling"]
+    },
+    {
+      "key": "accessibility_need",
+      "rare": true,
+      "text": "The customer has a hearing or visual impairment and needs another way to communicate.",
+      "expect": "Adapts the communication and checks understanding.",
+      "stresses": ["empathy", "active_listening"]
+    }
+  ]
+}

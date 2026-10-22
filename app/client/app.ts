@@ -562,6 +562,9 @@
   }));
 
   // Training: scenario builder, replay and what-if (demo data; the Training agent would supply these)
+  const advisorPicker = byId<HTMLSelectElement>('advisor');
+  if (advisorPicker) advisorPicker.addEventListener('change', () => advisorPicker.form?.submit());
+
   const deck = byId('scenarios');
   if (deck) {
     interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
