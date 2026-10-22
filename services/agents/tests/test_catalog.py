@@ -44,6 +44,15 @@ def test_criterion_names_are_matched_leniently(catalog):
     assert catalog.criterion_to_skills("something else") is None
 
 
+def test_every_criterion_of_the_real_quality_analyst_is_understood(catalog):
+    """The coach reads the Quality Analyst's own criterion names; none may be ignored as unknown."""
+    from quality_analyst.engine import CRITERIA
+    for name in CRITERIA:
+        assert catalog.criterion_to_skills(name), name
+    assert [skill for skill, _ in catalog.criterion_to_skills("Communication")] == ["active_listening", "empathy"]
+    assert catalog.criterion_to_skills("Customer sentiment") == catalog.criterion_to_skills("sentiment")
+
+
 def test_restrict_to_the_sims_intents(tmp_path, catalog):
     path = tmp_path / "intents.json"
     path.write_text(json.dumps({"double_billing": {}, "line_cut": {}, "other_thing": {}}), encoding="utf-8")

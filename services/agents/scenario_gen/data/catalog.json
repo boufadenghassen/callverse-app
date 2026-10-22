@@ -16,7 +16,11 @@
     "accuracy": [["accuracy", 1.0]],
     "relevance": [["active_listening", 0.8], ["accuracy", 0.4]],
     "satisfaction": [["empathy", 0.6], ["resolution", 0.8]],
-    "sentiment": [["empathy", 1.0], ["de_escalation", 0.8]]
+    "communication": [
+    ["active_listening", 1.0],
+    ["empathy", 0.6]
+  ],
+  "sentiment": [["empathy", 1.0], ["de_escalation", 0.8]]
   },
   "intents": [
     {

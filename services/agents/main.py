@@ -77,7 +77,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality"], "voice": voice.available(), "listen": stt.available()}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "scenario_gen"], "voice": voice.available(), "listen": stt.available()}
 
 
 @app.post("/voice/speak")

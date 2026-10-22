@@ -211,8 +211,12 @@ def client(service):
     app.dependency_overrides.clear()
 
 
+SEGMENT_LABELS = {"new": "New", "loyal": "Loyal", "dissatisfied": "Unsatisfied", "premium": "Premium", "at_risk": "At risk"}
+
+
 def test_api_health_and_catalog(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    health_all = client.get("/health").json()
+    assert health_all["status"] == "UP" and "scenario_gen" in health_all["agents"]       # the whole agents service
     health = client.get("/scenario-gen/health").json()
     assert health["status"] == "ok" and health["intents"] >= 12
     catalog = client.get("/scenario-gen/catalog").json()
@@ -242,7 +246,7 @@ def test_api_full_flow_generate_sim_replay_mutate_lineage(client):
     assert training.json() == [{
         "id": s["id"],
         "title": s["title"],
-        "profile": "New",
+        "profile": SEGMENT_LABELS[s["spec"]["segment"]],                    # whatever segment the seed gives, labelled for the page
         "difficulty": "Easy",
         "origin": "Template library",
     }]

@@ -23,6 +23,7 @@ CRITERION_ALIASES = {
     "satisfaction_client": "satisfaction",
     "customer_satisfaction": "satisfaction",
     "sentiments": "sentiment",
+    "customer_sentiment": "sentiment",   # the name the Quality Analyst uses
 }
 
 
