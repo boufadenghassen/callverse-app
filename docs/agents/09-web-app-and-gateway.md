@@ -34,7 +34,8 @@ Open to **every signed-in user**: the home page `/` (cards for the workspaces yo
 | `/quality`, `/quality/audio`, `/quality/sample-call.wav`, `/quality/feedback` | GET, POST | QUALITY | reviews, analytics, upload of a two-channel recording (up to 11 MB), a sample call, reviewer verdicts |
 | `/call-review`, `/call-review/analyze` | GET, POST | QUALITY | emotion of an uploaded recording through the emotion service (up to 15 MB) |
 | `/sales`, `/sales/detect`, `/sales/outcome` | GET, POST | SALES | see [05-sales-agent.md](05-sales-agent.md) |
-| `/complaints`, `/training` | GET | COMPLAINT, TRAINER | demo pages ([06-training-and-complaints.md](06-training-and-complaints.md)) |
+| `/complaints` | GET | COMPLAINT | demo page ([06-training-and-complaints.md](06-training-and-complaints.md)) |
+| `/training`, `/training/scenarios/{id}`, and POST `/training/generate`, `/training/scenarios/{id}/mutate`, `/training/scenarios/{id}/delete` | GET, POST | TRAINER | the Training agent's coach plan, scenario detail, builder, what-if and delete ([06-training-and-complaints.md](06-training-and-complaints.md)) |
 | `/client`, `/client/say` | GET, POST | CLIENT | the client simulator (see below) |
 | `/voice/speak`, `/voice/transcribe` | POST | any signed in | text to speech, voice note to text ([07-voice.md](07-voice.md)) |
 | `/personas`, `/ideas`, `/present`, `/pipeline`, `/insights` | GET | any signed in | the presentation pages |
@@ -100,7 +101,7 @@ node dist/main.js                                       # http://localhost:8080
 With the agents (port 8000) and the emotion service (port 8001) running as described in the [index](README.md). `PORT` and `SESSION_SECRET` are optional. Details on the contract are in `app/README.md`.
 
 ## Tests
-* **Unit and HTTP tests** (`npm test`, Node's test runner and supertest, **88 tests** in 11 files): `security-and-pages` (sign-in, lock, CSRF, roles, headers, error pages), `deck-and-simulator` (client simulator, presentation pages), `insights`, `customer` (customer 360, suggestions), `polish` (pages, validation, accessibility landmarks), `call-review`, `live-call`, `voice` (6), `workforce`, `quality`, `sales` (6). They run in demo mode, with a fake or the mock gateway, so they need no Python.
+* **Unit and HTTP tests** (`npm test`, Node's test runner and supertest, **95 tests** in 12 files): `security-and-pages` (sign-in, lock, CSRF, roles, headers, error pages), `deck-and-simulator` (client simulator, presentation pages), `insights`, `customer` (customer 360, suggestions), `polish` (pages, validation, accessibility landmarks), `call-review`, `live-call`, `voice` (6), `workforce`, `quality`, `sales` (6), `training` (5). They run in demo mode, with a fake or the mock gateway, so they need no Python.
 * **Browser tests** (`app/e2e`, Playwright on Edge, **40 tests**): the real app against the real agents: sign-in per role, every page, live call with spoken replies, voice note, the quality flow (sample call, recording upload, verdicts, filters, "what moved this score"), the sales flow, call review with the emotion service, the command palette, the tour, presentation mode, dark mode, particles, keyboard shortcuts, phone width. A separate **axe audit** reports "NO PROBLEMS FOUND".
 * **Continuous integration** (`.github/workflows/ci.yml`, on every push to main and every pull request): job *web* (Node 24, `npm ci`, `npm run build`, `npm test`) and job *agents* (Python 3.11, `pip install -r requirements.txt`, `pytest -q`, without the heavy speech and emotion models, whose tests skip). The browser tests run on a developer machine, not in CI.
 
