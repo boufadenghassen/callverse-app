@@ -87,31 +87,28 @@ export class PagesController {
   }
 
   @Roles('TRAINER') @Get('training') @Render('training')
-  async training(@Query('advisor') advisorParam?: string, @Query('generate') generateParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string) {
+  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string) {
     const advisor = typeof advisorParam === 'string' && advisorParam.trim() ? advisorParam.trim().slice(0, 60) : 'Karim B.';
-    const [analytics, opportunities] = await Promise.all([this.agents.qualityAnalytics(), this.agents.opportunities()]);
+    const analytics = await this.agents.qualityAnalytics();
     const report = analytics.advisors.find((item) => item.advisor === advisor) ?? null;
     const selectedAdvisor = advisor;
     const weaknesses = report
       ? Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }))
       : [];
-    const shouldGenerate = generateParam === '1';
-    const [plan, reviews, scenarios] = await Promise.all([
-      weaknesses.length && shouldGenerate
-        ? this.agents.trainingPlan(selectedAdvisor, weaknesses)
-        : Promise.resolve({
-          advisor_id: selectedAdvisor,
-          needs_training: weaknesses.some((item) => item.score < 7),
-          focus: weaknesses.filter((item) => item.score < 7).sort((a, b) => a.score - b.score).slice(0, 3)
-            .map((item) => ({ skill: item.criterion.toLowerCase(), gap: Number(((10 - item.score) / 10).toFixed(2)), criteria: [item.criterion] })),
-          scenarios: [],
-          rationale: weaknesses.length
-            ? ['Select Generate targeted scenarios to create practice cases for this advisor.']
-            : ['No Quality Analyst weaknesses are available for this advisor yet.'],
-        }),
+    const [reviews, opportunities] = await Promise.all([
       this.agents.recentReviews({ advisor: selectedAdvisor }),
-      this.agents.scenarios(selectedAdvisor),
+      this.agents.opportunities(),
     ]);
+    const plan = weaknesses.length
+      ? await this.agents.trainingPlan(selectedAdvisor, weaknesses)
+      : {
+        advisor_id: selectedAdvisor,
+        needs_training: false,
+        focus: [],
+        scenarios: [],
+        rationale: ['No Quality Analyst weaknesses are available for this advisor yet.'],
+      };
+    const scenarios = await this.agents.scenarios(selectedAdvisor);
     const advisorNames = analytics.advisors.length ? analytics.advisors.map((item) => item.advisor) : QA_ADVISORS;
     const salesOffset = Math.max(0, advisorNames.indexOf(selectedAdvisor)) % Math.max(1, opportunities.length);
     const coachOpportunities = opportunities.length

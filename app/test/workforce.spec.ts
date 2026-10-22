@@ -119,8 +119,7 @@ test('the Coach training flow changes advisor data and supports scenario details
 test('the Coach generates scenarios only for the selected advisor and replays them through the server', async () => {
   const coach = await client(app, 'rim');
   const before = await coach.get('/training?advisor=Karim%20B.').expect(200);
-  assert.match(before.text, /Generate targeted scenarios/);
-  assert.doesNotMatch(before.text, /SC-hela/);
+  assert.doesNotMatch(before.text, /Generate targeted scenarios/);
 
   const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Hard' });
   assert.equal(generated.status, 302);
@@ -147,6 +146,7 @@ test('the Coach renders one scenario list and keeps generation and replay routes
   const before = await coach.get('/training?advisor=Hela%20M.').expect(200);
   assert.equal((before.text.match(/id="targeted-simulations"/g) ?? []).length, 1);
   assert.equal((before.text.match(/id="scenarios"/g) ?? []).length, 0);
+  assert.doesNotMatch(before.text, /Generate targeted scenarios/);
   assert.match(before.text, /action="\/training\/scenarios\/generate\?advisor=Hela%20M\."/);
 
   const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Medium' });

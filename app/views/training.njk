@@ -39,7 +39,6 @@
           <h3>Automatic focus</h3>
           {% if plan.focus %}<ul>{% for item in plan.focus %}<li>{{ item.skill }} · gap {{ item.gap }} · {{ item.criteria | join(', ') }}</li>{% endfor %}</ul>{% else %}<p class="muted">No weakness requires training right now.</p>{% endif %}
           {% for reason in plan.rationale %}<p class="muted small">{{ reason }}</p>{% endfor %}
-          {% if plan.focus %}<form method="get" action="/training"><input type="hidden" name="advisor" value="{{ advisor }}"><input type="hidden" name="generate" value="1"><button class="btn" type="submit">Generate targeted scenarios</button></form>{% endif %}
         </article>
       </div>
       {% else %}
@@ -49,12 +48,12 @@
 
     <section class="panel" aria-labelledby="targeted-simulations">
       <h2 id="targeted-simulations">Targeted simulations</h2>
-      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. Generate them after reviewing the automatic focus.</p>
+      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. They are created automatically from the advisor's Quality Analyst weaknesses.</p>
       {% if scenarios %}
       <ul class="deck-cards">{% for s in scenarios %}
         <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form></div></li>
       {% endfor %}</ul>
-      {% else %}<p class="muted">No scenarios have been generated for this advisor yet. Use the button below.</p>{% endif %}
+      {% else %}<p class="muted">No targeted scenarios are available for this advisor yet.</p>{% endif %}
     </section>
 
     {% if action %}
@@ -80,7 +79,7 @@
     <section class="panel builder" aria-labelledby="sb">
       <div>
         <h2 id="sb">Create one scenario for {{ advisor }}</h2>
-        <p class="muted">Scenario generation is explicit. The new scenario is saved to this advisor's history and can be replayed or mutated from its details page.</p>
+        <p class="muted">Create an additional custom scenario for this advisor. QA-targeted scenarios are generated automatically above.</p>
       </div>
       <form id="builder-form" class="builder-actions" method="post" action="/training/scenarios/generate?advisor={{ advisor | urlencode }}">
         <input type="hidden" name="_csrf" value="{{ csrf }}">
