@@ -99,3 +99,63 @@ def test_the_api_lists_detects_records_and_validates():
     before = client.get("/sales/analytics").json()["total"]
     assert client.post("/sales/outcome", json=dict(customer_id="MS-0007", offer_id="data-booster", outcome="accepted", relevance=80)).json() == {"recorded": True}
     assert client.get("/sales/analytics").json()["total"] == before + 1
+
+
+def test_churn_risk_is_a_sum_of_named_factors_and_follows_the_customer():
+    risk = {c["id"]: engine.churn_risk(c, engine.file_needs(c), engine.MOOD_OF[c["mood"]]) for c in advisor.CUSTOMERS}
+    for r in risk.values():
+        assert r["score"] == max(0, min(100, sum(f["points"] for f in r["factors"])))
+    assert risk["SH-5520"]["level"] == "High" and risk["WF-3391"]["level"] == "High"               # usage down 45 %, angry; cancelling twice
+    assert risk["IK-2210"]["level"] == "Low" and risk["YT-1042"]["level"] == "Low"
+    assert sum(f["name"] == "Usage" for f in risk["SH-5520"]["factors"]) == 1 and not any(f["name"] == "Talks about leaving" for f in risk["SH-5520"]["factors"])   # a usage drop is counted once
+    said = engine.churn_risk(None, engine.conversation_needs([C("I want to cancel, it is too expensive.", mood=30)]), 30)       # no file: the conversation alone
+    assert {f["name"] for f in said["factors"]} >= {"Talks about leaving", "Price", "Mood"}
+
+
+def test_the_chance_of_a_yes_comes_from_similar_offers_and_is_smoothed():
+    rates = {"data-booster": (40, 20)}                                                           # 50 % overall
+    assert engine.acceptance("data-booster", 80, "now", None, None) is None                      # no history, no figure
+    alone = engine.acceptance("data-booster", 80, "now", rates, {})
+    assert alone["probability"] == 0.5 and alone["similar"] == 0 and "overall rate" in alone["basis"]
+    few = engine.acceptance("data-booster", 80, "now", rates, {("data-booster", "70+", "now"): (2, 2)})
+    many = engine.acceptance("data-booster", 80, "now", rates, {("data-booster", "70+", "now"): (60, 54)})
+    assert 0.5 < few["probability"] < 0.7 < many["probability"] <= 0.95                           # two cases barely move it, sixty do
+    assert "60 similar offers" in many["basis"] and "54 accepted" in many["basis"]
+
+
+def test_what_a_yes_is_worth_and_the_retention_offer_can_lose_money():
+    rates, cells = store.rates(), store.cells()
+    store.ensure_history()
+    rates, cells = store.rates(), store.cells()
+    mounir = advisor.get_customer("MS-0007")
+    top = engine.recommend(mounir, engine.conversation_needs([C("I run out of data every month.")]), 60, rates, cells)[0][0]
+    assert top["expected"]["ifYes"] == 108 and top["expected"]["tnd"] == round(108 * top["acceptance"]["probability"])
+    salma, yasmine = advisor.get_customer("SH-5520"), advisor.get_customer("YT-1042")
+    def retention(customer, mood):
+        needs = engine.merge_needs(engine.conversation_needs([C("I want to cancel.")]), engine.file_needs(customer))
+        return next(r for r in engine.recommend(customer, needs, mood, rates, cells)[0] if r["offerId"] == "loyalty-discount")["expected"]
+    assert retention(salma, 20)["ifYes"] > 0                                                      # 75 % of a 336 TND year is kept, minus the discount
+    assert retention(yasmine, 70)["ifYes"] < retention(salma, 20)["ifYes"]                        # the same discount keeps far less when the risk is lower
+
+
+def test_the_policy_simulation_trades_volume_for_acceptance():
+    store.ensure_history()
+    r = store.simulate(1000, 30)
+    every, strict = r["policies"][0], r["policies"][3]
+    assert every["offers"] == 300 and r["opportunities"] == 300                                  # 1000 calls x 30 %
+    assert strict["offers"] < every["offers"] and strict["rate"] > every["rate"] and strict["declined"] < every["declined"]
+    assert strict["revenue"] <= every["revenue"]                                                  # fewer offers, fewer sales: the refusals are not priced
+    assert store.simulate(1000, 30, 70, True)["yours"]["offers"] == strict["offers"]
+    assert store.simulate(2000, 30)["policies"][0]["revenue"] == 2 * every["revenue"]            # twice the calls, twice the money
+
+
+def test_the_new_figures_travel_through_the_api():
+    store.ensure_history()                                            # the service does this at start; the test client does not run it
+    opps = client.get("/sales/opportunities").json()
+    assert all(o["churn"]["level"] in ("Low", "Medium", "High") and "tnd" in o["expected"] for o in opps)
+    ok = client.post("/sales/detect", json=dict(customer_id="SH-5520", turns=[dict(speaker="customer", text="I want to cancel.", start=1)])).json()
+    assert ok["churn"]["score"] > 60 and ok["offers"][0]["acceptance"]["probability"] > 0
+    sim = client.post("/sales/simulate", json=dict(calls=500, share=20, min_relevance=60, good_moment_only=True)).json()
+    assert sim["opportunities"] == 100 and len(sim["policies"]) == 4 and sim["yours"]["minRelevance"] == 60
+    assert client.post("/sales/simulate", json=dict(calls=0)).status_code == 422
+    assert client.post("/sales/simulate", json=dict(min_relevance=101)).status_code == 422

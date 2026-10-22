@@ -8,6 +8,11 @@ offer is suggested and what would change it:
   the moment               -20 to +10 mood and open tickets: do not sell to someone who is upset, solve first
   track record             -10 to +10 how often this offer was accepted before (a smoothed rate)
 The needs are found with phrase patterns on what the customer said, not with a language model, and the offers, prices and customers are invented.
+
+Two more scores come with every customer and offer, built the same way (named parts you can read):
+  churn risk         0 to 100, a sum of named factors: usage dropping, wanting to leave, open tickets, mood, years with us...
+  chance of a yes    from the history of offers made (offer, relevance band, moment), smoothed so a few cases cannot swing it
+and what the offer is worth in revenue over twelve months if the customer says yes, and in expectation (chance x worth).
 """
 import json
 import re
@@ -19,6 +24,7 @@ _K = Path(__file__).resolve().parents[1] / "knowledge"
 CATALOG = json.loads((_K / "offers.json").read_text(encoding="utf-8"))
 PROFILES = {k: v for k, v in json.loads((_K / "sales_profiles.json").read_text(encoding="utf-8")).items() if not k.startswith("_")}
 OFFERS = {o["id"]: o for o in CATALOG["offers"]}
+VALUES = {k: v for k, v in CATALOG["values"].items() if not k.startswith("_")}
 NEEDS = {k: dict(label=v["label"], rx=re.compile(v["rx"], re.I)) for k, v in CATALOG["needs"].items()}
 
 MOOD_OF = {"Calm": 70, "Curious": 65, "Impatient": 45, "Frustrated": 30, "Angry": 20}
@@ -94,12 +100,74 @@ def offer_name(offer: dict, plan: str) -> str | None:
     return f"Upgrade to {nxt}" if nxt else None
 
 
-def recommend(customer: dict | None, needs: dict, mood: int, rates: dict | None = None) -> tuple[list[dict], list[dict]]:
+def band(relevance: int) -> str:
+    return "70+" if relevance >= 70 else "50-69" if relevance >= 50 else "under 50"
+
+
+def churn_risk(customer: dict | None, needs: dict, mood: int) -> dict:
+    """Risk (0 to 100) that the customer leaves, as a sum of named factors. It reads the file and the conversation, nothing is learned."""
+    profile = PROFILES.get(customer["id"], {}) if customer else {}
+    tenure, trend = profile.get("tenureYears"), profile.get("usageTrend", 0)
+    factors = [dict(name="Starting point", points=10, why="every customer has some risk")]
+
+    def add(name, points, why):
+        if points:
+            factors.append(dict(name=name, points=points, why=why))
+
+    add("Usage", 30 if trend <= -30 else 15 if trend <= -15 else 0, f"usage {trend}% in two months")
+    leaving = needs.get("leaving")
+    spoken = bool(leaving) and leaving["source"] == "conversation"
+    if spoken or (customer and "Cancellation" in customer["intents"]):        # a usage drop alone is already counted above
+        add("Talks about leaving", 25 if spoken else 20, "said it in this conversation" if spoken else "contacted us about cancelling")
+    if "price_sensitive" in needs and needs["price_sensitive"]["source"] == "conversation":
+        add("Price", 10, "finds it too expensive")
+    tickets, transfers = (customer["openTickets"], customer["transfers"]) if customer else (0, 0)
+    add("Open tickets", min(16, 8 * tickets), f"{tickets} open")
+    add("Passed around", min(12, 4 * transfers), f"transferred {transfers} time{'s' if transfers != 1 else ''}")
+    add("Mood", 15 if mood < 40 else 5 if mood < 55 else -5 if mood >= 65 else 0, f"mood {mood}")
+    if tenure is not None:
+        add("Years with us", -10 if tenure >= 5 else -5 if tenure >= 2 else 5 if tenure < 1 else 0, f"{tenure:g} years" if tenure >= 1 else "new, still deciding")
+    score = max(0, min(100, sum(f["points"] for f in factors)))
+    return dict(score=score, level="High" if score >= 60 else "Medium" if score >= 30 else "Low", factors=factors)
+
+
+def acceptance(offer_id: str, relevance: int, cue: str, rates: dict | None, cells: dict | None) -> dict | None:
+    """Chance the customer says yes, from the history: the offer's own rate, adjusted by what happened to similar offers (same relevance band and moment).
+    The adjustment counts as five cases of the offer's rate, so a handful of similar cases moves the figure a little, not a lot."""
+    if not rates or offer_id not in rates:
+        return None
+    offered, accepted = rates[offer_id]
+    base = (accepted + 2) / (offered + 4)
+    n, a = (cells or {}).get((offer_id, band(relevance), cue), (0, 0))
+    p = max(0.02, min(0.95, (a + 5 * base) / (n + 5)))
+    moment = "good moment" if cue == "now" else "problem not solved yet"
+    basis = (f"{n} similar offers in the history (relevance {band(relevance)}, {moment}): {a} accepted; this offer overall: {round(100 * base)}% of {offered}" if n
+             else f"no similar offer in the history yet, so the offer's overall rate is used: {round(100 * base)}% of {offered}")
+    return dict(probability=round(p, 2), similar=n, similarAccepted=a, basis=basis)
+
+
+def expected(offer: dict, chance: dict | None, customer: dict | None, churn: dict) -> dict:
+    """What a yes is worth over twelve months, and the expected value (chance x worth). A retention offer is worth the revenue it keeps
+    (the risk of losing the customer times a year of their bill) minus the discount it gives; it assumes a yes keeps the customer."""
+    value = VALUES[offer["id"]]
+    bill = PROFILES.get(customer["id"], {}).get("monthlyTnd") if customer else None
+    if offer["kind"] == "retention" and bill:
+        year = bill * 12
+        kept, cost = churn["score"] / 100 * year, value["discount"] * year
+        worth, how = kept - cost, f"keeps {round(kept)} TND ({churn['score']}% risk of losing {year} TND a year) and gives {round(cost)} TND of discount"
+    else:
+        worth, how = value["tnd_year"], value["how"]
+    p = chance["probability"] if chance else None
+    return dict(ifYes=round(worth), chance=p, tnd=None if p is None else round(worth * p), how=how)
+
+
+def recommend(customer: dict | None, needs: dict, mood: int, rates: dict | None = None, cells: dict | None = None) -> tuple[list[dict], list[dict]]:
     """Ranked offers (most relevant first) and the offers set aside with the reason."""
     plan = customer["contract"] if customer else ""
     profile = PROFILES.get(customer["id"], {}) if customer else {}
     tickets = customer["openTickets"] if customer else 0
     tenure, trend = profile.get("tenureYears"), profile.get("usageTrend", 0)
+    churn = churn_risk(customer, needs, mood)
     ranked, skipped = [], []
     for o in CATALOG["offers"]:
         links = sorted(((needs[k]["strength"] * w, k) for k, w in o["needs"].items() if k in needs), reverse=True)
@@ -153,33 +221,37 @@ def recommend(customer: dict | None, needs: dict, mood: int, rates: dict | None 
                 factors.append(dict(name="Track record", points=record, why=f"accepted {round(100 * rate)}% of the time in the history (simulated)"))
         total = max(0, min(100, sum(f["points"] for f in factors)))
         worst = min((f for f in factors if f["points"] < 0), key=lambda f: f["points"], default=None)
+        cue = "after_resolution" if moment < 0 else "now"
+        chance = acceptance(o["id"], total, cue, rates, cells)
         ranked.append(dict(
             offerId=o["id"], offer=name, price=o["price"], kind=o["kind"], pitch=o["pitch"], relevance=total, reason=said,
             need=dict(key=links[0][1], label=top["label"]), factors=factors,
-            timing=dict(cue="after_resolution" if moment < 0 else "now", why=mwhy),
+            timing=dict(cue=cue, why=mwhy), acceptance=chance, expected=expected(o, chance, customer, churn),
             counterfactual=f"Without “{worst['name']}” ({worst['why']}), the relevance would be {total - worst['points']}." if worst else None))
     ranked.sort(key=lambda r: -r["relevance"])
     return ranked, skipped
 
 
-def detect(turns: list[dict], customer_id: str | None, rates: dict | None = None, top: int = 4) -> dict:
+def detect(turns: list[dict], customer_id: str | None, rates: dict | None = None, top: int = 4, cells: dict | None = None) -> dict:
     """The needs voiced in a conversation (plus what the customer's file says) and the offers that answer them, with the reasons."""
     customer = advisor.get_customer(customer_id) if customer_id else None
     spoken = conversation_needs(turns)
     needs = merge_needs(spoken, file_needs(customer))
     mood = mood_of(turns, customer)
-    offers, skipped = recommend(customer, needs, mood, rates)
+    offers, skipped = recommend(customer, needs, mood, rates, cells)
     signals = sorted(({k: v for k, v in dict(need=k, **n).items() if k != "strength"} | dict(strength=round(n["strength"], 2)) for k, n in needs.items()),
                      key=lambda s: -s["strength"])
-    return dict(customerId=customer_id, customer=customer["name"] if customer else None, mood=mood, signals=signals, offers=offers[:top], skipped=skipped)
+    return dict(customerId=customer_id, customer=customer["name"] if customer else None, mood=mood, churn=churn_risk(customer, needs, mood), signals=signals,
+                offers=offers[:top], skipped=skipped)
 
 
-def opportunities(rates: dict | None = None) -> list[dict]:
+def opportunities(rates: dict | None = None, cells: dict | None = None) -> list[dict]:
     """One line per customer on file: the best offer for them today (what their file says, no conversation), with its reasons."""
     out = []
     for c in advisor.CUSTOMERS:
-        offers, _ = recommend(c, file_needs(c), MOOD_OF.get(c["mood"], 55), rates)
+        needs, mood = file_needs(c), MOOD_OF.get(c["mood"], 55)
+        offers, _ = recommend(c, needs, mood, rates, cells)
         if offers:
             best = offers[0]
-            out.append(dict(best, customer=c["name"], customerId=c["id"], alternatives=[dict(offer=o["offer"], relevance=o["relevance"]) for o in offers[1:3]]))
+            out.append(dict(best, customer=c["name"], customerId=c["id"], churn=churn_risk(c, needs, mood), alternatives=[dict(offer=o["offer"], relevance=o["relevance"]) for o in offers[1:3]]))
     return sorted(out, key=lambda o: -o["relevance"])

@@ -2,6 +2,19 @@
   "_note": "Invented offers for the demo (prices in TND). `needs` says which customer need an offer answers and how well (0 to 1). `excluded_plans`: the customer's plan already covers it.",
   "plans": ["Starter 10 GB", "Mobile Basic 20 GB", "Mobile Plus 40 GB", "Premium Unlimited"],
   "upgrade_path": {"Starter 10 GB": "Mobile Basic 20 GB", "Mobile Basic 20 GB": "Mobile Plus 40 GB", "Mobile Plus 40 GB": "Premium Unlimited"},
+  "values": {
+    "_note": "Invented revenue the company books in the 12 months after the customer says yes (TND). Revenue, not margin. A retention offer is worth the revenue it keeps minus the discount it gives, worked out per customer; `tnd_year` there is a typical figure used only for the policy simulation.",
+    "roaming-pass": {"tnd_year": 25, "how": "one 7-day pass at 25 TND"},
+    "data-booster": {"tnd_year": 108, "how": "9 TND x 12 months"},
+    "plan-upgrade": {"tnd_year": 96, "how": "8 TND more x 12 months"},
+    "family-line": {"tnd_year": 144, "how": "12 TND x 12 months"},
+    "home-fiber": {"tnd_year": 468, "how": "39 TND x 12 months"},
+    "loyalty-discount": {"tnd_year": 150, "how": "revenue kept minus the discount (typical)", "discount": 0.15},
+    "autopay": {"tnd_year": 0, "how": "no revenue counted: it lowers late payments, not sales"},
+    "premium-care": {"tnd_year": 120, "how": "10 TND x 12 months"},
+    "device-plan": {"tnd_year": 348, "how": "29 TND x 12 months"},
+    "intl-calls": {"tnd_year": 84, "how": "7 TND x 12 months"}
+  },
   "offers": [
     {"id": "roaming-pass", "name": "Roaming Pass 5 GB", "price": "25 TND for 7 days", "kind": "cross-sell", "needs": {"travel": 1.0}, "excluded_plans": ["Premium"],
      "pitch": "Data, calls and texts abroad at local prices."},
