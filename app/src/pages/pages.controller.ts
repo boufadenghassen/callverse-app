@@ -4,6 +4,7 @@ import { AgentGateway } from '../agents/agent.gateway';
 import { Roles } from '../auth/access.guard';
 import { lineChart } from './charts';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
+import { simSettings, SimSettings } from './scenario-sim';
 
 const CHART_W = 640, CHART_H = 280;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -35,14 +36,24 @@ export class PagesController {
 
   // ---- Karim: advisor console ----------------------------------------------------------------
 
-  @Roles('ADVISOR') @Get('advisor') @Render('advisor')
-  async advisor(@Query('customer') customerParam?: string, @Query('q') qParam?: string) {
+  @Roles('ADVISOR', 'TRAINER') @Get('advisor') @Render('advisor')
+  async advisor(@Query('customer') customerParam?: string, @Query('q') qParam?: string, @Query('scenario') scenarioParam?: string, @Query('auto') auto?: string, @Query('start') start?: string) {
     const customerId = customerParam || 'YT-1042', raw = qParam || 'double charge on monthly bill';
     if (typeof customerId !== 'string' || !/^[A-Z]{2}-\d{4}$/.test(customerId)) throw new BadRequestException('Invalid customer id');
     if (typeof raw !== 'string' || raw.length < 3 || raw.length > 200) throw new BadRequestException('Search must be 3 to 200 characters');
     const query = raw.replace(/\p{Cc}/gu, ' ').trim();
-    const [customer, answer] = await Promise.all([this.agents.customerContext(customerId), this.agents.suggestAnswer(customerId, query)]);
-    return { customer, query, answer, personas: PERSONAS, difficulties: DIFFICULTIES, intents: INTENTS };
+    // a training scenario to practise: read into the simulator's settings, with the reasons
+    let play: { id: string; title: string; brief: string; criteria: string[]; settings: SimSettings } | null = null, playError = '';
+    if (typeof scenarioParam === 'string' && scenarioParam) {
+      if (!/^[A-Za-z0-9_-]{2,40}$/.test(scenarioParam)) throw new BadRequestException('Invalid scenario id');
+      try {
+        const sc = await this.agents.scenario(scenarioParam);
+        play = { id: sc.id, title: sc.title, brief: sc.trainer_brief ?? '', criteria: sc.success_criteria ?? [], settings: simSettings(sc) };
+      } catch { playError = 'That training scenario was not found.'; }
+    }
+    const autostart = play ? (auto === 'careful' || auto === 'rushed' ? auto : start === '1' ? 'start' : '') : '';
+    const [customer, answer, scenarios] = await Promise.all([this.agents.customerContext(customerId), this.agents.suggestAnswer(customerId, query), this.agents.scenarios().catch(() => [])]);
+    return { customer, query, answer, personas: PERSONAS, difficulties: DIFFICULTIES, intents: INTENTS, play, playError, autostart, scenarios: scenarios.slice(0, 6) };
   }
 
   // ---- Sana: workforce twin ------------------------------------------------------------------

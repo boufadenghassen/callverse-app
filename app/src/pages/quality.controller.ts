@@ -73,10 +73,15 @@ export class QualityController {
   }
 
   /** Karim sends the call he just had to the quality queue. */
-  @Roles('ADVISOR') @HttpCode(200) @Post('advisor/live/review')
+  @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('advisor/live/review')
   async reviewLiveCall(@Body() b: Record<string, unknown>, @Req() req: Request, @Res() res: Response) {
     if (typeof b.id !== 'string' || !/^[0-9a-f]{16}$/.test(b.id)) return res.status(400).json({ error: 'This call is not valid. Start a new one.' });
-    return this.run(res, async () => { const r = await this.agents.reviewCall(b.id as string, advisorName(req.session.user?.name)); return { callId: r.callId, overall: r.overall }; });
+    return this.run(res, async () => { const r = await this.agents.reviewCall(b.id as string, advisorName(req.session.user?.name)); const rules = (r.errors ?? []).map((e) => e.rule);
+      return {
+        callId: r.callId, overall: r.overall, hurt: (r.drivers?.hurt ?? []).slice(0, 2).map((d) => d.label), helped: (r.drivers?.helped ?? []).filter((d) => d.effect > 0).slice(0, 2).map((d) => d.label),
+        hungUp: rules.includes('hang_up'), unresolved: rules.includes('unresolved'),
+      };
+    });
   }
 
   private async run(res: Response, work: () => Promise<object>) {

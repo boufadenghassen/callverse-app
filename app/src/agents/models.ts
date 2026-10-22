@@ -3,6 +3,8 @@ export interface Evidence { source: string; score: number; excerpt: string }
 /** `intents` and `evidence` come from the real advisor agent; the demo data leaves them out. */
 export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
 export interface Transcript { text: string; seconds: number }
+/** What the advisor agent says by itself at one point of a call: one step of its routine (acknowledge, check the policy, give the solution, confirm in writing), or a rushed advisor for demonstrations. */
+export interface AutoReply { text: string; step: string; turn: number; last: boolean; sources: string[]; intents: string[]; policyWarning: string | null; style: 'careful' | 'rushed' }
 /** How the advisor's voice sounded (the emotion model on a voice note): one of anger, disgust, fear, happy, neutral, sad and a 0-100 mood. */
 export interface Tone { emotion: string; mood: number }
 export interface SpeakRequest { text: string; role: 'advisor' | 'customer'; persona: string | null; mood: number }
@@ -98,7 +100,8 @@ export interface ScenarioDetail extends Scenario {
   kind?: string;
   parent_id?: string | null;
   mutation_log?: string[];
-  spec?: { segment: string; difficulty: number };
+  spec?: { segment: string; difficulty: number; intent?: string; events?: string[]; language?: string };
+  opening_emotion?: string; skills?: string[];
 }
 export interface TrainingWeakness { criterion: string; score: number }
 export interface TrainingPlan {

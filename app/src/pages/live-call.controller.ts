@@ -27,7 +27,7 @@ const oneOf = <T extends object>(table: T, v: unknown): keyof T | undefined =>
 export class LiveCallController {
   constructor(private readonly agents: AgentGateway) {}
 
-  @Roles('ADVISOR') @HttpCode(200) @Post('start')
+  @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('start')
   async start(@Body() b: Record<string, unknown>, @Res() res: Response) {
     const persona = oneOf(PERSONAS, b.persona), difficulty = oneOf(DIFFICULTIES, b.difficulty), intent = oneOf(INTENTS, b.intent);
     const mix = b.mix ? oneOf(PERSONAS, b.mix) : null;
@@ -38,7 +38,7 @@ export class LiveCallController {
     });
   }
 
-  @Roles('ADVISOR') @HttpCode(200) @Post('say')
+  @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('say')
   async say(@Body() b: Record<string, unknown>, @Res() res: Response) {
     const text = typeof b.text === 'string' ? b.text.replace(/\p{Cc}/gu, ' ').trim() : '';
     if (typeof b.id !== 'string' || !/^[0-9a-f]{16}$/.test(b.id)) return res.status(400).json({ error: 'This call is not valid. Start a new one.' });
@@ -53,7 +53,7 @@ export class LiveCallController {
   }
 
   /** The offers worth keeping in mind, read from the conversation so far (the console asks after each customer message). */
-  @Roles('ADVISOR') @HttpCode(200) @Post('offers')
+  @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('offers')
   async offers(@Body() b: Record<string, unknown>, @Res() res: Response) {
     const turns = cleanTurns(b.turns);
     if (!turns.length) return res.status(400).json({ error: 'There is no conversation yet.' });
@@ -61,6 +61,16 @@ export class LiveCallController {
       const detection = await this.agents.salesDetect(CUSTOMER_ID, turns);
       return { ...detection, offers: detection.offers.slice(0, 2) };
     });
+  }
+
+  /** The advisor agent's own reply at this point of the call, for the automatic call (the page sends it like a typed reply). */
+  @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('auto')
+  async auto(@Body() b: Record<string, unknown>, @Res() res: Response) {
+    const topic = typeof b.topic === 'string' ? b.topic.replace(/\p{Cc}/gu, ' ').trim().slice(0, 300) : '';
+    const turn = typeof b.turn === 'number' && Number.isInteger(b.turn) ? b.turn : -1;
+    const style = b.style === undefined ? 'careful' : b.style;
+    if (topic.length < 3 || turn < 0 || turn > 10 || (style !== 'careful' && style !== 'rushed')) return res.status(400).json({ error: 'The call is not valid. Start a new one.' });
+    return this.run(res, () => this.agents.autoReply(topic, turn, style));
   }
 
   private async run(res: Response, work: () => Promise<object>) {

@@ -841,3 +841,55 @@ test('complaints: cases come with their reasons, a complaint is read, opened, ta
   }
   await ctx.close();
 });
+
+test('the advisor agent talks by itself: the call is scored and the sales, quality and complaint agents have their say', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/advisor`);
+  await page.click('[data-auto="careful"]');
+  await page.locator('#live-summary').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#lv-sum-list li', { hasText: 'Complaint agent:' }).waitFor({ timeout: 30000 });
+  const summary = await page.locator('#live-summary').innerText();
+  assert.match(summary, /Customer simulator: Resolved/);
+  assert.match(summary, /Advisor agent: 4 replies by itself \(acknowledge, check the policy, give the solution, follow up in writing\), following the good practices/);
+  assert.match(summary, /Sales agent: /);
+  assert.match(summary, /Quality analyst: CALL-\d+ scored \d+\/100\. What lowered it: .*What went well: .*(Acknowledged|Checked|Gave)/);
+  assert.match(summary, /Complaint agent: no complaint expected/);
+  assert.equal(await page.locator('.live-msg.client').count(), 5, 'her opening and four answers');
+  assert.equal(await page.locator('.live-msg.advisor').count(), 4);
+  assert.equal(await page.locator('[data-auto]').first().isDisabled(), false, 'the buttons are free again');
+  await ctx.close();
+});
+
+test('a rushed advisor ends the call badly, and the call shows up for the complaint agent', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/advisor`);
+  await page.click('[data-auto="rushed"]');
+  await page.locator('#lv-sum-list li', { hasText: 'Complaint agent:' }).waitFor({ timeout: 60000 });
+  const summary = await page.locator('#live-summary').innerText();
+  assert.doesNotMatch(summary, /Customer simulator: Resolved/);
+  assert.match(summary, /in the rushed style, to show what goes wrong/);
+  assert.match(summary, /Quality analyst: CALL-\d+ scored \d+\/100\. What lowered it: .*(refund|asked|Transferred)/i);
+  assert.match(summary, /Complaint agent: the call ended badly/);
+  await page.goto(`${BASE}/complaints`);
+  assert.match(await page.textContent('main'), /Calls that may be complaints[\s\S]*CALL-\d+/);
+  await ctx.close();
+});
+
+test('a training scenario can be played in the console, and the advisor agent can play it', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/training`);
+  await page.selectOption('#gen-diff', 'Hard');
+  await page.click('#generate');
+  await page.waitForURL(/\/training\/scenarios\//);
+  await page.click('a:has-text("Let the advisor agent play it")');
+  await page.waitForURL(/\/advisor\?scenario=.*auto=careful/);
+  assert.match(await page.textContent('.play-banner'), /Training scenario:[\s\S]*How the scenario was read by the customer simulator[\s\S]*Difficulty 4\/5 becomes “Hard”/);
+  assert.equal(await page.inputValue('#lv-diff'), 'HARD');
+  await page.locator('#live-summary').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#lv-sum-list li', { hasText: 'Quality analyst:' }).waitFor({ timeout: 30000 });
+  assert.match(await page.locator('#live-summary').innerText(), /Advisor agent: \d replies by itself/);
+  await ctx.close();
+});

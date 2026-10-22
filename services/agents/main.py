@@ -115,6 +115,25 @@ def suggest(body: SuggestIn):
     return advisor.suggest(body.query)
 
 
+class AutoIn(BaseModel):
+    topic: str = Field(min_length=3, max_length=300)
+    turn: int = Field(0, ge=0, le=10)
+    customer_id: str | None = Field(None, pattern=r"^[A-Z]{2}-\d{4}$")
+    style: Literal["careful", "rushed"] = "careful"
+
+
+@app.post("/advisor/auto")
+def advisor_auto(body: AutoIn):
+    """What the advisor agent says by itself at this point of a call (acknowledge, check the policy, give the solution, confirm in writing)."""
+    name = None
+    if body.customer_id:
+        record = advisor.get_customer(body.customer_id)
+        if record is None:
+            raise HTTPException(404, f"No customer with id {body.customer_id}.")
+        name = None  # the greeting by name is left out: the live call is with a simulated customer, not the file's customer
+    return advisor.auto_reply(body.topic, body.turn, name, body.style)
+
+
 @app.get("/advisor/customers/{customer_id}")
 def advisor_customer(customer_id: str = Path(pattern=r"^[A-Z]{2}-\d{4}$")):
     """The customer's 360-degree context (name, contract, open tickets, mood...) for the advisor's sidebar."""

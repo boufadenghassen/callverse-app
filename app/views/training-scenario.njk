@@ -23,6 +23,15 @@
 </section>
 
 <section class="panel">
+  <h2>Practise this scenario</h2>
+  <p class="muted">The customer simulator plays the scenario in the advisor console; the advisor agent can answer by itself, and the call is then scored by the quality analyst.</p>
+  <div class="actions">
+    <a class="btn" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;start=1#live">Play it in the console</a>
+    <a class="btn-line" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;auto=careful#live">Let the advisor agent play it</a>
+  </div>
+</section>
+
+<section class="panel">
   <h2>What-if variants</h2>
   <p class="muted">Create a harder or easier version from this scenario.</p>
   <div class="actions">

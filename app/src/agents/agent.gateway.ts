@@ -23,6 +23,8 @@ export abstract class AgentGateway {
   /** Throws CustomerNotFoundError when no customer has that id. */
   abstract customerContext(customerId: string): Promise<m.CustomerContext>;
   abstract suggestAnswer(customerId: string, query: string): Promise<m.SuggestedAnswer>;
+  /** The advisor agent answering by itself (the automatic call). Throws NeedsRealAgentsError in demo mode. */
+  abstract autoReply(topic: string, turn: number, style: 'careful' | 'rushed'): Promise<m.AutoReply>;
   abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
   /** Throws UnknownCallError when the call id is not known (for example the agents service restarted). */
   abstract say(callId: string, text: string, tone?: m.Tone | null): Promise<m.CallReply>;

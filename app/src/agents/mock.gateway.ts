@@ -27,6 +27,8 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
+  async autoReply(_topic: string, _turn: number, _style: 'careful' | 'rushed'): Promise<m.AutoReply> { throw new NeedsRealAgentsError('the advisor agent answers by itself only with the real agents'); }
+
   private readonly calls = new Map<string, Call>();
   private replayOf(c: Call) {
     const { persona, mix, difficulty, intent, memory } = c.cfg;

@@ -436,7 +436,7 @@
     const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
     const voiceOn = byId<HTMLInputElement>('lv-voice');
     if (voiceOn) { voiceOn.checked = store.get('cv-voice') !== 'off'; voiceOn.addEventListener('change', () => { store.set('cv-voice', voiceOn.checked ? 'on' : 'off'); if (!voiceOn.checked) stopSpeaking(); }); }
-    let callId = '', topic = '', personaKey = '';
+    let callId = '', topic = '', personaKey = '', muted = false, running = false;   // muted: no voice while the advisor agent talks by itself
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -494,7 +494,7 @@
     });
     const say = (who: string, msg: string, extra = '', mood = 50, voice?: { url?: string; after?: Promise<unknown> }) => {
       convo.push(who === 'client' ? { speaker: 'customer', text: msg, mood } : { speaker: 'advisor', text: msg });
-      if (who === 'client' && voiceOn?.checked) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
+      if (who === 'client' && voiceOn?.checked && !muted) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
       const li = make('li', { className: `live-msg ${who}` });
       li.append(make('strong', { textContent: who === 'client' ? 'Customer' : voice?.url ? 'You (voice note)' : 'You' }), make('span', { textContent: msg }));
       if (who === 'advisor' && voice?.url) {
@@ -524,26 +524,28 @@
       w.hidden = !s.policyWarning;
       w.textContent = s.policyWarning ?? '';
     };
-    byId('live-setup')!.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    const startCall = async (): Promise<boolean> => {
       status.textContent = 'Calling the customer…';
+      byId('live-summary')!.hidden = true;
       try {
-        const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
-        callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        const d = await post('/advisor/live/start', { persona: sel('lv-persona'), mix: byId<HTMLInputElement>('lv-mix')?.value || null, intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
+        callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true; useBtn.disabled = false;
         convo = []; offerBox.hidden = true;
         say('client', d.opening, d.persona, d.mood);
         void showOffers();
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
-      } catch (err) { status.textContent = (err as Error).message; }
-    });
+        return true;
+      } catch (err) { status.textContent = (err as Error).message; return false; }
+    };
+    byId('live-setup')!.addEventListener('submit', (e) => { e.preventDefault(); void startCall(); });
     useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
     // one way to answer the customer, whether the words were typed or came from a voice note
-    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null) => {
-      if (!msg || !callId) return;
+    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null): Promise<{ ended: boolean; outcome: { verdict: string } | null; mood: number } | null> => {
+      if (!msg || !callId) return null;
       sendBtn.disabled = true; if (recBtn) recBtn.disabled = true;
       // a typed reply can be said out loud in the advisor's voice; the customer then answers after it
-      const spoken = !voiceUrl && sayMine?.checked ? speak(msg, 'advisor') : undefined;
+      const spoken = !voiceUrl && sayMine?.checked && !muted ? speak(msg, 'advisor') : undefined;
       const heard: Record<string, string> = { anger: 'angry', disgust: 'disgusted', fear: 'worried', happy: 'happy', neutral: 'calm', sad: 'sad' };
       say('advisor', msg, tone ? `Your voice sounded ${heard[tone.emotion] ?? tone.emotion}` : '', 50, { url: voiceUrl });
       text.value = '';
@@ -556,9 +558,56 @@
           box.textContent = `${o.verdict} Churn risk ${o.churnRisk}%. ${o.notes.join(' ')}`;
           box.hidden = false; useBtn.disabled = true;
         } else { sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; }
-      } catch (err) { status.textContent = (err as Error).message; }
+        return d;
+      } catch (err) { status.textContent = (err as Error).message; return null; }
     };
     byId('live-say')!.addEventListener('submit', (e) => { e.preventDefault(); void sendAdvisor(text.value.trim()); });
+
+    // the advisor agent talks by itself: one step of its routine per turn, then the call is scored and the other agents have their say
+    const autoBtns = $$<HTMLButtonElement>('[data-auto]');
+    const sleep = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
+    const summarise = async (steps: string[], style: string, last: { outcome: { verdict: string } | null; mood: number } | null) => {
+      const box = byId('live-summary')!, list = byId('lv-sum-list')!;
+      list.replaceChildren();
+      const add = (who: string, words: string) => { const li = make('li'); li.append(make('strong', { textContent: who }), ` ${words}`); list.append(li); };
+      add('Customer simulator:', last?.outcome ? `${last.outcome.verdict} Her mood at the end: ${last.mood}/100.` : 'the call is still open.');
+      add('Advisor agent:', `${steps.length} replies by itself (${steps.join(', ')}), ${style === 'rushed' ? 'in the rushed style, to show what goes wrong' : 'following the good practices'}.`);
+      add('Sales agent:', byId('lv-o-top')!.hidden ? 'no offer fits this call.' : `${byId('lv-o-name')!.textContent}. ${byId('lv-o-timing')!.textContent}`);
+      box.hidden = false;
+      box.scrollIntoView({ block: 'nearest' });
+      try {
+        const r = await post('/advisor/live/review', { id: callId });
+        add('Quality analyst:', `${r.callId} scored ${r.overall}/100. What lowered it: ${r.hurt.length ? r.hurt.join('; ') : 'nothing'}. What went well: ${r.helped.length ? r.helped.join('; ') : 'nothing recorded'}.`);
+        const bad = r.hungUp || r.unresolved || (last?.mood ?? 100) <= 25;
+        add('Complaint agent:', bad ? 'the call ended badly (the customer hung up, left upset or nothing was agreed), so it is listed under Complaints, calls that may be complaints.' : 'no complaint expected: the customer was not left upset.');
+      } catch (err) { add('Quality analyst:', (err as Error).message); }
+    };
+    const runAuto = async (style: 'careful' | 'rushed') => {
+      if (running) return;
+      running = true; muted = true; stopSpeaking();
+      autoBtns.forEach((b) => { b.disabled = true; });
+      try {
+        if (!(await startCall())) return;
+        await sleep(900);
+        const steps: string[] = [];
+        let last: Awaited<ReturnType<typeof sendAdvisor>> = null;
+        for (let turn = 0; turn < 6; turn++) {
+          status.textContent = `The advisor agent is answering (step ${turn + 1})…`;
+          const r = await post('/advisor/live/auto', { topic, turn, style });
+          steps.push(r.step);
+          last = await sendAdvisor(r.text);
+          if (!last || last.ended) break;
+          await sleep(1100);
+        }
+        status.textContent = '';
+        await summarise(steps, style, last);
+      } catch (err) { status.textContent = (err as Error).message; }
+      finally { muted = false; running = false; autoBtns.forEach((b) => { b.disabled = false; }); }
+    };
+    autoBtns.forEach((b) => b.addEventListener('click', () => void runAuto(b.dataset.auto === 'rushed' ? 'rushed' : 'careful')));
+    const begin = live.dataset.autostart;
+    if (begin === 'careful' || begin === 'rushed') void runAuto(begin);
+    else if (begin === 'start') void startCall();
 
     // send the call to the quality queue (the quality analyst scores it from the transcript)
     const reviewBtn = byId<HTMLButtonElement>('lv-review');

@@ -305,3 +305,53 @@ def test_the_tone_of_a_voice_note_reaches_her_over_http():
     for bad in ({"emotion": "furious", "mood": 10}, {"emotion": "anger", "mood": 101}, {"emotion": "anger"}):
         assert client.post(f"/customer/sessions/{a['id']}/say", json={"text": "hi", "tone": bad}).status_code == 422
 
+
+def _auto_call(persona, difficulty, intent, style="careful"):
+    """The advisor agent talks to the customer simulator by itself until the call ends."""
+    s = customer.start(persona, None, difficulty, intent, False)
+    moves, turn = [], 0
+    while True:
+        r = advisor.auto_reply(s["opening"], turn, None, style)
+        assert 0 < len(r["text"]) <= 300 and r["step"]
+        reply = customer.say(s["id"], r["text"])
+        moves.append(reply["move"])
+        turn += 1
+        if reply["ended"] or turn > 6:
+            return moves, reply["outcome"]
+
+
+def test_the_advisor_agent_talking_by_itself_follows_the_good_practices_and_resolves_every_call():
+    for persona in customer.PERSONAS:
+        for difficulty in ("MEDIUM", "HARD"):
+            for intent in customer.INTENTS:
+                moves, outcome = _auto_call(persona, difficulty, intent)
+                assert moves[0] == "EMPATHY" and moves[1] == "CHECK_POLICY" and moves[-1] == "FOLLOW_UP", (persona, difficulty, intent, moves)
+                assert outcome["verdict"].startswith("Resolved") and outcome["expectationMet"] and not outcome["notes"], (persona, difficulty, intent, outcome)
+    first = advisor.auto_reply("I was charged twice on my September bill.", 0)
+    assert first["step"] == "acknowledge" and "sorry" in first["text"] and first["sources"] and not first["last"]
+    assert advisor.auto_reply("I was charged twice on my September bill.", 3)["last"] and advisor.auto_reply("I was charged twice on my September bill.", 9)["last"]
+    check = advisor.auto_reply("I was charged twice for 120 dinars on my bill.", 1)
+    assert "Let me check the policy in" in check["text"] and "commit to anything" in check["text"]
+
+
+def test_a_rushed_advisor_promises_too_early_and_the_call_ends_badly():
+    verdicts = set()
+    for persona in customer.PERSONAS:
+        moves, outcome = _auto_call(persona, "MEDIUM", "BILLING", "rushed")
+        assert moves[0] == "PROMISE" and "ASK_REPEAT" in moves and "TRANSFER" in moves
+        verdicts.add(outcome["verdict"])
+        assert not outcome["verdict"].startswith("Resolved") and any("Compliance risk" in n for n in outcome["notes"])
+    assert verdicts <= {"The client hung up.", "Call left open."}
+
+
+def test_the_auto_endpoint_answers_validates_and_never_reads_a_missing_customer():
+    ok = client.post("/advisor/auto", json={"topic": "I was charged twice on my September bill.", "turn": 1}).json()
+    assert ok["step"] == "check the policy" and ok["style"] == "careful"
+    rushed = client.post("/advisor/auto", json={"topic": "I was charged twice", "turn": 0, "style": "rushed"}).json()
+    assert rushed["step"] == "promise too early" and rushed["sources"] == []
+    assert client.post("/advisor/auto", json={"topic": "hi", "turn": 0}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "turn": 11}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "style": "angry"}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "customer_id": "ZZ-0000"}).status_code == 404
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "customer_id": "bad"}).status_code == 422
+

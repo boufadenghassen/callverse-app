@@ -38,6 +38,7 @@ export class HttpAgentGateway extends MockAgentGateway {
 
   /** Real Python agents: the advisor, the customer simulator, the workforce manager, the voice. */
   customerContext(customerId: string) { return this.call<m.CustomerContext>(`/advisor/customers/${encodeURIComponent(customerId)}`, undefined, true); }
+  autoReply(topic: string, turn: number, style: 'careful' | 'rushed') { return this.call<m.AutoReply>('/advisor/auto', { topic, turn, style }); }
   suggestAnswer(customerId: string, query: string) { return this.call<m.SuggestedAnswer>('/advisor/suggest', { customer_id: customerId, query }); }
   async speak(r: m.SpeakRequest): Promise<Buffer> {
     let res: Response;

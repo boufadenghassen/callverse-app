@@ -78,3 +78,41 @@ def suggest(query: str, customer_name: str | None = None) -> dict:
 def cosine(a: str, b: str) -> float:
     """TF-IDF cosine similarity of two texts, in the knowledge base's own vocabulary."""
     return float(cosine_similarity(_vec.transform([a]), _vec.transform([b]))[0][0])
+
+
+# ---- the advisor agent talking by itself (the automatic call)
+AUTO_STEPS = ("acknowledge", "check the policy", "give the solution", "follow up in writing")
+# a rushed advisor for demonstrations: promises at once, asks the customer to repeat, passes them on. It is what the quality analyst and the complaint agent are there for.
+RUSHED = (("promise too early", "I will refund you right away."), ("ask to repeat", "Could you explain the problem again from the start?"),
+          ("transfer", "Let me transfer you to the billing team."), ("transfer again", "Please hold while I transfer you to another colleague."))
+
+
+def _sentences(text: str) -> list[str]:
+    return [x.strip() for x in re.split(r"(?<=[.!?])\s+", text.strip()) if x.strip()]
+
+
+def auto_reply(topic: str, turn: int, customer_name: str | None = None, style: str = "careful") -> dict:
+    """What the advisor agent says by itself, one step per turn: acknowledge the problem, check the policy, give the solution, confirm in writing.
+
+    The facts come from the same sourced answer the console suggests (`suggest`); the steps are the good practices the quality analyst checks for,
+    so an automatic call is the advisor agent's knowledge wrapped in a fixed, honest routine. It is not a language model and it does not read the
+    customer's mood: after the last step the call is closed. `turn` counts the advisor's replies so far (0 for the first one).
+    """
+    if style == "rushed":
+        step, text = RUSHED[min(max(turn, 0), len(RUSHED) - 1)]
+        return dict(text=text, step=step, turn=turn, last=False, sources=[], intents=detect_intents(topic), policyWarning=None, style=style)
+    a = suggest(topic, customer_name)
+    step = AUTO_STEPS[min(max(turn, 0), len(AUTO_STEPS) - 1)]
+    facts = _sentences(a["text"])
+    source = a["sources"][0] if a["sources"] else "our procedure"
+    if step == "acknowledge":
+        text = "I'm sorry about this, I understand how frustrating it is. " + (facts[0] if facts else "I will look into it now.")
+    elif step == "check the policy":
+        text = f"Let me check the policy in {source} before I commit to anything."
+        if a.get("policyWarning"):
+            text += " " + a["policyWarning"]
+    elif step == "give the solution":
+        text = " ".join(facts[1:3]) if len(facts) > 1 else (facts[0] if facts else "I will take care of it myself.")
+    else:
+        text = "I will send you a confirmation by email with a reference number and call you back. Is there anything else I can help you with?"
+    return dict(text=text[:300], step=step, turn=turn, last=step == AUTO_STEPS[-1], sources=a["sources"], intents=a["intents"], policyWarning=a.get("policyWarning"), style="careful")

@@ -47,20 +47,35 @@
       </section>
     </div>
 
-    <section class="panel" id="live" data-csrf="{{ csrf }}" aria-labelledby="lv">
+    <section class="panel" id="live" data-csrf="{{ csrf }}" data-autostart="{{ autostart }}" aria-labelledby="lv">
       <h2 id="lv">Live call with a simulated customer</h2>
-      <p class="muted">The customer agent answers in real time. After each of her messages, the advisor agent suggests the next answer with its sources.</p>
+      <p class="muted">The customer agent answers in real time. After each of her messages, the advisor agent suggests the next answer with its sources. Or let the advisor agent talk by itself: the call is then scored by the quality analyst, and the offers and the complaint check follow.</p>
+      {% if playError %}<p class="warning" role="alert">{{ playError }}</p>{% endif %}
+      {% if play %}
+      <div class="play-banner" role="note">
+        <h3>Training scenario: {{ play.title }}</h3>
+        <p class="muted small">{{ play.id }}. How the scenario was read by the customer simulator:</p>
+        <ul>{% for w in play.settings.why %}<li>{{ w }}</li>{% endfor %}</ul>
+        {% if play.brief %}<p><strong>Trainer brief:</strong> {{ play.brief }}</p>{% endif %}
+        {% if play.criteria | length %}<p><strong>Success looks like:</strong></p><ul>{% for c in play.criteria %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% elif scenarios | length %}
+      <p class="muted small">Or practise a training scenario: {% for s in scenarios %}<a href="/advisor?scenario={{ s.id | urlencode }}&amp;start=1#live">{{ s.id }}</a>{{ ', ' if not loop.last }}{% endfor %}.</p>
+      {% endif %}
       <form id="live-setup" class="live-setup">
         <div><label for="lv-persona">Customer</label>
-          <select id="lv-persona">{% for k, p in personas %}<option value="{{ k }}">{{ p.label }}</option>{% endfor %}</select></div>
+          <select id="lv-persona">{% for k, p in personas %}<option value="{{ k }}"{% if play and play.settings.persona == k %} selected{% endif %}>{{ p.label }}</option>{% endfor %}</select>
+          <input type="hidden" id="lv-mix" value="{{ play.settings.mix if play and play.settings.mix else '' }}"></div>
         <div><label for="lv-intent">Reason for the call</label>
-          <select id="lv-intent">{% for k, i in intents %}<option value="{{ k }}">{{ i.label }}</option>{% endfor %}</select></div>
+          <select id="lv-intent">{% for k, i in intents %}<option value="{{ k }}"{% if play and play.settings.intent == k %} selected{% endif %}>{{ i.label }}</option>{% endfor %}</select></div>
         <div><label for="lv-diff">Difficulty</label>
-          <select id="lv-diff">{% for k, d in difficulties %}<option value="{{ k }}"{% if k == 'MEDIUM' %} selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
-        <div class="live-check"><input id="lv-memory" type="checkbox"><label for="lv-memory">Repeat contact</label></div>
+          <select id="lv-diff">{% for k, d in difficulties %}<option value="{{ k }}"{% if (play and play.settings.difficulty == k) or (not play and k == 'MEDIUM') %} selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
+        <div class="live-check"><input id="lv-memory" type="checkbox"{% if play and play.settings.memory %} checked{% endif %}><label for="lv-memory">Repeat contact</label></div>
         <div class="live-check"><input id="lv-voice" type="checkbox" checked><label for="lv-voice">Speak her replies</label></div>
         <div class="live-check"><input id="lv-sayme" type="checkbox" checked><label for="lv-sayme">Say my typed replies aloud</label></div>
         <button type="submit" class="btn">Start call</button>
+        <button type="button" class="btn-line" data-auto="careful">Let the advisor agent talk</button>
+        <button type="button" class="btn-quiet" data-auto="rushed">Show a rushed advisor</button>
       </form>
       <p id="live-status" role="status" class="muted"></p>
       <div id="live-call" hidden>
@@ -101,6 +116,10 @@
             </div>
           </div>
           <p class="muted" id="lv-o-none" hidden>No offer fits yet. Solve the customer's problem first.</p>
+        </article>
+        <article class="answer summary-box" id="live-summary" hidden aria-live="polite">
+          <h3>What the agents did on this call</h3>
+          <ul class="summary-list" id="lv-sum-list"></ul>
         </article>
       </div>
     </section>

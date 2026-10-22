@@ -1125,3 +1125,10 @@ html[data-theme="dark"] .lane-low { --lane: #9fd0b0; } html[data-theme="dark"] .
 .good-note { color: var(--ok); font-weight: 600; }
 .keep { margin: var(--s2) 0; } .keep-list { margin: 0 0 var(--s3); padding-left: 1.2rem; }
 .lost h4 { margin: var(--s3) 0 var(--s1); font-size: .9375rem; }
+
+/* The advisor console: a training scenario to practise, and what the agents did on an automatic call */
+.play-banner { background: var(--paper); border-radius: 14px; padding: var(--s3) var(--s4); margin: var(--s3) 0; }
+.play-banner h3 { margin: 0 0 var(--s1); }
+.play-banner ul { margin: var(--s1) 0 var(--s2); padding-left: 1.2rem; }
+.summary-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+#live-summary[hidden] { display: none; }
