@@ -3,13 +3,15 @@
 
     .\start-all.ps1              start the three services and open the browser
     .\start-all.ps1 -Reset       first restart the clock of the complaint cases (their deadlines run in real time, so a demo prepared yesterday shows them all late)
+    .\start-all.ps1 -Clean       first start from the clean demo state: the complaint, sales and quality stores (what your rehearsals and the browser tests added to them) are moved to
+                                 services\agents\data\backup-<date> (nothing is deleted) and recreated with their simulated history. Use it just before a presentation.
     .\start-all.ps1 -Stop        stop the three services
     .\start-all.ps1 -NoBrowser   do not open the browser
 
   Needs Node.js 22 or newer and the Python environment next to this folder (..\venv). The first start loads the speech and emotion models and can take a minute.
   The demo password is CALLVERSE_DEMO_PASSWORD if you set it, else demo-password-123. For a LOCAL demo only.
 #>
-param([switch]$Reset, [switch]$Stop, [switch]$NoBrowser)
+param([switch]$Reset, [switch]$Clean, [switch]$Stop, [switch]$NoBrowser)
 
 $root = $PSScriptRoot
 $agents = Join-Path $root "services\agents"
@@ -41,6 +43,16 @@ if (-not $py) { Write-Host "No Python found (expected ..\venv\Scripts\python.exe
 if ($Reset) {
     $db = Join-Path $agents "data\complaints.db"
     if (Test-Path $db) { Remove-Item $db -Force; Write-Host "the complaint cases will be recreated with fresh deadlines" }
+}
+if ($Clean) {
+    $data = Join-Path $agents "data"
+    $backup = Join-Path $data ("backup-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+    $stores = Get-ChildItem $data -File | Where-Object { $_.Name -match '^(complaints|sales|quality)\.db' }
+    if ($stores) {
+        New-Item -ItemType Directory -Force $backup | Out-Null
+        $stores | Move-Item -Destination $backup
+        Write-Host "the complaint, sales and quality stores were moved to $backup; they are recreated with their simulated history"
+    }
 }
 
 Write-Host "Building the web app..."
