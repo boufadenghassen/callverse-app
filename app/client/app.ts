@@ -302,6 +302,24 @@
         }));
         byId('r-timeline')!.replaceChildren(...d.timeline.map((t: { startSec: number; emotion: string }) =>
           make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
+        // why: which blocks of the recording the model leaned on (occlusion, see models/src/explain.py)
+        const why = d.explanation as { target: string; blockSec: number; blocks: { startSec: number; endSec: number; drop: number; rel: number }[]; top: { startSec: number; endSec: number; drop: number }[] } | null;
+        byId('r-why-box')!.hidden = !why;
+        if (why) {
+          const pts = (x: number) => `${Math.abs(x * 100).toFixed(1)} points`;
+          byId('r-why-lead')!.textContent = `Each block is ${why.blockSec} s of the recording. The darker the block, the more it mattered to the answer “${why.target}”.`;
+          byId('r-why')!.replaceChildren(...why.blocks.map((b) => {
+            const li = make('li', { className: b.drop > 0 ? 'for' : b.drop < 0 ? 'against' : '' }), bar = make('span', { className: 'bar' });
+            bar.style.opacity = String(0.25 + 0.75 * Math.abs(b.rel));
+            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}${b.drop ? `, ${pts(b.drop)}` : ''}`);
+            li.append(bar);
+            return li;
+          }));
+          byId('r-why-end')!.textContent = `${d.durationSec} s`;
+          byId('r-why-top')!.textContent = why.top.length
+            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s (${pts(t.drop)} of confidence)`).join(', ')}.`
+            : 'No single part of the recording stands out.';
+        }
         out.hidden = false;
       } catch { status.textContent = 'The app could not be reached. Try again.'; }
     });

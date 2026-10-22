@@ -28,6 +28,15 @@
       <ul class="emo-bars" id="r-bars"></ul>
       <h3>Through the call</h3>
       <ol class="emo-timeline" id="r-timeline"></ol>
+      <div id="r-why-box" hidden>
+        <h3>Why this answer</h3>
+        <p class="muted" id="r-why-lead"></p>
+        <ol class="emo-why" id="r-why" aria-label="How much each part of the recording mattered to the answer"></ol>
+        <div class="emo-why-axis muted"><span>0 s</span><span id="r-why-end"></span></div>
+        <p class="emo-why-legend"><span class="sw for"></span> the model leaned on this part <span class="sw against"></span> this part argued against the answer</p>
+        <p id="r-why-top"></p>
+        <p class="muted">How this was found: the app silences one short block of the recording at a time and scores the clip again with the same calibrated model. A block whose removal makes the answer less likely is a block the model leaned on. It shows where the model looked, not why it is right.</p>
+      </div>
       <p class="muted">Percentages are calibrated on unseen actors: on average they match how often the model is right (about 74%). Trained on acted speech (CREMA-D, RAVDESS) with phone-line effects added. Real calls may be harder; sad is its weakest emotion. See the model card in <code>models/</code>.</p>
     </section>
 {% endblock %}

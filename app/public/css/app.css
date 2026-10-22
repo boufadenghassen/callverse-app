@@ -991,6 +991,16 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .emo-timeline { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .emo-timeline li { padding: .3rem .7rem; border-radius: 999px; background: var(--paper); font-size: .8125rem; text-transform: capitalize; }
 .emo-timeline li.bad { background: var(--danger-soft); color: var(--danger); }
+.emo-why { list-style: none; margin: 0 0 var(--s2); padding: 0; display: flex; gap: 2px; }
+.emo-why li { flex: 1; min-width: 0; }
+.emo-why .bar { display: block; height: 2.6rem; border-radius: 4px; background: var(--paper); }
+.emo-why .for .bar { background: var(--accent); }
+.emo-why .against .bar { background: repeating-linear-gradient(45deg, var(--muted) 0 3px, transparent 3px 6px); }
+.emo-why-axis { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: var(--s3); }
+.emo-why-legend { font-size: .8125rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.emo-why-legend .sw { display: inline-block; width: 1.4rem; height: .8rem; border-radius: 3px; }
+.emo-why-legend .sw.for { background: var(--accent); }
+.emo-why-legend .sw.against { background: repeating-linear-gradient(45deg, var(--muted) 0 3px, transparent 3px 6px); }
 
 /* Advisor live call */
 .live-setup { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: end; margin: var(--s4) 0; }
