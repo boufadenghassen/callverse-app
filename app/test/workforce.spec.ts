@@ -141,3 +141,21 @@ test('the Coach generates scenarios only for the selected advisor and replays th
   assert.match(replayed.headers.location as string, /replayed=1/);
   await coach.get(replayed.headers.location as string).expect(200);
 });
+
+test('the Coach renders one scenario list and keeps generation and replay routes available', async () => {
+  const coach = await client(app, 'rim');
+  const before = await coach.get('/training?advisor=Hela%20M.').expect(200);
+  assert.equal((before.text.match(/id="targeted-simulations"/g) ?? []).length, 1);
+  assert.equal((before.text.match(/id="scenarios"/g) ?? []).length, 0);
+  assert.match(before.text, /action="\/training\/scenarios\/generate\?advisor=Hela%20M\."/);
+
+  const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Medium' });
+  assert.equal(generated.status, 302);
+  const generatedPath = generated.headers.location as string;
+  const scenarioId = generatedPath.match(/\/training\/scenarios\/([^?]+)/)?.[1];
+  assert.ok(scenarioId);
+
+  const replayed = await post(coach, `/training/scenarios/${scenarioId}/replay?advisor=Hela%20M.`, generatedPath, {});
+  assert.equal(replayed.status, 302);
+  assert.match(replayed.headers.location as string, /replayed=1/);
+});
