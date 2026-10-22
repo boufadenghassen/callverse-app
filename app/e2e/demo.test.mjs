@@ -104,9 +104,10 @@ test('the demo tour walks from the home page to the simulator', async () => {
   await ctx.close();
 });
 
-test('escalating a complaint moves it up a lane and updates the counts', async () => {
+test('escalating a complaint moves it up a lane and updates the counts', async (t) => {
   const { ctx, page } = await signIn('admin');
   await page.goto(`${BASE}/complaints`);
+  if ((await page.locator('.lane[data-lane]').count()) === 0) { await ctx.close(); return t.skip('the real complaint agent is running: see the test after this one'); }
   const high = page.locator('.lane[data-lane="high"]');
   await high.locator('[data-escalate]').click();
   assert.equal(await page.locator('.lane[data-lane="critical"] .case').count(), 2);
@@ -791,5 +792,46 @@ test('the customer reacts to shouting and to what was actually said, not just to
   assert.doesNotMatch(shouted, /Alright|Mm-hm|go on|Okay, sure/i);                                // not the empty filler she used to give
   assert.match(await page.locator('.live-msg.client').last().innerText(), /She read this as: Raised your voice or was rude/);
   assert.ok((await mood()) < calm - 10, `her mood must drop after shouting (${calm} -> ${await mood()}, started at ${start})`);
+  await ctx.close();
+});
+
+test('complaints: cases come with their reasons, a complaint is read, opened, taken, resolved and closed after the follow-up', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/complaints`);
+  assert.ok(await page.locator('.lane').count() >= 4, 'critical, high, medium and low lanes');
+  assert.ok(await page.locator('.case').count() >= 4 && await page.locator('.early-warning').count() >= 1, 'open cases and an early warning');
+  const card = page.locator('.case').first();
+  await card.locator('summary', { hasText: 'Why' }).click();
+  assert.ok(await card.locator('.driver-list .eff').count() >= 3, 'every number has its points');
+  // read a complaint without saving it
+  await page.click('button[data-tri-sample]:has-text("Charged twice")');
+  await page.click('#tri-read');
+  await page.locator('#tri-result').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#tri-cluster').innerText(), /Billing duplicates/);
+  assert.match(await page.locator('#tri-level').innerText(), /(Critical|High) · escalation risk \d+/);
+  assert.ok(await page.locator('#tri-sev li').count() >= 2 && await page.locator('#tri-actions li').count() >= 3);
+  // open it as a case, then take it, resolve it and close it after the follow-up call
+  await page.click('#tri-form button[type=submit]');
+  await page.waitForURL(/\/complaints\/CMP-\d+$/);
+  assert.match(await page.textContent('main'), /Why this level and this risk[\s\S]*What to do first/);
+  await page.click('button:has-text("Take case")');
+  assert.match(await page.textContent('.page-head .lede'), /taken by admin/);
+  await page.selectOption('#res', 'refunded');
+  await page.fill('#res-note', 'refunded the duplicate');
+  await page.click('button:has-text("Resolve")');
+  assert.match(await page.textContent('main'), /Follow-up call: is the customer satisfied\?/);
+  await page.selectOption('#tr', 'yes');
+  await page.click('button:has-text("Close the follow-up")');
+  assert.match(await page.textContent('main'), /Closed: the customer is satisfied/);
+  assert.match(await page.textContent('main'), /opened[\s\S]*taken[\s\S]*resolved[\s\S]*closed/);
+  // a call the quality analyst scored badly can become a case
+  await page.goto(`${BASE}/complaints`);
+  const open = page.locator('form[action="/complaints/from-call"] button');
+  if (await open.count()) {
+    await open.first().click();
+    await page.waitForURL(/\/complaints\/CMP-\d+$/);
+    assert.match(await page.textContent('main'), /from the call/);
+  }
   await ctx.close();
 });

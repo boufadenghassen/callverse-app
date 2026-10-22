@@ -50,6 +50,17 @@ export abstract class AgentGateway {
   /** A two-channel example call (WAV). */
   abstract sampleCall(): Promise<Buffer>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
+  /** One case in full. Throws RejectedError (no such case) or NeedsRealAgentsError (demo mode). */
+  abstract complaint(id: string): Promise<m.ComplaintDetail>;
+  /** Read a complaint without saving it. Throws RejectedError or NeedsRealAgentsError. */
+  abstract complaintTriage(text: string, customerId: string | null): Promise<m.ComplaintCase>;
+  abstract complaintCreate(text: string, customerId: string | null, channel: string): Promise<m.ComplaintDetail>;
+  /** take, escalate, set a level, alert a supervisor, resolve, close after the follow-up, or reopen. Throws RejectedError (a wrong move) or NeedsRealAgentsError. */
+  abstract complaintAct(id: string, act: m.ComplaintAct): Promise<m.ComplaintDetail>;
+  abstract complaintInsights(): Promise<m.ComplaintInsights | null>;
+  abstract complaintFollowUps(): Promise<m.ComplaintFollowUp[]>;
+  abstract complaintCandidates(): Promise<m.ComplaintCandidate[]>;
+  abstract complaintFromCall(callId: string): Promise<m.ComplaintDetail>;
   abstract scenarios(): Promise<m.Scenario[]>;
   abstract opportunities(): Promise<m.Opportunity[]>;
   /** The needs a customer voiced in a conversation and the offers that answer them, with the reasons. Throws NeedsRealAgentsError (demo mode) or RejectedError (unknown customer). */

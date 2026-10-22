@@ -157,6 +157,16 @@ export class MockAgentGateway extends AgentGateway {
     ];
   }
 
+  private demoOnly(): never { throw new NeedsRealAgentsError('the demo data keeps no complaint cases'); }
+  async complaint(_id: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintTriage(_text: string, _customerId: string | null): Promise<m.ComplaintCase> { return this.demoOnly(); }
+  async complaintCreate(_text: string, _customerId: string | null, _channel: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintAct(_id: string, _act: m.ComplaintAct): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintInsights(): Promise<m.ComplaintInsights | null> { return null; }
+  async complaintFollowUps(): Promise<m.ComplaintFollowUp[]> { return []; }
+  async complaintCandidates(): Promise<m.ComplaintCandidate[]> { return []; }
+  async complaintFromCall(_callId: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+
   async scenarios(): Promise<m.Scenario[]> {
     return [
       { id: 'SC-31', title: 'Double charge, customer threatens to post online', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'QA weakness: compliance' },

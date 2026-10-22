@@ -8,6 +8,7 @@ import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { ErrorFilter } from './errors.filter';
 import { CallReviewController } from './pages/call-review.controller';
+import { ComplaintsController } from './pages/complaints.controller';
 import { LiveCallController } from './pages/live-call.controller';
 import { QualityController } from './pages/quality.controller';
 import { SalesController } from './pages/sales.controller';
@@ -16,7 +17,7 @@ import { DeckController } from './pages/deck.controller';
 import { PagesController } from './pages/pages.controller';
 
 @Module({
-  controllers: [AuthController, PagesController, DeckController, CallReviewController, LiveCallController, VoiceController, QualityController, SalesController],
+  controllers: [AuthController, PagesController, DeckController, CallReviewController, ComplaintsController, LiveCallController, VoiceController, QualityController, SalesController],
   providers: [
     AuthService,
     // AGENTS_MODE=http calls the real Python agents; anything else serves the mock data.

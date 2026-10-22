@@ -1039,6 +1039,45 @@
     draw();
   }
 
+  // Complaints: read a complaint without saving it (the real complaint agent), then open it as a case with the form's other button
+  const triForm = byId<HTMLFormElement>('tri-form');
+  if (triForm) {
+    const csrf = triForm.dataset.csrf!;
+    document.addEventListener('click', (e) => {
+      const sample = hit<HTMLButtonElement>(e, '[data-tri-sample]');
+      if (!sample) return;
+      byId<HTMLTextAreaElement>('tri-text')!.value = sample.dataset.triSample!;
+      byId<HTMLSelectElement>('tri-customer')!.value = sample.dataset.triCustomer ?? '';
+    });
+    byId('tri-read')!.addEventListener('click', async () => {
+      const status = byId('tri-status')!, out = byId('tri-result')!, text = byId<HTMLTextAreaElement>('tri-text')!.value.trim(), customer = byId<HTMLSelectElement>('tri-customer')!.value;
+      if (text.length < 10) { status.textContent = 'Write the complaint in at least a sentence.'; return; }
+      status.textContent = 'Reading the complaint…';
+      out.hidden = true;
+      try {
+        const res = await fetch('/complaints/triage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ text, customerId: customer || null }) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error ?? 'Something went wrong.');
+        status.textContent = '';
+        byId('tri-cluster')!.textContent = d.cluster;
+        const level = byId('tri-level')!;
+        level.textContent = `${d.severity} · escalation risk ${d.escalationRisk}`;
+        level.className = `risk ${d.severity === 'Critical' || d.severity === 'High' ? 'high' : d.severity === 'Medium' ? 'medium' : 'low'}`;
+        byId('tri-deadline')!.textContent = `Deadline ${d.deadline.slaHours} h${d.warning ? `. Early warning: ${d.warning.why}.` : ''}`;
+        byId('tri-sev-h')!.textContent = `How serious: ${d.severityScore}/100`;
+        byId('tri-risk-h')!.textContent = `How likely to escalate: ${d.escalationRisk}/100`;
+        byId('tri-sev')!.replaceChildren(...(d.severityFactors.length ? [...factorList(d.severityFactors).children] : [make('li', { textContent: 'Nothing at stake that the agent can see.' })]));
+        byId('tri-risk')!.replaceChildren(...[...factorList(d.riskFactors).children]);
+        byId('tri-actions')!.replaceChildren(...(d.actions as { action: string; why: string; who: string }[]).map((a) => {
+          const li = make('li');
+          li.append(make('strong', { textContent: a.action }), ` ${a.why}. ${a.who}.`);
+          return li;
+        }));
+        out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
+  }
+
   // Complaints: drag a card to another lane, or press Escalate to move it up one
   const lanes = $$('.lane[data-lane]');
   if (lanes.length) {

@@ -1096,3 +1096,19 @@ table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4
 .sim-form input[type=number] { width: 9rem; max-width: 100%; }
 .sim-form .check { display: flex; align-items: center; min-height: 2.5rem; } .sim-form .check input { width: auto; margin-right: .4rem; }
 .sim .yours th, .sim .yours td { font-weight: 700; background: var(--accent-soft); }
+
+/* Complaints: the real agent (four lanes, the reasons, the follow-up, where complaints come from) */
+.lanes.real { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+.lane-low { --lane: #3d5a47; }
+.lane-low .ring .fg { stroke: #3d5a47; }
+html[data-theme="dark"] .lane-low { --lane: #9fd0b0; } html[data-theme="dark"] .lane-low .ring .fg { stroke: #9fd0b0; }
+.case .why { margin: var(--s2) 0; font-size: .875rem; } .case .why h4 { margin: var(--s2) 0 var(--s1); font-size: .8125rem; }
+.late { color: var(--danger); }
+.rising { color: var(--danger); font-weight: 650; }
+.candidates { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.candidates li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3); align-items: flex-start; background: var(--paper); border-radius: 14px; padding: var(--s3) var(--s4); }
+.move-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s3); margin: var(--s3) 0; }
+.move-form select, .move-form input:not([type=hidden]) { width: auto; min-width: 12rem; }
+.timeline-log { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.todo li { margin-bottom: var(--s2); }
+#tri-form select, #tri-form textarea { width: 100%; max-width: 40rem; font: inherit; padding: .5rem .75rem; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; }

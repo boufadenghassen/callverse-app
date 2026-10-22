@@ -62,7 +62,34 @@ export interface QualityAnalytics {
           causes: { cause: string; calls: number; share: number }[]; byIntent: { intent: string; calls: number; avg: number }[] } | null;
   advisors: AdvisorStats[]; method: string;
 }
-export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
+export interface ComplaintAction { action: string; why: string; who: string }
+export interface ComplaintDeadline { slaHours: number; ageHours: number; hoursLeft: number; used: number; overdue: boolean }
+export interface ComplaintWarning { why: string; hoursLeft: number; alerted: boolean }
+/** The first six fields are the contract; the rest comes from the real complaint agent (the demo data leaves them out). Severity and risk come with their reasons in points. */
+export interface ComplaintCase {
+  id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number;
+  clusterKey?: string; otherClusters?: string[]; cause?: string; team?: string; customerId?: string | null; customer?: string | null;
+  status?: 'open' | 'taken' | 'resolved' | 'closed'; assigned?: string | null; channel?: string; source?: string; opened?: string;
+  severityScore?: number; computedLevel?: string; overridden?: boolean; severityFactors?: SalesFactor[]; riskFactors?: SalesFactor[];
+  deadline?: ComplaintDeadline; contacts?: number; amount?: number | null; warning?: ComplaintWarning | null; actions?: ComplaintAction[];
+}
+export interface ComplaintEvent { at: string; who: string; kind: string; note: string }
+export interface ComplaintDetail extends ComplaintCase {
+  text: string; events: ComplaintEvent[]; earlier: { id: string; summary: string; opened: string; status: string }[];
+  similar: { id: string; summary: string; resolution: string }[]; worked: { code: string; label: string; count: number; of: number } | null;
+  resolution: string | null; trusted: number | null; callId: string | null;
+  customerFile: { id: string; name: string; profile: string; contract: string; openTickets: number; transfers: number; mood: string; tenureYears?: number; monthlyTnd?: number; usageTrend?: number } | null;
+}
+export interface ComplaintFollowUp { id: string; summary: string; customer: string | null; resolution: string; due: string; dueInHours: number }
+/** A call the quality analyst scored where the customer hung up, left upset or nothing was agreed, with how the complaint agent would read it. */
+export interface ComplaintCandidate { callId: string; advisor: string; overall: number; why: string[]; text: string; triage: ComplaintCase }
+export interface ComplaintClusterStat { key: string; label: string; cause: string; open: number; last28: number; previous28: number; trend: number; avgHours: number | null; worked: { label: string; count: number; of: number } | null }
+export interface ComplaintInsights {
+  open: number; byLevel: Record<string, number>; avgRisk: number; overdue: number; warnings: number; followUps: number; resolved: number; avgResolutionHours: number | null;
+  slaMetRate: number | null; trustRate: number | null; reopened: number; repeatRate: number | null; weeks: number[]; clusters: ComplaintClusterStat[];
+  causes: { cause: string; cases: number; share: number }[]; simulated: number; method: string;
+}
+export interface ComplaintAct { action: 'take' | 'escalate' | 'severity' | 'alert' | 'resolve' | 'close' | 'reopen'; by: string; note?: string; resolution?: string; level?: string; trusted?: boolean }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
 /** One reason an offer is suggested, in points of its 0-100 relevance (the sales agent's explanation). */
 export interface SalesFactor { name: string; points: number; why: string }
