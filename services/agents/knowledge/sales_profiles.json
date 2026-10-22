@@ -1,0 +1,8 @@
+{
+  "_note": "Invented sales facts about the five demo customers (ids as in customers.json). usageTrend: change in monthly usage over the last two months, in percent.",
+  "YT-1042": {"tenureYears": 6.0, "usageTrend": 5, "monthlyTnd": 42, "addons": []},
+  "MS-0007": {"tenureYears": 0.04, "usageTrend": 40, "monthlyTnd": 15, "addons": []},
+  "IK-2210": {"tenureYears": 3.0, "usageTrend": 0, "monthlyTnd": 120, "addons": []},
+  "WF-3391": {"tenureYears": 2.0, "usageTrend": -10, "monthlyTnd": 42, "addons": []},
+  "SH-5520": {"tenureYears": 1.5, "usageTrend": -45, "monthlyTnd": 28, "addons": []}
+}

@@ -1,0 +1,41 @@
+{
+  "_note": "Invented offers for the demo (prices in TND). `needs` says which customer need an offer answers and how well (0 to 1). `excluded_plans`: the customer's plan already covers it.",
+  "plans": ["Starter 10 GB", "Mobile Basic 20 GB", "Mobile Plus 40 GB", "Premium Unlimited"],
+  "upgrade_path": {"Starter 10 GB": "Mobile Basic 20 GB", "Mobile Basic 20 GB": "Mobile Plus 40 GB", "Mobile Plus 40 GB": "Premium Unlimited"},
+  "offers": [
+    {"id": "roaming-pass", "name": "Roaming Pass 5 GB", "price": "25 TND for 7 days", "kind": "cross-sell", "needs": {"travel": 1.0}, "excluded_plans": ["Premium"],
+     "pitch": "Data, calls and texts abroad at local prices."},
+    {"id": "data-booster", "name": "Data Booster +20 GB", "price": "9 TND per month", "kind": "cross-sell", "needs": {"data_short": 1.0, "travel": 0.2}, "excluded_plans": ["Premium"],
+     "pitch": "A bigger monthly allowance without changing plan."},
+    {"id": "plan-upgrade", "name": "Plan upgrade", "price": "from 8 TND more per month", "kind": "up-sell", "needs": {"plan_change": 1.0, "data_short": 0.7}, "excluded_plans": ["Premium"],
+     "pitch": "The next plan up: more data and more perks."},
+    {"id": "family-line", "name": "Family line add-on", "price": "12 TND per month", "kind": "cross-sell", "needs": {"family": 1.0}, "excluded_plans": [],
+     "pitch": "A second line for someone at home, on the same bill."},
+    {"id": "home-fiber", "name": "Home Fiber 100 Mbps", "price": "39 TND per month", "kind": "cross-sell", "needs": {"home_internet": 1.0}, "excluded_plans": [],
+     "pitch": "Fast internet at home, with a discount for mobile customers."},
+    {"id": "loyalty-discount", "name": "Loyalty discount -15% for 12 months", "price": "free", "kind": "retention", "needs": {"leaving": 1.0, "price_sensitive": 0.8}, "excluded_plans": [],
+     "min_tenure_years": 1.0, "pitch": "A reason to stay: 15% off the monthly bill for a year."},
+    {"id": "autopay", "name": "Auto-pay discount", "price": "-3 TND per month", "kind": "cross-sell", "needs": {"payment": 1.0}, "excluded_plans": [],
+     "pitch": "Pay by direct debit and never miss a due date."},
+    {"id": "premium-care", "name": "Premium Care line", "price": "10 TND per month", "kind": "up-sell", "needs": {"premium_service": 1.0}, "excluded_plans": ["Premium"],
+     "pitch": "A priority line with a shorter wait and a named advisor."},
+    {"id": "device-plan", "name": "Device upgrade plan", "price": "from 29 TND per month", "kind": "up-sell", "needs": {"device": 1.0}, "excluded_plans": [],
+     "pitch": "A new phone spread over 24 months, with insurance."},
+    {"id": "intl-calls", "name": "International calls pack", "price": "7 TND per month", "kind": "cross-sell", "needs": {"call_abroad": 1.0, "travel": 0.3}, "excluded_plans": ["Premium"],
+     "pitch": "Cheap calls to family and friends abroad."}
+  ],
+  "needs": {
+    "travel": {"label": "Travelling abroad", "rx": "\\b(abroad|overseas|trip|travel(l)?ing|flight|holiday|vacation|business trip|going to (france|italy|turkey|spain|dubai|paris|canada|germany|london)|next week in (france|italy|turkey|paris))\\b"},
+    "data_short": {"label": "Running out of data", "rx": "(run(ning)? out of (data|internet|gb)|data (runs?|ran|is|was|gets?) (out|finished|gone|too low|not enough)|not enough (data|gb|internet)|need more (data|gb|internet)|(data|internet) limit|(slow|throttled) (internet|data)|(internet|data) is slow|use(s|d)? (a lot of )?data|streaming|videos?)"},
+    "plan_change": {"label": "Wants a different plan", "rx": "(change|switch|upgrade|move to|bigger|better|higher) (my |the )?(plan|offer|package|subscription)|\\b(plan change|what plans|other plans|cheaper plan|more data plan)\\b|(plan|package|offer) (is|feels) (too small|too limited)"},
+    "family": {"label": "Someone to add to the account", "rx": "\\b(my (wife|husband|son|daughter|kids?|children|mother|father|parents|brother|sister|partner)|second line|another line|add a (line|number)|another number|whole family|family plan)\\b"},
+    "home_internet": {"label": "Internet at home", "rx": "\\b(wi-?fi|router|home internet|internet at home|fiber|fibre|adsl|the box|work(ing)? from home|broadband)\\b"},
+    "leaving": {"label": "Thinking of leaving", "rx": "\\b(cancel|leave|leaving|switch(ing)? (to|operator|provider)|another operator|other operator|competitor|orange|ooredoo|telecom|looking at other (options|operators)|close (my )?(account|line)|terminate)\\b"},
+    "price_sensitive": {"label": "Finds it too expensive", "rx": "\\b(too expensive|expensive|too much|price(s)?|cheaper|cost(s)? (too much|a lot)|bill is (high|too high)|afford|discount)\\b"},
+    "payment": {"label": "Payment trouble", "rx": "\\b(late (payment|fee)|forgot to pay|due date|direct debit|bank (card|account)|pay(ing)? (online|by card)|payment (method|failed|reminder)|automatic payment)\\b"},
+    "premium_service": {"label": "Wants priority service", "rx": "\\b(priority|wait(ed|ing)? (too )?long|hold(ing)? for|dedicated (line|advisor)|vip|premium service|named advisor|account manager)\\b"},
+    "device": {"label": "Phone problem or upgrade", "rx": "\\b(new phone|old phone|my phone (is|broke|died|has)|battery|cracked screen|screen (is )?broken|upgrade my (phone|device)|iphone|samsung)\\b"},
+    "call_abroad": {"label": "Calls to people abroad", "rx": "\\b(call(ing)? (my )?(family|relatives|friends|parents|brother|sister|son|daughter) (in|abroad)|calls? (to|abroad)|international calls?|relatives (in|abroad))\\b"}
+  },
+  "intent_needs": {"Plan change": ["plan_change", 0.5], "Data usage": ["data_short", 0.5], "Roaming": ["travel", 0.6], "Cancellation": ["leaving", 0.8], "Billing": ["payment", 0.3]}
+}

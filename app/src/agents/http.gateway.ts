@@ -120,6 +120,19 @@ export class HttpAgentGateway extends MockAgentGateway {
   routing() { return this.call<m.RoutingPlan>('/workforce/routing', undefined, true); }
   forecast(queue: string) { return this.call<m.ForecastPoint[]>(`/workforce/forecast?queue=${encodeURIComponent(queue)}`, undefined, true); }
   simulate(r: m.SimulationRequest) { return this.call<m.SimulationResult>('/workforce/simulate', r); }
+  opportunities() { return this.call<m.Opportunity[]>('/sales/opportunities'); }
+  salesAnalytics() { return this.call<m.SalesAnalytics>('/sales/analytics'); }
+  async salesDetect(customerId: string | null, turns: m.SalesTurn[]) {
+    const res = await this.raw('/sales/detect', { customer_id: customerId, turns });
+    if (res.status === 404 || res.status === 422) throw new RejectedError('The conversation or the customer is not valid.');
+    if (!res.ok) throw new AgentDownError(`sales detect answered ${res.status}`);
+    return (await res.json()) as m.SalesDetection;
+  }
+  async salesOutcome(o: m.SalesOutcome) {
+    const res = await this.raw('/sales/outcome', { customer_id: o.customerId, offer_id: o.offerId, outcome: o.outcome, relevance: o.relevance, cue: o.cue, need: o.need });
+    if (res.status === 404 || res.status === 422) throw new RejectedError('This offer or customer is not valid.');
+    if (!res.ok) throw new AgentDownError(`sales outcome answered ${res.status}`);
+  }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
 }

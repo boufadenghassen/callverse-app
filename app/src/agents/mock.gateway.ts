@@ -171,4 +171,16 @@ export class MockAgentGateway extends AgentGateway {
       { customer: 'Salma Hammami', offer: 'Loyalty data top-up', relevance: 71, reason: 'Usage dropping, churn risk; retention offer' },
     ];
   }
+
+  async salesDetect(_customerId: string | null, _turns: m.SalesTurn[]): Promise<m.SalesDetection> {
+    throw new NeedsRealAgentsError('demo mode cannot read a conversation');
+  }
+
+  async salesOutcome(_outcome: m.SalesOutcome): Promise<void> {
+    throw new NeedsRealAgentsError('demo mode keeps no outcomes');
+  }
+
+  async salesAnalytics(): Promise<m.SalesAnalytics | null> {
+    return null;
+  }
 }

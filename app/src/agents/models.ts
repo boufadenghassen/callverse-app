@@ -62,4 +62,21 @@ export interface QualityAnalytics {
 }
 export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
-export interface Opportunity { customer: string; offer: string; relevance: number; reason: string }
+/** One reason an offer is suggested, in points of its 0-100 relevance (the sales agent's explanation). */
+export interface SalesFactor { name: string; points: number; why: string }
+/** Say it now, or wait until the customer's problem is solved. */
+export interface SalesTiming { cue: 'now' | 'after_resolution'; why: string }
+/** The first four fields are the contract; the rest comes from the real sales agent (the demo data leaves them out). */
+export interface Opportunity {
+  customer: string; offer: string; relevance: number; reason: string;
+  customerId?: string; offerId?: string; price?: string; kind?: string; pitch?: string; need?: { key: string; label: string };
+  factors?: SalesFactor[]; timing?: SalesTiming; counterfactual?: string | null; alternatives?: { offer: string; relevance: number }[];
+}
+export interface SalesTurn { speaker: 'advisor' | 'customer'; text: string; start?: number; mood?: number }
+/** A need the customer voiced (or their file shows), with the words that show it. */
+export interface SalesSignal { need: string; label: string; quote: string; turn: number | null; time: string | null; mentions: number; strength: number; source: 'conversation' | 'file' }
+export interface SalesDetection { customerId: string | null; customer: string | null; mood: number; signals: SalesSignal[]; offers: Opportunity[]; skipped: { offerId: string; offer: string; why: string }[] }
+export interface SalesOutcome { customerId: string | null; offerId: string; outcome: 'accepted' | 'declined'; relevance: number; cue: string; need: string }
+export interface SalesStatRow { label: string; key: string; offered: number; accepted: number; rate: number | null }
+/** Which offers convert. The history is simulated until real outcomes are logged. */
+export interface SalesAnalytics { total: number; accepted: number; rate: number | null; simulated: number; byOffer: SalesStatRow[]; byRelevance: SalesStatRow[]; byMoment: SalesStatRow[]; byNeed: SalesStatRow[]; method: string }

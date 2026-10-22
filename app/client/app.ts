@@ -325,6 +325,85 @@
     });
   }
 
+  // Sales: read a conversation, and record what the customer did with an offer
+  const sales = byId('sales');
+  if (sales) {
+    const csrf = sales.dataset.csrf!;
+    const post = async (path: string, body: object) => {
+      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
+      return data;
+    };
+    interface Factor { name: string; points: number; why: string }
+    interface Offer { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string } }
+    const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+    const factorList = (factors: Factor[]) => {
+      const ul = make('ul', { className: 'driver-list' });
+      for (const f of factors) {
+        const li = make('li'), body = make('span');
+        body.append(make('strong', { textContent: f.name }), `: ${f.why}`);
+        li.append(make('span', { className: `eff ${f.points >= 0 ? 'pos' : 'neg'}`, textContent: sign(f.points) }), body);
+        ul.append(li);
+      }
+      return ul;
+    };
+    sales.addEventListener('click', async (e) => {
+      const s = hit<HTMLButtonElement>(e, '[data-sample]');
+      if (s) {
+        byId<HTMLTextAreaElement>('sales-text')!.value = s.dataset.sample!;
+        byId<HTMLSelectElement>('sales-customer')!.value = s.dataset.sampleCustomer ?? '';
+        return;
+      }
+      const b = hit<HTMLButtonElement>(e, '[data-outcome]');
+      if (!b) return;
+      const group = b.parentElement!.querySelectorAll<HTMLButtonElement>('[data-outcome]');
+      group.forEach((x) => { x.disabled = true; });
+      try {
+        await post('/sales/outcome', { customerId: b.dataset.customer || null, offerId: b.dataset.offer, outcome: b.dataset.outcome, relevance: Number(b.dataset.relevance), cue: b.dataset.cue, need: b.dataset.need ?? '' });
+        toast(`Recorded: ${b.dataset.outcome}. It counts in the track record.`);
+      } catch (err) { group.forEach((x) => { x.disabled = false; }); toast((err as Error).message); }
+    });
+    byId<HTMLFormElement>('sales-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = byId('sales-status')!, out = byId('sales-result')!, customer = byId<HTMLSelectElement>('sales-customer')!.value;
+      const turns = byId<HTMLTextAreaElement>('sales-text')!.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+        const m = /^([CA])\s*:\s*(.*)$/i.exec(l);
+        return { speaker: m && m[1].toUpperCase() === 'A' ? 'advisor' : 'customer', text: m ? m[2] : l };
+      }).filter((t) => t.text);
+      status.textContent = 'Reading the conversation…';
+      out.hidden = true;
+      try {
+        const d = await post('/sales/detect', { customerId: customer || null, turns });
+        status.textContent = '';
+        const signals = d.signals as { label: string; quote: string; time: string | null; mentions: number; strength: number; source: string }[];
+        byId('sales-signals')!.replaceChildren(...(signals.length ? signals : [null]).map((s) => {
+          const li = make('li'), body = make('span');
+          if (!s) { body.textContent = 'No need found in this conversation.'; li.append(make('span', { className: 'eff', textContent: '–' }), body); return li; }
+          body.append(make('strong', { textContent: s.label }), s.source === 'conversation' ? `: “${s.quote}”${s.time ? ` at ${s.time}` : ''}${s.mentions > 1 ? `, said in ${s.mentions} replies` : ''}` : `: ${s.quote} (from the file)`);
+          li.append(make('span', { className: 'eff pos', textContent: `${Math.round(s.strength * 100)}%` }), body);
+          return li;
+        }));
+        byId('sales-offers')!.replaceChildren(...(d.offers as Offer[]).map((o) => {
+          const li = make('li'), wait = o.timing.cue === 'after_resolution';
+          li.append(make('h4', { textContent: `${o.offer}: ${o.relevance}/100` }), make('p', { className: `timing ${wait ? 'wait' : 'go'}`, textContent: `${wait ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }), factorList(o.factors));
+          if (o.counterfactual) li.append(make('p', { className: 'muted small', textContent: o.counterfactual }));
+          const actions = make('div', { className: 'actions' });
+          for (const outcome of ['accepted', 'declined']) {
+            const btn = make('button', { type: 'button', className: outcome === 'accepted' ? 'btn' : 'btn-quiet', textContent: outcome === 'accepted' ? 'Customer accepted' : 'Declined' });
+            Object.assign(btn.dataset, { outcome, customer: d.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key });
+            actions.append(btn);
+          }
+          li.append(actions);
+          return li;
+        }));
+        byId('sales-skipped')!.textContent = d.skipped.length ? `Set aside: ${(d.skipped as { offer: string; why: string }[]).map((s) => `${s.offer} (${s.why})`).join('; ')}.` : '';
+        if (!d.offers.length) byId('sales-offers')!.replaceChildren(make('li', { textContent: `No offer fits. The customer's mood was read as ${d.mood}/100.` }));
+        out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
+  }
+
   // Advisor live call: talk to the simulated customer, read the advisor agent's suggestion after every message
   const live = byId('live');
   if (live) {

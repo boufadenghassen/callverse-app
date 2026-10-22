@@ -88,11 +88,4 @@ export class PagesController {
   async training() {
     return { scenarios: await this.agents.scenarios() };
   }
-
-  @Roles('SALES') @Get('sales') @Render('sales')
-  async sales() {
-    const initials = (name: string) => { const [a, b = ''] = name.split(' '); return a.charAt(0) + b.charAt(0); };
-    const opportunities = (await this.agents.opportunities()).map((o) => ({ ...o, initials: initials(o.customer) }));
-    return { opportunities };
-  }
 }
