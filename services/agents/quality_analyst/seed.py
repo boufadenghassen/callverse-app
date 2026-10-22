@@ -10,8 +10,8 @@ import random
 
 import advisor as kb
 import customer
-import quality
-import quality_store
+from . import engine as quality
+from . import store as quality_store
 
 GREET = ["Hello, thank you for calling, how can I help you today?", "Good afternoon, you are speaking with {name}. How can I help?", "Welcome, my name is {name}. What can I do for you?"]
 IDENT = ["Before I look at the account, can you confirm your date of birth so I can verify your identity?", "Could you please confirm your full name and date of birth to verify your identity?"]
@@ -130,5 +130,5 @@ def build(today: dt.date | None = None) -> None:
             calls.append((when, name, turns, outcome))
     calls.sort(key=lambda c: c[0])
     for n, (when, name, turns, outcome) in enumerate(calls):
-        review = quality.review(turns, name, f"CALL-{quality_store.FIRST_ID + n}", source="simulated", outcome=outcome, date=when.date().isoformat())
+        review = quality.review(turns, name, f"CALL-{quality_store.FIRST_ID + n}", source="simulated", outcome=outcome, date=when.date().isoformat(), with_drivers=False)   # the explanation is worked out when a call is shown
         quality_store.save(review, created=when.replace(microsecond=0).isoformat())

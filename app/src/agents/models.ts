@@ -27,8 +27,10 @@ export interface SimulationRequest { queue: string; extraAdvisors: number; from:
 export interface SimulationHour { hour: string; calls: number; advisors: number; simulatedAdvisors: number; baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; needed: number }
 export interface SimulationResult { baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; recommendations: string[]; hours?: SimulationHour[]; method?: string }
 export interface CriterionScore { name: string; score: number; max: number; evidence: string; timestamp: string }
-export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string; verdict?: 'agree' | 'disagree' | null }
-export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string }
+export interface QualityError { rule: string; criterion: string; points: number; turn: number; timestamp: string; quote: string; reason: string; fix: string; cause: string; verdict?: 'agree' | 'disagree' | null; effect?: number; floored?: boolean }
+export interface QualityStrength { turn: number; timestamp: string; text: string; rule: string; effect?: number; prevents?: string[] }
+/** One reason the overall score is what it is: `effect` is a what-if on the 0-100 score (negative = the advisor's words lowered it, positive = they protected it). */
+export interface QualityDriver { turn: number; timestamp: string; rule: string; label: string; effect: number; quote: string; criterion?: string; points?: number; floored?: boolean; prevents?: string[] }
 export interface QualityCoaching { rule: string; criterion: string; tip: string; scenario: string }
 export interface QualityTurn { speaker: 'advisor' | 'customer'; text: string; start: number; end: number; mood: number | null; emotion: string | null; flags: string[] }
 /** The first five fields are the contract; the rest comes from the real quality agent (the demo data leaves them out). */
@@ -37,6 +39,7 @@ export interface QualityReview {
   source?: string; date?: string | null; durationSec?: number; intent?: string; moodSource?: string;
   adjusted?: boolean; originalOverall?: number;
   errors?: QualityError[]; strengths?: QualityStrength[]; coaching?: QualityCoaching[]; turns?: QualityTurn[]; moodCurve?: [number, number][];
+  drivers?: { hurt: QualityDriver[]; helped: QualityDriver[] };
 }
 export interface ErrorStat { rule: string; label: string; calls: number; share: number; cause: string }
 export interface AdvisorStats {

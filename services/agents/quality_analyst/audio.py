@@ -17,7 +17,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 
-import quality
+from . import engine as quality
 import stt
 import voice
 
@@ -97,7 +97,7 @@ SAMPLE_SCRIPT = [   # a call with problems on purpose: no greeting, asked to rep
     ("advisor", "Please hold while I transfer you to the billing team."),
     ("customer", "Another transfer. Unbelievable. I am done, goodbye."),
 ]
-SAMPLE_PATH = Path(__file__).parent / "data" / "sample-call.wav"
+SAMPLE_PATH = Path(__file__).resolve().parents[1] / "data" / "sample-call.wav"
 
 
 @lru_cache(maxsize=1)

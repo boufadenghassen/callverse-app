@@ -1,7 +1,7 @@
 """Where reviewed calls are kept (SQLite, one file) and the analytics computed from them: per advisor and for the team.
 
 The file lives in services/agents/data/ (git-ignored). On a first run with an empty store a synthetic history of past calls is created
-by quality_seed.py, so the analytics have something to show; the calls are simulated but every one is scored by the real quality.review().
+by seed.py, so the analytics have something to show; the calls are simulated but every one is scored by the real engine.review().
 """
 import datetime as dt
 import json
@@ -10,14 +10,14 @@ import sqlite3
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import quality as q
+from . import engine as q
 
 FIRST_ID = 3300
 
 
 def db_path() -> Path:
     """Read each time, so a test (or another deployment) can point the store somewhere else with QUALITY_DB."""
-    return Path(os.environ.get("QUALITY_DB", Path(__file__).parent / "data" / "quality.db"))
+    return Path(os.environ.get("QUALITY_DB", Path(__file__).resolve().parents[1] / "data" / "quality.db"))
 
 
 def _conn() -> sqlite3.Connection:
@@ -64,18 +64,31 @@ def _feedback(call_ids: list[str] | None = None) -> dict[str, dict[tuple[str, in
 
 def _adjusted(review: dict, fb: dict[tuple[str, int], str] | None) -> dict:
     """The stored review as the human reviewer left it: each finding shows its verdict, and disputed findings no longer count."""
-    if not fb:
-        return review
     review = dict(review)
-    review["errors"] = [dict(e, verdict=fb.get((e["rule"], e["turn"]))) for e in review["errors"]]
-    disputed = {k for k, v in fb.items() if v == "disagree"}
-    return q.rescore(review, disputed) if disputed else review
+    if fb:
+        review["errors"] = [dict(e, verdict=fb.get((e["rule"], e["turn"]))) for e in review["errors"]]
+    disputed = _disputed(fb)
+    return q.rescore(review, disputed, with_drivers=False) if disputed else review
+
+
+def _disputed(fb) -> set[tuple[str, int]]:
+    return {k for k, v in (fb or {}).items() if v == "disagree"}
+
+
+def _shown(review: dict, fb) -> dict:
+    """A review ready to show: with what moved its score. The explanation costs a few re-scorings per call, so only the calls shown get it
+    (the analytics never do); reviews stored before it existed, and reviews a reviewer has disputed, get it worked out now."""
+    disputed = _disputed(fb)
+    return q.explained(review, disputed) if disputed or "drivers" not in review else review
 
 
 def get(call_id: str) -> dict | None:
     with _conn() as c:
         row = c.execute("select review from calls where call_id = ?", (call_id,)).fetchone()
-    return _adjusted(json.loads(row[0]), _feedback([call_id]).get(call_id)) if row else None
+    if not row:
+        return None
+    fb = _feedback([call_id]).get(call_id)
+    return _shown(_adjusted(json.loads(row[0]), fb), fb)
 
 
 def recent(limit: int = 20, advisor: str | None = None, rule: str | None = None, below: int | None = None) -> list[dict]:
@@ -92,7 +105,7 @@ def recent(limit: int = 20, advisor: str | None = None, rule: str | None = None,
         reviews = [r for r in reviews if any(e["rule"] == rule and e.get("verdict") != "disagree" for e in r["errors"])]
     if below:
         reviews = [r for r in reviews if r["overall"] < below]
-    return reviews[:limit]
+    return [_shown(r, fb.get(r["callId"])) for r in reviews[:limit]]
 
 
 def count() -> int:
@@ -110,8 +123,8 @@ def _rows() -> list[tuple[str, str, dict]]:
 def ensure_history() -> None:
     """Create the synthetic history once, when the store is empty."""
     if count() == 0:
-        import quality_seed
-        quality_seed.build()
+        from . import seed
+        seed.build()
 
 
 # ---- analytics ---------------------------------------------------------------------------------------

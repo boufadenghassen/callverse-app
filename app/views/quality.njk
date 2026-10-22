@@ -153,6 +153,35 @@
       </table>
       <p class="coach"><strong>Coaching hint.</strong> <span data-speak>{{ r.counterfactual }}</span></p>
 
+      {% if r.drivers %}
+      <details class="drivers" open>
+        <summary>What moved this score</summary>
+        <p class="muted small">What the advisor said that lowered the score, and what protected it. Each number is a what-if on the {{ r.overall }}/100: the score the call would get if only that one thing were different.</p>
+        <div class="driver-cols">
+          <div>
+            <h3>Lowered the score</h3>
+            {% if r.drivers.hurt | length %}
+            <ul class="driver-list">{% for d in r.drivers.hurt %}
+              <li><span class="eff neg">{% if d.effect %}−{{ 0 - d.effect }}{% else %}0{% endif %}</span>
+                <span><strong>{{ d.label }}</strong> at {{ d.timestamp }}.{% if d.quote %} <q>{{ d.quote }}</q>{% endif %}{% if d.floored %} <em class="muted">On its own this changes nothing: {{ d.criterion }} is already at 0 because of other mistakes.</em>{% endif %}</span></li>
+            {% endfor %}</ul>
+            {% else %}<p class="muted">Nothing lowered it.</p>{% endif %}
+          </div>
+          <div>
+            <h3>Protected the score</h3>
+            {% if r.drivers.helped | length %}
+            <ul class="driver-list">{% for d in r.drivers.helped %}
+              <li><span class="eff pos">{% if d.effect %}+{{ d.effect }}{% else %}0{% endif %}</span>
+                <span><strong>{{ d.label }}</strong> at {{ d.timestamp }}.{% if d.quote %} <q>{{ d.quote }}</q>{% endif %}
+                {% if d.prevents | length %}<em class="muted">Without it, this would have been flagged: {{ d.prevents | join(', ') }}.</em>{% else %}<em class="muted">Good practice, but no points were at stake in this call.</em>{% endif %}</span></li>
+            {% endfor %}</ul>
+            {% else %}<p class="muted">No strength was found.</p>{% endif %}
+          </div>
+        </div>
+        <p class="muted small">The effects do not add up to the gap from 100: a criterion stops at 0, so two mistakes in it can share the same points.</p>
+      </details>
+      {% endif %}
+
       {% if r.errors and r.errors | length %}
       <details class="lost">
         <summary>{{ r.errors | length }} reason{{ '' if r.errors | length == 1 else 's' }} points were lost</summary>
@@ -181,8 +210,8 @@
           <li class="qturn {{ t.speaker }}{% if t.errors | length %} has-error{% endif %}">
             <span class="qwho">{{ 'Advisor' if t.speaker == 'advisor' else 'Customer' }} · {{ t.time }}{% if t.mood !== null %} · mood {{ t.mood }}{% if t.emotion %} ({{ t.emotion }}){% endif %}{% endif %}</span>
             <span>{{ t.text }}</span>
-            {% for e in t.errors %}<span class="qflag lost-flag">Lost {{ e.points }}: {{ e.reason }}</span>{% endfor %}
-            {% for g in t.strengths %}<span class="qflag good-flag">{{ g.text }}</span>{% endfor %}
+            {% for e in t.errors %}<span class="qflag lost-flag">Lost {{ e.points }}: {{ e.reason }}{% if e.effect %} (score −{{ 0 - e.effect }}){% endif %}</span>{% endfor %}
+            {% for g in t.strengths %}<span class="qflag good-flag">{{ g.text }}{% if g.effect %} (protected +{{ g.effect }}){% endif %}</span>{% endfor %}
           </li>
         {% endfor %}</ol>
       </details>

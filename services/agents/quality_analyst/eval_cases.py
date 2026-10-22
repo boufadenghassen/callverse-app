@@ -166,10 +166,10 @@ CASES = [
 
 
 def _more():
-    from quality_eval_cases2 import CASES2
+    from .eval_cases2 import CASES2
     cases = list(CASES2)
     if os.environ.get("QUALITY_EVAL_FINAL", "1") != "0":          # the final test calls (batch 3); QUALITY_EVAL_FINAL=0 keeps them out of sight while developing
-        from quality_eval_cases3 import CASES3
+        from .eval_cases3 import CASES3
         cases += CASES3
     return cases
 

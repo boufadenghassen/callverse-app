@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call labelling sheet</title>
+<style>
+  :root { --bg:#f6f7fb; --card:#fff; --ink:#1b2033; --muted:#5b647f; --line:#d9ddea; --accent:#4f46e5; --good:#15803d; --adv:#e8ecff; --cus:#fff1e6; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12152a; --card:#1a1f36; --ink:#e0e4f0; --muted:#9aa3c0; --line:#343c61; --accent:#818cf8; --good:#4ade80; --adv:#252b48; --cus:#3a2a22; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { position:sticky; top:0; z-index:2; background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  header h1 { font-size:18px; margin:0; margin-right:auto; }
+  input[type=text], textarea { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  button { font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:8px 14px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  main { max-width:1100px; margin:0 auto; padding:16px; display:grid; gap:16px; grid-template-columns:200px 1fr; }
+  @media (max-width:760px) { main { grid-template-columns:1fr; } }
+  nav { display:grid; grid-template-columns:repeat(auto-fill, minmax(52px,1fr)); gap:6px; align-content:start; }
+  nav button { padding:6px 0; font-size:14px; }
+  nav button.done { background:var(--good); border-color:var(--good); color:#fff; }
+  nav button[aria-current=true] { outline:3px solid var(--accent); outline-offset:1px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .turn { padding:8px 12px; border-radius:10px; margin:6px 0; }
+  .turn.advisor { background:var(--adv); margin-right:12%; }
+  .turn.customer { background:var(--cus); margin-left:12%; }
+  .turn small { color:var(--muted); display:block; }
+  fieldset { border:0; padding:0; margin:0 0 12px; }
+  legend { font-weight:700; margin-bottom:4px; }
+  .rule { display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid var(--line); }
+  .rule input { margin-top:5px; width:20px; height:20px; flex:none; }
+  .rule span.def { display:block; color:var(--muted); font-size:14px; }
+  details { margin-bottom:16px; } summary { cursor:pointer; font-weight:600; }
+  .muted { color:var(--muted); } .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Call labelling sheet</h1>
+  <label>Your name <input type="text" id="name" autocomplete="off"></label>
+  <span id="progress" aria-live="polite"></span>
+  <button class="primary" id="download">Download my labels</button>
+</header>
+<main>
+  <nav id="nav" aria-label="Calls"></nav>
+  <section>
+    <details class="card" id="howto" open>
+      <summary>How to fill this in (read once)</summary>
+      <ol>
+        <li>Work <b>alone</b>. Do not look at the quality analyst page and do not compare with a teammate until you both have sent your file.</li>
+        <li>For each call, read the conversation, then <b>tick every problem that happened</b> in it. If nothing went wrong, tick nothing.</li>
+        <li>Press <b>Save and next</b> on every call, even when you tick nothing: that is how a call counts as done. Your work is saved in this browser as you go, so you can close the page and come back later (same browser, same file).</li>
+        <li>When all calls are done, press <b>Download my labels</b> and send the file to Ghassen.</li>
+        <li>Use the mood numbers (0 to 100, shown on customer lines when known). When there is none, judge the mood from the words. A mood under about 40 is upset.</li>
+        <li>Check what the advisor says against the company facts below. If you are unsure, tick nothing and write a short note.</li>
+      </ol>
+    </details>
+    <details class="card"><summary>Company facts (what is true at this call centre)</summary><div id="facts"></div></details>
+    <div id="call"></div>
+  </section>
+</main>
+<script>
+const DATA = /*DATA*/;
+const STORE = "qa-labelling-" + DATA.sheet;
+let state = { name: "", labels: {} };
+try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (s) state = s; } catch (e) { /* no storage: still works, just not remembered */ }
+let current = 0;
+const $ = (id) => document.getElementById(id);
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* ignore */ } };
+const label = (id) => (state.labels[id] ||= { done: false, rules: [], note: "" });
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+function drawFacts() {
+  const box = $("facts");
+  for (const f of DATA.facts) { const p = el("p"); const b = el("b", "", f.title + ". "); p.append(b, f.text); box.append(p); }
+}
+function drawNav() {
+  const nav = $("nav"); nav.replaceChildren();
+  DATA.calls.forEach((c, i) => {
+    const b = el("button", label(c.id).done ? "done" : "", c.id.slice(1));
+    b.type = "button"; b.title = "Call " + c.id; b.setAttribute("aria-label", "Call " + c.id + (label(c.id).done ? ", done" : ""));
+    if (i === current) b.setAttribute("aria-current", "true");
+    b.onclick = () => { current = i; draw(); window.scrollTo(0, 0); };
+    nav.append(b);
+  });
+  const done = DATA.calls.filter((c) => label(c.id).done).length;
+  $("progress").textContent = done + " of " + DATA.calls.length + " done";
+}
+function drawCall() {
+  const c = DATA.calls[current], l = label(c.id), box = $("call"); box.replaceChildren();
+  const card = el("div", "card");
+  card.append(el("h2", "", "Call " + c.id + "  (" + (current + 1) + " of " + DATA.calls.length + ")"));
+  for (const t of c.turns) {
+    const d = el("div", "turn " + t.who);
+    const meta = (t.who === "advisor" ? "Advisor" : "Customer") + (t.time ? "  " + t.time : "") + (t.mood != null ? "  mood " + t.mood + "/100" : "");
+    d.append(el("small", "", meta), t.text);
+    card.append(d);
+  }
+  box.append(card);
+  const form = el("div", "card");
+  form.append(el("h3", "", "Which problems happened in this call?"));
+  for (const g of DATA.groups) {
+    const fs = el("fieldset"); fs.append(el("legend", "", g.criterion));
+    for (const r of g.rules) {
+      const row = el("label", "rule"), cb = el("input"); cb.type = "checkbox"; cb.checked = l.rules.includes(r.id);
+      cb.onchange = () => { l.rules = cb.checked ? [...l.rules, r.id] : l.rules.filter((x) => x !== r.id); l.done = false; save(); drawNav(); };
+      const txt = el("div"); txt.append(el("b", "", r.label), el("span", "def", r.def)); row.append(cb, txt); fs.append(row);
+    }
+    form.append(fs);
+  }
+  const note = el("textarea"); note.rows = 2; note.style.width = "100%"; note.placeholder = "Optional note (for example: I was not sure about the refund delay)"; note.value = l.note;
+  note.oninput = () => { l.note = note.value; save(); };
+  const nl = el("label", "", "Note "); nl.append(note);
+  const row = el("div", "row");
+  const next = el("button", "primary", current < DATA.calls.length - 1 ? "Save and next" : "Save");
+  next.type = "button"; next.onclick = () => { l.done = true; save(); if (current < DATA.calls.length - 1) current++; draw(); window.scrollTo(0, 0); };
+  const prev = el("button", "", "Previous"); prev.type = "button"; prev.disabled = current === 0; prev.onclick = () => { current--; draw(); window.scrollTo(0, 0); };
+  row.append(prev, next); if (l.done) row.append(el("span", "muted", "Saved"));
+  form.append(nl, row); box.append(form);
+}
+function draw() { drawNav(); drawCall(); }
+$("name").value = state.name; $("name").oninput = () => { state.name = $("name").value; save(); };
+$("download").onclick = () => {
+  const todo = DATA.calls.filter((c) => !label(c.id).done).length;
+  if (!state.name.trim()) { alert("Please type your name at the top first."); $("name").focus(); return; }
+  if (todo && !confirm(todo + " call(s) are not marked done yet. Download anyway?")) return;
+  const out = { sheet: DATA.sheet, labeller: state.name.trim(), exported: new Date().toISOString(), calls: state.labels };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: "application/json" }));
+  a.download = "labels-" + state.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".json"; a.click();
+};
+drawFacts(); draw();
+</script>
+</body>
+</html>

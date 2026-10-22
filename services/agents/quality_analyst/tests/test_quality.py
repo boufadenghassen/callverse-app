@@ -1,4 +1,4 @@
-"""Quality analyst tests. Run from services/agents:  ../../../venv/Scripts/python.exe -m pytest -q tests/test_quality.py"""
+"""Quality analyst tests. Run from services/agents:  ../../../venv/Scripts/python.exe -m pytest -q quality_analyst/tests"""
 import datetime as dt
 import sys
 from pathlib import Path
@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import customer  # noqa: E402
-import quality  # noqa: E402
-import quality_seed  # noqa: E402
-import quality_store  # noqa: E402
+from quality_analyst import engine as quality  # noqa: E402
+from quality_analyst import seed as quality_seed  # noqa: E402
+from quality_analyst import store as quality_store  # noqa: E402
 import stt  # noqa: E402
 import voice  # noqa: E402
 from main import app  # noqa: E402
@@ -178,7 +178,7 @@ needs_models = pytest.mark.skipif(not (stt.available() and voice.available()), r
 
 @needs_models
 def test_a_two_channel_recording_is_transcribed_by_speaker_and_scored():
-    import quality_audio
+    from quality_analyst import audio as quality_audio
     wav = quality_audio.sample_call()
     turns = quality_audio.transcript(wav)
     assert {t["speaker"] for t in turns} == {"advisor", "customer"}
@@ -205,8 +205,8 @@ def test_recordings_that_cannot_be_reviewed_are_refused_kindly():
     assert client.post("/quality/review-audio", content=b"").status_code == 400
 
 
-# ---- how accurate is the analyst? (quality_eval.py; the calls are hand-labelled, see quality_eval_cases*.py) ----
-import quality_eval  # noqa: E402
+# ---- how accurate is the analyst? (evaluation.py; the calls are hand-labelled, see eval_cases*.py) ----
+from quality_analyst import evaluation as quality_eval  # noqa: E402
 
 
 def test_the_analyst_stays_accurate_on_calls_it_was_never_tuned_on():

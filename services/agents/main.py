@@ -14,10 +14,11 @@ from pydantic import BaseModel, Field
 
 import advisor
 import customer
-import quality
-import quality_audio
-import quality_eval
-import quality_store
+from quality_analyst import audio as quality_audio
+from quality_analyst import engine as quality
+from quality_analyst import evaluation as quality_eval
+from quality_analyst import semantic as quality_semantic
+from quality_analyst import store as quality_store
 import stt
 import voice
 import routing
@@ -29,6 +30,8 @@ import workforce
 async def lifespan(_app):
     # load the voice model in the background, so the first spoken line does not wait for it
     quality_store.ensure_history()
+    if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
+        threading.Thread(target=lambda: (quality_semantic.scores('Ready.'), quality_eval.report()), daemon=True).start()
     if voice.available():
         threading.Thread(target=lambda: voice.speak("Ready."), daemon=True).start()
     if stt.available():
