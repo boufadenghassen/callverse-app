@@ -50,6 +50,38 @@ describe('the customer talks', () => {
     assert.equal(typed.turns[0].said, 'I understand, sorry.');
   });
 
+  test('she hears a raised voice, rude words and shouting', () => {
+    const angry = { emotion: 'anger', mood: 14 };
+    assert.equal(readAdvisor('I am sorry about that.', angry), 'RUDE');                                   // polite words, angry voice
+    assert.equal(readAdvisor('I am sorry about that.', { emotion: 'happy', mood: 85 }), 'EMPATHY');
+    assert.equal(readAdvisor('I am sorry about that.', { emotion: 'anger', mood: 60 }), 'EMPATHY');       // a weak reading is not enough
+    assert.equal(readAdvisor('I am sorry about that.', { emotion: 'sad', mood: 5 }), 'EMPATHY');          // only anger or disgust counts
+    for (const rude of ["Don't be stupid.", 'shut up and listen', 'I WANT MY MONEY BACK NOW', 'What are you doing!!!']) assert.equal(readAdvisor(rude), 'RUDE', rude);
+    assert.equal(readAdvisor('Please send the SMS and USB details.'), 'OTHER');                          // acronyms are not shouting
+  });
+
+  test('a raised voice costs patience, spoils the ending and is noted', () => {
+    const calm = replay('IMPATIENT', null, 'MEDIUM', 'BILLING', false, ['EMPATHY'], ['I am sorry.']);
+    const rude = replay('IMPATIENT', null, 'MEDIUM', 'BILLING', false, ['RUDE'], ['I am sorry.']);
+    assert.ok(rude.mood < calm.mood - 15 && rude.patience < calm.patience - 15);
+    const done = replay('IMPATIENT', null, 'MEDIUM', 'BILLING', false, ['RUDE', 'EMPATHY', 'CHECK_POLICY', 'FOLLOW_UP']);
+    assert.equal(done.outcome?.expectationMet, false);
+    assert.ok(done.outcome?.notes.some((n) => /Conduct/.test(n)));
+    assert.equal(replay('IMPATIENT', null, 'MEDIUM', 'BILLING', false, ['RUDE', 'RUDE', 'RUDE']).outcome?.verdict, 'The client hung up.');
+  });
+
+  test('she answers what was actually said when it matches no move', () => {
+    const line = (said: string | null, mood = 50) => customerLine({ persona: 'NEW_SUBSCRIBER', intent: 'BILLING', difficulty: 'MEDIUM', move: 'OTHER', mood, memory: false, hungUp: false, turn: 0, advisorSaid: said });
+    assert.match(line('Why did you put $2,000?'), /\$2,000/);
+    assert.match(line('Is this about 45 TND?'), /45 TND/);
+    assert.match(line('Hello, how are you today?'), /my bill/);
+    assert.match(line('Can you give me your name?'), /my bill/);
+    assert.doesNotMatch(line('The weather is nice today.'), /my bill/);
+    assert.doesNotMatch(line(null), /my bill/);
+    assert.equal(line('Why did you put $2,000?'), line('Why did you put $2,000?'));
+    assert.notEqual(line('Why did you put $2,000?', 10), line('Why did you put $2,000?', 90));
+  });
+
   test('small talk wastes patience and solves nothing', () => {
     const s = replay('IMPATIENT', null, 'MEDIUM', 'BILLING', false, ['OTHER', 'OTHER']);
     assert.ok(s.patience < 65);

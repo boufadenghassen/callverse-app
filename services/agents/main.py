@@ -30,16 +30,27 @@ import workforce
 
 @asynccontextmanager
 async def lifespan(_app):
-    # load the voice model in the background, so the first spoken line does not wait for it
     quality_store.ensure_history()
     sales_store.ensure_history()
-    if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
-        threading.Thread(target=lambda: (quality_semantic.scores('Ready.'), quality_eval.report()), daemon=True).start()
-    if voice.available():
-        threading.Thread(target=lambda: voice.speak("Ready."), daemon=True).start()
-    if stt.available():
-        threading.Thread(target=stt._pipeline, daemon=True).start()
+    threading.Thread(target=_warm_up, daemon=True).start()
     yield
+
+
+def _warm_up():
+    """Load the models in the background, one after the other, so the first spoken line, voice note or review does not wait for them.
+    One thread on purpose: transformers imports its parts lazily and two threads importing it at once could leave speech to text broken until a restart."""
+    steps = []
+    if voice.available():
+        steps.append(lambda: voice.speak("Ready."))
+    if stt.available():
+        steps.append(stt._pipeline)
+    if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
+        steps.append(lambda: (quality_semantic.scores("Ready."), quality_eval.report()))
+    for step in steps:
+        try:
+            step()
+        except Exception as e:   # a model that cannot load is reported when it is used; the others still warm up
+            print(f"warm-up skipped: {e!r}")
 
 
 app = FastAPI(title="orqestra agents", lifespan=lifespan)
@@ -60,8 +71,15 @@ class CallIn(BaseModel):
     memory: bool = False
 
 
+class Tone(BaseModel):
+    """How the advisor's voice sounded, from the emotion model on a voice note."""
+    emotion: Literal["anger", "disgust", "fear", "happy", "neutral", "sad"]
+    mood: int = Field(ge=0, le=100)
+
+
 class SayIn(BaseModel):
     text: str = Field(min_length=1, max_length=300)
+    tone: Tone | None = None
 
 
 class SpeakIn(BaseModel):
@@ -108,7 +126,7 @@ def say(sid: str, body: SayIn):
     if not re.fullmatch(r"[0-9a-f]{16}", sid):
         raise HTTPException(404, "Unknown call.")
     try:
-        return customer.say(sid, body.text)
+        return customer.say(sid, body.text, body.tone.model_dump() if body.tone else None)
     except KeyError:
         raise HTTPException(404, "Unknown call.")
 

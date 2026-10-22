@@ -1,6 +1,6 @@
 # 8. Emotion model (shared): hearing how the customer feels
 
-A speech-emotion model built by the team and served as its own service. It is the only component trained from data. It is used by the **Call review** page (upload a recording, see how the caller felt moment by moment) and by the **quality analyst** (the mood of every customer sentence in a recorded call).
+A speech-emotion model built by the team and served as its own service. It is the only component trained from data. It is used by the **Call review** page (upload a recording, see how the caller felt moment by moment), by the **quality analyst** (the mood of every customer sentence in a recorded call) and by the **live call**: the advisor's voice notes are heard too, so the simulated customer can react to a raised voice.
 
 ## What it does
 It listens to a clip of speech and answers one of **six emotions**: anger, disgust, fear, happy, neutral, sad, plus a **mood from 0 (furious) to 100 (delighted)**. The mood is the probability-weighted average of a lookup: anger 10, disgust 25, fear 30, sad 35, neutral 55, happy 90.
@@ -37,6 +37,7 @@ An **occlusion map**: the service silences one short block of the recording at a
 
 ## In the web app
 * **Call review** (`/call-review`, role `nour` or `admin`): upload an audio file (wav, mp3, ogg, flac; up to 15 MB; the first 2 minutes are scored), press **Analyze emotion**. The page shows the **emotion** (for example "Anger"), the **mood** out of 100 and the length of speech, **Through the call** (the emotion of each 3-second window) and **Why this answer**: a strip of blocks, darker = the model leaned on it more, hatched = that part argued against the answer, the three most influential moments in words, and a short note on how it was found and its limits. The page sends the audio to the web app (`POST /call-review/analyze`, CSRF token required), which forwards it to the emotion service (60 s timeout); if the service is not running, the page says so (503).
+* **Live call (advisor's voice notes)**: the web app sends each voice note to `POST /emotion/analyze` along with the transcription (20 s limit, the answer is `null` when the service is down). Anger or disgust with a mood of 30 or lower makes the customer hear a raised voice. Checked on real acted clips from CREMA-D through the whole stack: an angry clip gave anger, mood 11 (she answered "I would like you to speak to me politely, please."); a neutral one gave neutral, mood 51 (no reaction); a loud *happy* clip gave anger, mood 34, which is exactly the confusion of acted speech the threshold of 30 is there to limit.
 * **Quality analyst**: for a recorded call, each customer sentence is sent to the service; the result becomes the sentence's `mood` and `emotion`, which feed the mood curve, the sentiment criterion and the empathy rule ([04-quality-analyst.md](04-quality-analyst.md)). Without the service the mood falls back to a word list and the review says so.
 
 ## Explainability and honesty

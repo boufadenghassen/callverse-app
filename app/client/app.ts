@@ -539,15 +539,16 @@
     });
     useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
     // one way to answer the customer, whether the words were typed or came from a voice note
-    const sendAdvisor = async (msg: string, voiceUrl?: string) => {
+    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null) => {
       if (!msg || !callId) return;
       sendBtn.disabled = true; if (recBtn) recBtn.disabled = true;
       // a typed reply can be said out loud in the advisor's voice; the customer then answers after it
       const spoken = !voiceUrl && sayMine?.checked ? speak(msg, 'advisor') : undefined;
-      say('advisor', msg, '', 50, { url: voiceUrl });
+      const heard: Record<string, string> = { anger: 'angry', disgust: 'disgusted', fear: 'worried', happy: 'happy', neutral: 'calm', sad: 'sad' };
+      say('advisor', msg, tone ? `Your voice sounded ${heard[tone.emotion] ?? tone.emotion}` : '', 50, { url: voiceUrl });
       text.value = '';
       try {
-        const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
+        const d = await post('/advisor/live/say', { id: callId, text: msg, topic, tone: tone ?? null });
         if (d.client) { say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken }); void showOffers(); }
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {
@@ -616,7 +617,7 @@
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error ?? 'Could not read the voice note.');
             status.textContent = '';
-            await sendAdvisor(data.text, URL.createObjectURL(recording));
+            await sendAdvisor(data.text, URL.createObjectURL(recording), data.tone);
           } catch (err) {
             status.textContent = (err as Error).message;
             sendBtn.disabled = false; recBtn.disabled = false;

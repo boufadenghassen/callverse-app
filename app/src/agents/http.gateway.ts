@@ -140,5 +140,5 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (!res.ok) throw new AgentDownError(`sales outcome answered ${res.status}`);
   }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
-  say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
+  say(callId: string, text: string, tone?: m.Tone | null) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, tone ? { text, tone } : { text }); }
 }

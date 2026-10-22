@@ -25,7 +25,7 @@ export abstract class AgentGateway {
   abstract suggestAnswer(customerId: string, query: string): Promise<m.SuggestedAnswer>;
   abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
   /** Throws UnknownCallError when the call id is not known (for example the agents service restarted). */
-  abstract say(callId: string, text: string): Promise<m.CallReply>;
+  abstract say(callId: string, text: string, tone?: m.Tone | null): Promise<m.CallReply>;
   /** The text as WAV audio. Throws VoiceUnavailableError when no neural voice exists. */
   abstract speak(request: m.SpeakRequest): Promise<Buffer>;
   /** A voice note (16 kHz mono WAV) as text. Throws VoiceUnavailableError or BadAudioError. */

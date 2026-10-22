@@ -2,7 +2,11 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, BadAudioError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { Test } from '@nestjs/testing';
+import { AgentDownError, AgentGateway, BadAudioError, VoiceUnavailableError } from '../src/agents/agent.gateway';
+import { MockAgentGateway } from '../src/agents/mock.gateway';
+import { AppModule } from '../src/app.module';
+import { setup } from '../src/setup';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { client, startApp } from './helpers';
 
@@ -94,5 +98,28 @@ test('the http gateway sends voice notes to the Python agents and maps their ans
   } finally {
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();
+  }
+});
+
+test('a voice note is also heard by the emotion model: the answer carries the tone, or null when that service is down', async () => {
+  class Hearing extends MockAgentGateway { async transcribe() { return { text: 'Thank you very much.', seconds: 2 }; } }
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).overrideProvider(AgentGateway).useValue(new Hearing()).compile();
+  const hearing = moduleRef.createNestApplication<NestExpressApplication>();
+  setup(hearing);
+  await hearing.init();
+  const emotion = createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(req.url === '/emotion/analyze' ? JSON.stringify({ emotion: 'anger', mood: 14.4, confidence: 0.9 }) : '{}'); });
+  await new Promise<void>((ok) => emotion.listen(0, ok));
+  const was = process.env.CALLVERSE_EMOTION_URL;
+  try {
+    const karim = await client(hearing, 'karim'), token = /name="csrf-token" content="([^"]+)"/.exec((await karim.get('/advisor')).text)![1];
+    const send = () => karim.post('/voice/transcribe').set('Content-Type', 'audio/wav').set('X-CSRF-Token', token).send(Buffer.alloc(2000, 1));
+    process.env.CALLVERSE_EMOTION_URL = `http://localhost:${(emotion.address() as { port: number }).port}`;
+    assert.deepEqual((await send().expect(200)).body, { text: 'Thank you very much.', seconds: 2, tone: { emotion: 'anger', mood: 14 } });
+    process.env.CALLVERSE_EMOTION_URL = 'http://localhost:1';                                      // the service is not running: the words still count
+    assert.deepEqual((await send().expect(200)).body, { text: 'Thank you very much.', seconds: 2, tone: null });
+  } finally {
+    if (was === undefined) delete process.env.CALLVERSE_EMOTION_URL; else process.env.CALLVERSE_EMOTION_URL = was;
+    emotion.close();
+    await hearing.close();
   }
 });

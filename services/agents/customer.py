@@ -33,6 +33,7 @@ MOVES = {
     "CHECK_POLICY": "Check the refund policy before promising",
     "PROMISE": "Promise the refund right away",
     "FOLLOW_UP": "Confirm the fix in writing and set a follow-up",
+    "RUDE": "Raised your voice or was rude",
     "OTHER": "Said something else",
 }
 
@@ -58,7 +59,19 @@ _READERS = [
 READERS = [(move, re.compile(rx, re.I)) for move, rx in _READERS]
 
 
-def read_advisor(text: str) -> str:
+# insults, three or more words in capitals, three or more exclamation marks: she hears shouting even in a typed reply
+RUDE_WORDS = re.compile(r"\b(shut up|stupid|idiot|dumb|useless|moron|bullshit|bloody|damn|crap|shit|fuck\w*|what the (hell|heck)|are you (deaf|stupid|kidding me)|nonsense)\b", re.I)
+SHOUTING = re.compile(r"!{3,}|(?:\b[A-Z]{3,}\b\W+){2,}\b[A-Z]{3,}\b")
+
+
+def raised_voice(tone: dict | None) -> bool:
+    """The emotion model heard anger or disgust in a voice note, and the mood it computes is low."""
+    return bool(tone) and tone["emotion"] in ("anger", "disgust") and tone["mood"] <= 30
+
+
+def read_advisor(text: str, tone: dict | None = None) -> str:
+    if raised_voice(tone) or RUDE_WORDS.search(text) or SHOUTING.search(text):
+        return "RUDE"
     return next((move for move, rx in READERS if rx.search(text)), "OTHER")
 
 
@@ -94,6 +107,11 @@ LINES = {
         ["Okay, that works for me.", "Alright, thank you. I will look out for it.", "Good, I'd like to have that in writing.", "Okay. Thanks for following through."],
         ["Perfect. That's all I needed.", "Great, thank you. You have been very helpful.", "Wonderful, that's exactly what I hoped for.", "Thank you, I'm glad we sorted this out."],
     ],
+    "RUDE": [
+        ["Don't shout at me! I'm the one with the problem.", "How dare you speak to me like that?", "I want to speak to your supervisor. Right now.", "That tone is unacceptable."],
+        ["Excuse me? There's no need to raise your voice.", "Was that really necessary? I only want this fixed.", "I would like you to speak to me politely, please."],
+        ["Oh... did I say something wrong? You sound upset.", "Sorry, I did not mean to annoy you. Is everything alright?", "Um, okay. Is there a problem?"],
+    ],
     "OTHER": [
         ["I'm not sure what that means for my problem.", "Okay... and? What are you going to do about it?", "That doesn't answer my question."],
         ["Hm, okay. And then?", "I'm not sure I follow. Can you be more specific?", "Alright... go on."],
@@ -107,6 +125,41 @@ FLAVOUR = {
     "LOYAL_AT_RISK": [" I have been with you for six years, you know.", " I would hate to leave after all this time.", " This is why I stayed with you."],
     "NEW_SUBSCRIBER": [" I'm still new, I don't know how any of this works.", " Sorry, I am still learning how it all works.", ""],
 }
+# when the advisor says something that matches no move she still answers what was said: an amount, a greeting or a question
+TOPIC = {"BILLING": "my bill", "ROAMING": "my roaming bundle", "CANCELLATION": "my cancellation"}
+AMOUNT = re.compile(r"[$€£]\s?\d[\d,.]*|\b\d[\d,.]*\s?(?:tnd|dinars?|dollars?|euros?|usd|eur)\b", re.I)
+GREETING = re.compile(r"^\W*(hello|hi|hey|good (morning|afternoon|evening))\b", re.I)
+QUESTION = re.compile(r"\?|^\s*(what|why|how|when|where|who|which|do|does|did|are|is|can|could|would|will)\b", re.I)
+REACTIONS = {
+    "amount": [
+        ["Why are you talking about {a}? That is not what I called about.", "{a}? Where did that come from? Read my file properly!"],
+        ["Sorry, {a}? I don't think that is the amount I'm asking about.", "Hm, {a}... that does not match what I see. Can you check?"],
+        ["Sorry, did you say {a}? I may have misunderstood, could you explain?", "Oh, {a}? I was not expecting that figure, can you tell me more?"],
+    ],
+    "greeting": [
+        ["Yes, hello. Can we get to {t} now?", "Hello. I have been waiting, can we talk about {t}?"],
+        ["Hello. So, about {t}?", "Hi. Can you help me with {t}?"],
+        ["Hello! Thank you for taking my call. It is about {t}.", "Hi there. I am calling about {t}."],
+    ],
+    "question": [
+        ["Why are you asking me that? I called about {t}.", "That is not an answer. I am calling about {t}!"],
+        ["Hm, I'm not sure how to answer that. Is it about {t}?", "I'm not sure what you mean. Can we go back to {t}?"],
+        ["Sure, I can try to answer. Is it about {t}?", "Of course. Just so we're on the same page, this is about {t}."],
+    ],
+}
+
+
+def reaction(intent: str, move: str, band: int, advisor_said: str | None) -> list[str] | None:
+    """The lines that answer what the advisor actually said, or None when it was nothing she can react to."""
+    if move != "OTHER" or not advisor_said:
+        return None
+    m = AMOUNT.search(advisor_said)
+    kind = "amount" if m else "greeting" if GREETING.search(advisor_said) and len(advisor_said.split()) <= 8 else "question" if QUESTION.search(advisor_said) else None
+    if not kind:
+        return None
+    return [line.replace("{a}", m.group(0).strip() if m else "").replace("{t}", TOPIC[intent]) for line in REACTIONS[kind][band]]
+
+
 HANG_UP = ["That's it. I'm done, goodbye.", "I've had enough. Goodbye.", "This is pointless. I am hanging up."]
 
 
@@ -129,7 +182,7 @@ def customer_line(persona: str, intent: str, move: str, mood: int, memory: bool,
     if hung_up:
         return HANG_UP[pick_index(seed, len(HANG_UP))]
     band = 0 if mood < 30 else 1 if mood < 60 else 2
-    options = list(LINES[move][band])
+    options = reaction(intent, move, band, advisor_said) or list(LINES[move][band])
     if move == "ASK_REPEAT" and memory and band < 2:
         options.append("You have my history right there. This is the third time I call about it.")
     line = options[pick_index(seed, len(options))]
@@ -170,7 +223,7 @@ def replay(persona: str, mix: str | None, difficulty: str, intent: str, memory: 
 
     opening = INTENTS[intent] + (" This is the third time I call about it." if memory else "")
     turns: list[Turn] = []
-    effort, checked, risky, closed, hung_up = 0, False, False, False, False
+    effort, checked, risky, rude, closed, hung_up = 0, False, False, False, False, False
     neg = d["penalty"]
 
     for i, m in enumerate(moves):
@@ -190,6 +243,8 @@ def replay(persona: str, mix: str | None, difficulty: str, intent: str, memory: 
             dm, dp = 14, 5
             if not checked:
                 risky = True
+        elif m == "RUDE":
+            dm, dp, rude = -18 * neg, -(18 + 8 * speed) * neg, True
         elif m == "OTHER":
             dm, dp = 1, -3
         else:  # FOLLOW_UP
@@ -203,13 +258,15 @@ def replay(persona: str, mix: str | None, difficulty: str, intent: str, memory: 
 
     outcome = None
     if hung_up or closed or len(turns) >= MAX_MOVES:
-        met = closed and not risky and not hung_up and mood >= 55
-        churn = clamp(100 - mood * 0.55 - patience * 0.35 + effort * 7 + (12 if risky else 0) + (25 if hung_up else 0))
+        met = closed and not risky and not rude and not hung_up and mood >= 55
+        churn = clamp(100 - mood * 0.55 - patience * 0.35 + effort * 7 + (12 if risky else 0) + (10 if rude else 0) + (25 if hung_up else 0))
         notes = []
         if effort > 0:
             notes.append(f"Customer effort: the client had to repeat or be transferred {effort} time(s).")
         if risky:
             notes.append("Compliance risk: a refund was promised before the policy was checked.")
+        if rude:
+            notes.append("Conduct: the advisor raised their voice or was rude to the client.")
         if memory and "ASK_REPEAT" in moves:
             notes.append("Memory ignored: the history was on file but the client was asked to repeat.")
         if not closed and not hung_up:
@@ -245,12 +302,12 @@ def start(persona: str, mix: str | None, difficulty: str, intent: str, memory: b
     return dict(id=sid, persona=PERSONAS[persona]["label"], opening=r.opening, mood=r.mood, patience=r.patience)
 
 
-def say(sid: str, text: str) -> dict:
+def say(sid: str, text: str, tone: dict | None = None) -> dict:
     s = SESSIONS[sid]  # KeyError = unknown call, the API turns it into 404
     before = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
     if before.outcome is not None:
         return dict(ended=True, outcome=before.outcome, mood=before.mood, patience=before.patience, client=None, move=None, moveLabel=None)
-    move = read_advisor(text)
+    move = read_advisor(text, tone)
     s.moves.append(move)
     s.said.append(text)
     r = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
