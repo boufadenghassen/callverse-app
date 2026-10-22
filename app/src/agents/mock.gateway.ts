@@ -183,4 +183,8 @@ export class MockAgentGateway extends AgentGateway {
   async salesAnalytics(): Promise<m.SalesAnalytics | null> {
     return null;
   }
+
+  async salesSimulate(_request: m.SalesSimulationRequest): Promise<m.SalesSimulation> {
+    throw new NeedsRealAgentsError('demo mode has no history to replay');
+  }
 }

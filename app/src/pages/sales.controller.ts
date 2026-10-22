@@ -4,6 +4,8 @@ import { AgentDownError, AgentGateway, NeedsRealAgentsError, RejectedError } fro
 import { Roles } from '../auth/access.guard';
 import type { SalesTurn } from '../agents/models';
 
+const START = { calls: 1000, share: 30, minRelevance: 0, goodMomentOnly: false };   // what the simulation shows before anyone changes it
+
 const CUSTOMER_ID = /^[A-Z]{2}-\d{4}$/;
 const initials = (name: string) => { const [a, b = ''] = name.split(' '); return a.charAt(0) + b.charAt(0); };
 
@@ -28,7 +30,8 @@ export class SalesController {
     const opportunities = found.map((o) => ({ ...o, initials: initials(o.customer) }));
     const real = opportunities.some((o) => o.factors);
     const customers = real ? opportunities.filter((o) => o.customerId).map((o) => ({ id: o.customerId!, name: o.customer })) : [];
-    return { opportunities, analytics, real, customers, samples: real ? SAMPLES : [] };
+    const simulation = real ? await this.agents.salesSimulate(START).catch(() => null) : null;
+    return { opportunities, analytics, real, customers, samples: real ? SAMPLES : [], simulation };
   }
 
   /** A conversation as turns ({speaker, text}): the needs the customer voiced and the offers that answer them. */
@@ -58,6 +61,15 @@ export class SalesController {
       await this.agents.salesOutcome({ customerId: id, offerId: b.offerId as string, outcome: b.outcome as 'accepted' | 'declined', relevance: b.relevance as number, cue: b.cue as string, need: b.need as string });
       return { recorded: true };
     });
+  }
+
+  /** A selling rule replayed on the history of offers: what a month of calls would earn under it. */
+  @Roles('SALES') @HttpCode(200) @Post('sales/simulate')
+  async simulate(@Body() b: Record<string, unknown>, @Res() res: Response) {
+    const int = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi ? v : null);
+    const calls = int(b.calls, 1, 100000), share = int(b.share, 1, 100), minRelevance = int(b.minRelevance, 0, 100);
+    if (calls === null || share === null || minRelevance === null || typeof b.goodMomentOnly !== 'boolean') return res.status(400).json({ error: 'These values are not valid.' });
+    return this.run(res, () => this.agents.salesSimulate({ calls, share, minRelevance, goodMomentOnly: b.goodMomentOnly as boolean }));
   }
 
   private async run(res: Response, work: () => Promise<object>) {

@@ -326,7 +326,11 @@
       return data;
     };
     interface Factor { name: string; points: number; why: string }
-    interface Offer { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string } }
+    interface Offer {
+      offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string };
+      acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string };
+    }
+    interface Policy { label: string; offers: number; accepted: number; declined: number; rate: number | null; revenue: number }
     const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
     const factorList = (factors: Factor[]) => {
       const ul = make('ul', { className: 'driver-list' });
@@ -366,6 +370,12 @@
       try {
         const d = await post('/sales/detect', { customerId: customer || null, turns });
         status.textContent = '';
+        const churn = d.churn as { score: number; level: string; factors: Factor[] } | undefined;
+        byId('sales-churn-box')!.hidden = !churn;
+        if (churn) {
+          byId('sales-churn')!.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`;
+          byId('sales-churn-factors')!.replaceChildren(...[...factorList(churn.factors).children]);
+        }
         const signals = d.signals as { label: string; quote: string; time: string | null; mentions: number; strength: number; source: string }[];
         byId('sales-signals')!.replaceChildren(...(signals.length ? signals : [null]).map((s) => {
           const li = make('li'), body = make('span');
@@ -376,7 +386,12 @@
         }));
         byId('sales-offers')!.replaceChildren(...(d.offers as Offer[]).map((o) => {
           const li = make('li'), wait = o.timing.cue === 'after_resolution';
-          li.append(make('h4', { textContent: `${o.offer}: ${o.relevance}/100` }), make('p', { className: `timing ${wait ? 'wait' : 'go'}`, textContent: `${wait ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }), factorList(o.factors));
+          li.append(make('h4', { textContent: `${o.offer}: ${o.relevance}/100` }), make('p', { className: `timing ${wait ? 'wait' : 'go'}`, textContent: `${wait ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }));
+          if (o.acceptance && o.expected) {
+            li.append(make('p', { className: 'figures', textContent: `Chance of a yes ${Math.round(o.acceptance.probability * 100)}% · worth ${o.expected.ifYes} TND over 12 months if yes · expected ${o.expected.tnd} TND` }));
+          }
+          li.append(factorList(o.factors));
+          if (o.acceptance && o.expected) li.append(make('p', { className: 'muted small', textContent: `Chance of a yes: ${o.acceptance.basis}. Worth: ${o.expected.how}.` }));
           if (o.counterfactual) li.append(make('p', { className: 'muted small', textContent: o.counterfactual }));
           const actions = make('div', { className: 'actions' });
           for (const outcome of ['accepted', 'declined']) {
@@ -390,6 +405,23 @@
         byId('sales-skipped')!.textContent = d.skipped.length ? `Set aside: ${(d.skipped as { offer: string; why: string }[]).map((s) => `${s.offer} (${s.why})`).join('; ')}.` : '';
         if (!d.offers.length) byId('sales-offers')!.replaceChildren(make('li', { textContent: `No offer fits. The customer's mood was read as ${d.mood}/100.` }));
         out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
+    // what a selling rule would earn: send the numbers, redraw the table
+    byId<HTMLFormElement>('sim-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const num = (id: string) => Number(byId<HTMLInputElement>(id)!.value), status = byId('sim-status')!;
+      status.textContent = 'Replaying the history…';
+      try {
+        const d = await post('/sales/simulate', { calls: num('sim-calls'), share: num('sim-share'), minRelevance: num('sim-min'), goodMomentOnly: byId<HTMLInputElement>('sim-good')!.checked });
+        const row = (p: Policy, cls = '') => {
+          const tr = make('tr', cls ? { className: cls } : {});
+          tr.append(make('th', { scope: 'row', textContent: p.label }), ...[p.offers, p.accepted, p.declined, p.rate === null ? '' : `${Math.round(p.rate * 100)}%`, p.revenue].map((v) => make('td', { textContent: String(v) })));
+          return tr;
+        };
+        byId('sim-body')!.replaceChildren(...(d.policies as Policy[]).map((p) => row(p)), row(d.yours as Policy, 'yours'));
+        byId('sim-caption')!.textContent = `One month: ${d.calls} calls, ${d.opportunities} with a chance to offer`;
+        status.textContent = '';
       } catch (err) { status.textContent = (err as Error).message; }
     });
   }

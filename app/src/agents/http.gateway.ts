@@ -128,6 +128,12 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (!res.ok) throw new AgentDownError(`sales detect answered ${res.status}`);
     return (await res.json()) as m.SalesDetection;
   }
+  async salesSimulate(r: m.SalesSimulationRequest) {
+    const res = await this.raw('/sales/simulate', { calls: r.calls, share: r.share, min_relevance: r.minRelevance, good_moment_only: r.goodMomentOnly });
+    if (res.status === 422) throw new RejectedError('These values are not valid.');
+    if (!res.ok) throw new AgentDownError(`sales simulate answered ${res.status}`);
+    return (await res.json()) as m.SalesSimulation;
+  }
   async salesOutcome(o: m.SalesOutcome) {
     const res = await this.raw('/sales/outcome', { customer_id: o.customerId, offer_id: o.offerId, outcome: o.outcome, relevance: o.relevance, cue: o.cue, need: o.need });
     if (res.status === 404 || res.status === 422) throw new RejectedError('This offer or customer is not valid.');
