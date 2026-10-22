@@ -50,7 +50,8 @@ export abstract class AgentGateway {
   /** A two-channel example call (WAV). */
   abstract sampleCall(): Promise<Buffer>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
-  abstract scenarios(): Promise<m.Scenario[]>;
+  abstract scenarios(advisorId?: string): Promise<m.Scenario[]>;
+  abstract generateScenario(advisorId: string, difficulty?: string): Promise<m.ScenarioDetail>;
   abstract scenario(id: string): Promise<m.ScenarioDetail>;
   abstract scenarioLineage(id: string): Promise<m.ScenarioDetail[]>;
   abstract replayScenario(id: string): Promise<m.ScenarioDetail>;

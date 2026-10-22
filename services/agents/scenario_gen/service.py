@@ -55,7 +55,7 @@ class ScenarioService:
             scenario = self.generator.assemble(spec, kind="generated")
         except CatalogError as error:
             raise BadRequest(str(error)) from error
-        return self._finish(scenario, req.enrich)
+        return self._finish(scenario, req.enrich, req.advisor_id)
 
     def batch(self, req: BatchRequest) -> list[TrainingScenario]:
         if req.difficulty_max < req.difficulty_min:
@@ -109,7 +109,7 @@ class ScenarioService:
         spec = original.spec.model_copy(update={"seed": derive_seed(original.spec.seed, "replay", len(self.store))})
         spec = self.generator.normalize_spec(spec, random.Random(spec.seed))
         scenario = self.generator.assemble(spec, kind="replay", parent_id=original.id, mutation_log=["reseed"])
-        return self.store.save(scenario)
+        return self._finish(scenario, False, self._owner(original))
 
     def mutate(self, scenario_id: str, req: MutateRequest) -> TrainingScenario:
         original = self.store.get(scenario_id)
@@ -124,7 +124,7 @@ class ScenarioService:
             scenario = self.generator.assemble(spec, kind="mutation", parent_id=original.id, mutation_log=log)
         except (MutationError, CatalogError) as error:
             raise BadRequest(str(error)) from error
-        return self._finish(scenario, req.enrich)
+        return self._finish(scenario, req.enrich, self._owner(original))
 
     def lineage(self, scenario_id: str) -> list[TrainingScenario]:
         return self.store.lineage(scenario_id)
@@ -135,7 +135,13 @@ class ScenarioService:
             plan = build_plan(req, self.generator)
         except CatalogError as error:
             raise BadRequest(str(error)) from error
+        owned: list[TrainingScenario] = []
         for scenario in plan.scenarios:
+            owned.append(scenario.model_copy(update={
+                "sim_extensions": {**scenario.sim_extensions, "advisor_id": req.advisor_id},
+            }))
+        plan = plan.model_copy(update={"scenarios": owned})
+        for scenario in owned:
             self.store.save(scenario)
         return plan
 
@@ -168,7 +174,16 @@ class ScenarioService:
         }
 
     # ------------------------------------------------------------------ internals
-    def _finish(self, scenario: TrainingScenario, enrich: bool) -> TrainingScenario:
+    @staticmethod
+    def _owner(scenario: TrainingScenario) -> str | None:
+        owner = scenario.sim_extensions.get("advisor_id")
+        return owner if isinstance(owner, str) and owner else None
+
+    def _finish(self, scenario: TrainingScenario, enrich: bool, advisor_id: str | None = None) -> TrainingScenario:
+        if advisor_id:
+            scenario = scenario.model_copy(update={
+                "sim_extensions": {**scenario.sim_extensions, "advisor_id": advisor_id},
+            })
         if enrich:
             if self.llm is None or not self.llm.available:
                 scenario = scenario.model_copy(

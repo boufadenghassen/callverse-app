@@ -115,3 +115,29 @@ test('the Coach training flow changes advisor data and supports scenario details
   assert.equal(deleted.status, 302);
   await coach.get(mutatedPath).expect(404);
 });
+
+test('the Coach generates scenarios only for the selected advisor and replays them through the server', async () => {
+  const coach = await client(app, 'rim');
+  const before = await coach.get('/training?advisor=Karim%20B.').expect(200);
+  assert.match(before.text, /Generate targeted scenarios/);
+  assert.doesNotMatch(before.text, /SC-hela/);
+
+  const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Hard' });
+  assert.equal(generated.status, 302);
+  const generatedPath = generated.headers.location as string;
+  assert.match(generatedPath, /training\/scenarios\//);
+  const details = await coach.get(generatedPath).expect(200);
+  assert.match(details.text, /Difficulty 4\/5/);
+
+  const hela = await coach.get('/training?advisor=Hela%20M.').expect(200);
+  assert.match(hela.text, /Hela M\./);
+  assert.match(hela.text, /Replay/);
+  const karim = await coach.get('/training?advisor=Karim%20B.').expect(200);
+  assert.doesNotMatch(karim.text, new RegExp(generatedPath.split('?')[0].split('/').pop()!));
+
+  const replayPath = `${generatedPath.split('?')[0]}/replay?advisor=Hela%20M.`;
+  const replayed = await post(coach, replayPath, generatedPath, {});
+  assert.equal(replayed.status, 302);
+  assert.match(replayed.headers.location as string, /replayed=1/);
+  await coach.get(replayed.headers.location as string).expect(200);
+});

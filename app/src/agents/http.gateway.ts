@@ -123,7 +123,17 @@ export class HttpAgentGateway extends MockAgentGateway {
   simulate(r: m.SimulationRequest) { return this.call<m.SimulationResult>('/workforce/simulate', r); }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
-  scenarios() { return this.call<m.Scenario[]>('/training/scenarios', undefined, true); }
+  scenarios(advisorId?: string) {
+    const query = advisorId ? `?advisor_id=${encodeURIComponent(advisorId)}` : '';
+    return this.call<m.Scenario[]>(`/training/scenarios${query}`, undefined, !advisorId);
+  }
+  generateScenario(advisorId: string, difficulty?: string) {
+    const level = difficulty === 'Easy' ? 2 : difficulty === 'Hard' ? 4 : 3;
+    return this.call<m.ScenarioDetail>('/scenario-gen/scenarios/generate', {
+      difficulty: level,
+      advisor_id: advisorId,
+    });
+  }
   scenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`); }
   scenarioLineage(id: string) { return this.call<m.ScenarioDetail[]>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/lineage`); }
   replayScenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/replay`, {}); }

@@ -26,6 +26,10 @@
   <h2>What-if variants</h2>
   <p class="muted">Create a harder or easier version from this scenario.</p>
   <div class="actions">
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/replay?advisor={{ advisor | urlencode }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn-line" type="submit">Replay scenario</button>
+    </form>
     <form method="post" action="/training/scenarios/{{ scenario.id }}/mutate">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       <input type="hidden" name="op" value="harder">
@@ -40,10 +44,12 @@
   </div>
 </section>
 
+{% if replayed %}<section class="panel" aria-live="polite"><p class="coach">Replay loaded successfully. The same scenario is ready for the next Customer Simulator session.</p></section>{% endif %}
+
 <section class="panel">
   <h2>Delete scenario</h2>
   <p class="muted">Deleting removes this scenario from the Scenario Gen store.</p>
-  <form method="post" action="/training/scenarios/{{ scenario.id }}/delete">
+  <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/delete?advisor={{ advisor | urlencode }}">
     <input type="hidden" name="_csrf" value="{{ csrf }}">
     <button class="btn-line" type="submit">Delete scenario</button>
   </form>

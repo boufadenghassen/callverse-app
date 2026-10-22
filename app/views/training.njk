@@ -13,7 +13,7 @@
       <div class="panel-head">
         <div>
           <h2 id="coach-plan">Coach plan for {{ advisor }}</h2>
-          <p class="muted">The plan is refreshed from the selected advisor's latest quality report.</p>
+          <p class="muted">Select an advisor first. The report, focus and scenarios below belong only to that advisor.</p>
         </div>
         <form method="get" action="/training">
           <label for="advisor">Advisor</label>
@@ -39,6 +39,7 @@
           <h3>Automatic focus</h3>
           {% if plan.focus %}<ul>{% for item in plan.focus %}<li>{{ item.skill }} · gap {{ item.gap }} · {{ item.criteria | join(', ') }}</li>{% endfor %}</ul>{% else %}<p class="muted">No weakness requires training right now.</p>{% endif %}
           {% for reason in plan.rationale %}<p class="muted small">{{ reason }}</p>{% endfor %}
+          {% if plan.focus %}<form method="get" action="/training"><input type="hidden" name="advisor" value="{{ advisor }}"><input type="hidden" name="generate" value="1"><button class="btn" type="submit">Generate targeted scenarios</button></form>{% endif %}
         </article>
       </div>
       {% else %}
@@ -48,12 +49,12 @@
 
     <section class="panel" aria-labelledby="targeted-simulations">
       <h2 id="targeted-simulations">Targeted simulations</h2>
-      <p class="muted">These scenarios are generated from the advisor's weaknesses and stored for the Customer Simulator.</p>
-      {% if plan.scenarios %}
-      <ul class="deck-cards">{% for s in plan.scenarios %}
-        <li class="scn"><a href="/training/scenarios/{{ s.id | urlencode }}"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.spec.segment if s.spec else s.profile }}</span><span class="chip">{{ s.spec.difficulty if s.spec else s.difficulty }}</span></p><p class="origin muted small">Open scenario details</p></a></li>
+      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. Generate them after reviewing the automatic focus.</p>
+      {% if scenarios %}
+      <ul class="deck-cards">{% for s in scenarios %}
+        <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form></div></li>
       {% endfor %}</ul>
-      {% else %}<p class="muted">No targeted simulation was generated.</p>{% endif %}
+      {% else %}<p class="muted">No scenarios have been generated for this advisor yet. Use the button below.</p>{% endif %}
     </section>
 
     {% if action %}
@@ -72,25 +73,22 @@
 
     <section class="panel" aria-labelledby="scenario-history">
       <h2 id="scenario-history">Scenario history</h2>
-      <p class="muted">Replay and What-if results stay visible here after the page reloads through their scenario links.</p>
-      <div class="actions">
-        {% for s in scenarios | slice(0, 12) %}
-        <a class="btn-line" href="/training?advisor={{ advisor | urlencode }}&replay={{ s.id | urlencode }}">Replay {{ s.id }}</a>
-        <a class="btn-line" href="/training?advisor={{ advisor | urlencode }}&whatif={{ s.id | urlencode }}&op=harder">What-if harder</a>
-        {% endfor %}
-      </div>
+      <p class="muted">This is the saved history for {{ advisor }}. Replay opens the selected scenario and records the replay state.</p>
+      {% if history %}<ul>{% for s in history | slice(0, 12) %}<li><a href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">{{ s.id }}</a> — {{ s.title }} ({{ s.origin }})</li>{% endfor %}</ul>{% else %}<p class="muted">History is empty until you generate a scenario.</p>{% endif %}
     </section>
 
     <section class="panel builder" aria-labelledby="sb">
       <div>
-        <h2 id="sb">Scenario builder</h2>
-        <p class="muted">Combine a customer, a problem and a goal from the template library. Then replay it or change one parameter and compare.</p>
+        <h2 id="sb">Generate a scenario for {{ advisor }}</h2>
+        <p class="muted">Scenario generation is explicit. The new scenario is saved to this advisor's history and can be replayed or mutated from its details page.</p>
       </div>
-      <div class="builder-actions">
+      <form id="builder-form" class="builder-actions" method="post" action="/training/scenarios/generate?advisor={{ advisor | urlencode }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
         <label for="gen-diff" class="sr-only">Difficulty</label>
         <select id="gen-diff"><option value="">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
-        <button type="button" class="btn" id="generate">Generate scenario</button>
-      </div>
+        <input type="hidden" name="difficulty" id="gen-diff-value" value="Medium">
+        <button type="submit" class="btn">Generate scenario</button>
+      </form>
     </section>
 
     <section id="whatif" class="panel whatif" hidden aria-labelledby="wi">

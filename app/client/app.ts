@@ -495,9 +495,14 @@
   // Training: scenario builder, replay and what-if (demo data; the Training agent would supply these)
   const advisorPicker = byId<HTMLSelectElement>('advisor');
   if (advisorPicker) advisorPicker.addEventListener('change', () => advisorPicker.form?.submit());
+  const builderDifficulty = byId<HTMLSelectElement>('gen-diff');
+  const builderDifficultyValue = byId<HTMLInputElement>('gen-diff-value');
+  if (builderDifficulty && builderDifficultyValue) builderDifficulty.addEventListener('change', () => {
+    builderDifficultyValue.value = builderDifficulty.value || 'Medium';
+  });
 
   const deck = byId('scenarios');
-  if (deck) {
+  if (deck && !byId('builder-form')) {
     interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
     interface Variant { title: string; profile: string; difficulty: string }
     const customers: [string, string][] = [['New', 'a new subscriber'], ['Premium', 'a premium client'],

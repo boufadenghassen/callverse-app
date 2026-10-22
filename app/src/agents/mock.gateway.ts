@@ -12,6 +12,8 @@ const MAX_CALLS = 200; // ponytail: oldest call is dropped past this
 @Injectable()
 export class MockAgentGateway extends AgentGateway {
   private readonly scenarioVariants = new Map<string, m.ScenarioDetail>();
+  private readonly scenarioOwners = new Map<string, string>();
+  private scenarioSequence = 1;
 
   async customerContext(id: string): Promise<m.CustomerContext> {
     return { id, name: 'Yasmine Toumi', profile: 'Loyal customer, 6 years', intents: ['Billing', 'Plan change'],
@@ -170,12 +172,38 @@ export class MockAgentGateway extends AgentGateway {
     ];
   }
 
-  async scenarios(): Promise<m.Scenario[]> {
-    return [
+  async scenarios(advisorId?: string): Promise<m.Scenario[]> {
+    const base = [
       { id: 'SC-31', title: 'Double charge, customer threatens to post online', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'QA weakness: compliance' },
       { id: 'SC-30', title: 'First call from a new subscriber about data limits', profile: 'New', difficulty: 'Easy', origin: 'Template library' },
       { id: 'SC-29', title: 'Premium customer, two intents, transferred once', profile: 'Premium', difficulty: 'Medium', origin: 'What-if mutation' },
     ];
+    const owned = [...this.scenarioOwners.entries()]
+      .filter(([, owner]) => !advisorId || owner === advisorId)
+      .map(([id]) => this.scenarioVariants.get(id))
+      .filter((item): item is m.ScenarioDetail => !!item);
+    if (!advisorId) return [...base, ...owned];
+    return [...(advisorId === 'Karim B.' ? base : []), ...owned];
+  }
+
+  async generateScenario(advisorId: string, difficulty = 'Medium'): Promise<m.ScenarioDetail> {
+    const source = await this.scenario('SC-31');
+    const id = `SC-${advisorId.replace(/[^a-z0-9]/gi, '').toLowerCase()}-${this.scenarioSequence++}`;
+    const scenario: m.ScenarioDetail = {
+      ...source,
+      id,
+      difficulty,
+      origin: 'QA weakness',
+      kind: 'adaptive',
+      mutation_log: [`generated for ${advisorId}`],
+      spec: {
+        segment: source.spec?.segment ?? source.profile.toLowerCase(),
+        difficulty: difficulty === 'Hard' ? 4 : difficulty === 'Easy' ? 2 : 3,
+      },
+    };
+    this.scenarioVariants.set(id, scenario);
+    this.scenarioOwners.set(id, advisorId);
+    return scenario;
   }
 
   async scenario(id: string): Promise<m.ScenarioDetail> {
@@ -183,7 +211,12 @@ export class MockAgentGateway extends AgentGateway {
     if (variant) return variant;
     const found = (await this.scenarios()).find((item) => item.id === id);
     if (!found) throw new Error(`Unknown scenario ${id}`);
-    return { ...found, kind: 'generated', mutation_log: [] };
+    return {
+      ...found,
+      kind: 'generated',
+      mutation_log: [],
+      spec: { segment: found.profile.toLowerCase(), difficulty: found.difficulty === 'Hard' ? 4 : found.difficulty === 'Easy' ? 2 : 3 },
+    };
   }
 
   async scenarioLineage(id: string): Promise<m.ScenarioDetail[]> {
@@ -204,13 +237,20 @@ export class MockAgentGateway extends AgentGateway {
       origin: 'What-if mutation',
       parent_id: original.id,
       mutation_log: [operation],
+      spec: {
+        segment: original.spec?.segment ?? original.profile.toLowerCase(),
+        difficulty: operation === 'harder' ? 4 : operation === 'easier' ? 2 : original.spec?.difficulty ?? 3,
+      },
     };
     this.scenarioVariants.set(mutated.id, mutated);
+    const owner = this.scenarioOwners.get(id);
+    if (owner) this.scenarioOwners.set(mutated.id, owner);
     return mutated;
   }
 
   async deleteScenario(id: string): Promise<void> {
     this.scenarioVariants.delete(id);
+    this.scenarioOwners.delete(id);
   }
 
   async trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan> {
@@ -223,7 +263,9 @@ export class MockAgentGateway extends AgentGateway {
       advisor_id: advisorId,
       needs_training: focus.length > 0,
       focus,
-      scenarios: (await this.scenarios()).map((s) => ({ ...s, origin: focus.length ? 'QA weakness' : s.origin })),
+      scenarios: focus.length
+        ? await Promise.all(focus.slice(0, 3).map(() => this.generateScenario(advisorId)))
+        : await this.scenarios(advisorId),
       rationale: focus.length
         ? focus.map((f) => `${f.skill}: coaching scenario recommended from ${f.criteria.join(', ')}.`)
         : ['No QA criterion is below the coaching threshold.'],

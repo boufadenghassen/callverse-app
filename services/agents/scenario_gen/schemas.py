@@ -91,6 +91,7 @@ class GenerateRequest(BaseModel):
     mode: Mode = "standard"
     events: list[str] = Field(default_factory=list)  # events that must be present
     focus_skill: str | None = None  # favour intents and events that train this skill
+    advisor_id: str | None = None  # owner used by the Coach to scope training history
     max_turns: int | None = Field(None, ge=2, le=40)
     seed: int | None = Field(None, ge=0)
     enrich: bool = False  # ask the LLM to rewrite the texts (falls back to templates)

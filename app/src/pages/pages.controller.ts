@@ -87,7 +87,7 @@ export class PagesController {
   }
 
   @Roles('TRAINER') @Get('training') @Render('training')
-  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string) {
+  async training(@Query('advisor') advisorParam?: string, @Query('generate') generateParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string) {
     const advisor = typeof advisorParam === 'string' && advisorParam.trim() ? advisorParam.trim().slice(0, 60) : 'Karim B.';
     const [analytics, opportunities] = await Promise.all([this.agents.qualityAnalytics(), this.agents.opportunities()]);
     const report = analytics.advisors.find((item) => item.advisor === advisor) ?? null;
@@ -95,13 +95,23 @@ export class PagesController {
     const weaknesses = report
       ? Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }))
       : [];
-    const [plan, reviews] = await Promise.all([
-      weaknesses.length
+    const shouldGenerate = generateParam === '1';
+    const [plan, reviews, scenarios] = await Promise.all([
+      weaknesses.length && shouldGenerate
         ? this.agents.trainingPlan(selectedAdvisor, weaknesses)
-        : Promise.resolve({ advisor_id: selectedAdvisor, needs_training: false, focus: [], scenarios: [], rationale: ['No Quality Analyst weaknesses are available for this advisor yet.'] }),
+        : Promise.resolve({
+          advisor_id: selectedAdvisor,
+          needs_training: weaknesses.some((item) => item.score < 7),
+          focus: weaknesses.filter((item) => item.score < 7).sort((a, b) => a.score - b.score).slice(0, 3)
+            .map((item) => ({ skill: item.criterion.toLowerCase(), gap: Number(((10 - item.score) / 10).toFixed(2)), criteria: [item.criterion] })),
+          scenarios: [],
+          rationale: weaknesses.length
+            ? ['Select Generate targeted scenarios to create practice cases for this advisor.']
+            : ['No Quality Analyst weaknesses are available for this advisor yet.'],
+        }),
       this.agents.recentReviews({ advisor: selectedAdvisor }),
+      this.agents.scenarios(selectedAdvisor),
     ]);
-    const scenarios = await this.agents.scenarios();
     const advisorNames = analytics.advisors.length ? analytics.advisors.map((item) => item.advisor) : QA_ADVISORS;
     const salesOffset = Math.max(0, advisorNames.indexOf(selectedAdvisor)) % Math.max(1, opportunities.length);
     const coachOpportunities = opportunities.length
@@ -111,12 +121,20 @@ export class PagesController {
     const action = replayId ? await this.agents.replayScenario(replayId)
       : whatIfId ? await this.agents.mutateScenario(whatIfId, operation === 'easier' || operation === 'add_second_problem' ? operation : 'harder')
       : null;
-    const history = action ? [action] : [];
+    const history = scenarios;
     return { scenarios, advisor: selectedAdvisor, report, reviews, opportunities: coachOpportunities, plan, advisorNames, action, history };
   }
 
+  @Roles('TRAINER') @Post('training/scenarios/generate')
+  async generateTrainingScenario(@Body() body: Record<string, unknown>, @Query('advisor') advisor: string | undefined, @Res() res: Response) {
+    const selectedAdvisor = typeof advisor === 'string' && advisor.trim() ? advisor.trim().slice(0, 60) : 'Karim B.';
+    const difficulty = body.difficulty === 'Easy' || body.difficulty === 'Hard' ? body.difficulty : 'Medium';
+    const scenario = await this.agents.generateScenario(selectedAdvisor, difficulty);
+    return res.redirect(`/training/scenarios/${encodeURIComponent(scenario.id)}?advisor=${encodeURIComponent(selectedAdvisor)}`);
+  }
+
   @Roles('TRAINER') @Get('training/scenarios/:id') @Render('training-scenario')
-  async trainingScenario(@Param('id') id: string, @Query('advisor') advisor?: string) {
+  async trainingScenario(@Param('id') id: string, @Query('advisor') advisor?: string, @Query('replayed') replayed?: string) {
     let scenario: Awaited<ReturnType<AgentGateway['scenario']>>;
     try {
       scenario = await this.agents.scenario(id);
@@ -124,7 +142,7 @@ export class PagesController {
       throw new NotFoundException('Scenario not found');
     }
     const lineage = await this.agents.scenarioLineage(id);
-    return { scenario, lineage, advisor: typeof advisor === 'string' ? advisor : 'Karim B.' };
+    return { scenario, lineage, advisor: typeof advisor === 'string' ? advisor : 'Karim B.', replayed: replayed === '1' };
   }
 
   @Roles('TRAINER') @Post('training/scenarios/:id/mutate')
@@ -135,10 +153,18 @@ export class PagesController {
     return res.redirect(`/training/scenarios/${encodeURIComponent(scenario.id)}${suffix}`);
   }
 
+  @Roles('TRAINER') @Post('training/scenarios/:id/replay')
+  async replayTrainingScenario(@Param('id') id: string, @Query('advisor') advisor: string | undefined, @Res() res: Response) {
+    const scenario = await this.agents.replayScenario(id);
+    const selectedAdvisor = typeof advisor === 'string' ? `&advisor=${encodeURIComponent(advisor)}` : '';
+    return res.redirect(`/training/scenarios/${encodeURIComponent(scenario.id)}?replayed=1${selectedAdvisor}`);
+  }
+
   @Roles('TRAINER') @Post('training/scenarios/:id/delete')
   async deleteTrainingScenario(@Param('id') id: string, @Res() res: Response) {
     await this.agents.deleteScenario(id);
-    return res.redirect('/training');
+    const suffix = typeof res.req.query.advisor === 'string' ? `?advisor=${encodeURIComponent(res.req.query.advisor)}` : '';
+    return res.redirect(`/training${suffix}`);
   }
 
   @Roles('SALES') @Get('sales') @Render('sales')
