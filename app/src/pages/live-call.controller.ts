@@ -1,11 +1,20 @@
 import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AgentDownError, AgentGateway, NeedsRealAgentsError, RejectedError, UnknownCallError } from '../agents/agent.gateway';
+import type { Tone } from '../agents/models';
 import { Roles } from '../auth/access.guard';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
 import { cleanTurns } from './sales.controller';
 
 const CUSTOMER_ID = 'YT-1042'; // the demo customer the advisor console shows
+
+const EMOTIONS = ['anger', 'disgust', 'fear', 'happy', 'neutral', 'sad'];
+/** A tone from the page (the emotion model's reading of a voice note), or null when it is missing or not valid. */
+const toneOf = (v: unknown): Tone | null => {
+  const t = v as Record<string, unknown> | null;
+  return t && typeof t.emotion === 'string' && EMOTIONS.includes(t.emotion) && typeof t.mood === 'number' && Number.isInteger(t.mood) && t.mood >= 0 && t.mood <= 100
+    ? { emotion: t.emotion, mood: t.mood } : null;
+};
 
 const oneOf = <T extends object>(table: T, v: unknown): keyof T | undefined =>
   typeof v === 'string' && Object.prototype.hasOwnProperty.call(table, v) ? (v as keyof T) : undefined;
@@ -37,7 +46,7 @@ export class LiveCallController {
     // what the call is about (the customer's opening line) keeps the suggestion on topic when her reply is short
     const topic = typeof b.topic === 'string' ? b.topic.replace(/\p{Cc}/gu, ' ').trim().slice(0, 200) : '';
     return this.run(res, async () => {
-      const reply = await this.agents.say(b.id as string, text);
+      const reply = await this.agents.say(b.id as string, text, toneOf(b.tone));
       // the advisor agent reads what the customer just said, unless the call is over
       return { ...reply, suggestion: reply.client ? await this.agents.suggestAnswer(CUSTOMER_ID, `${topic} ${reply.client}`.trim()) : null };
     });

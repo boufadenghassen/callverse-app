@@ -767,3 +767,29 @@ test('sales in the live call: an offer to keep in mind appears with its timing a
   assert.equal(await page.locator('#lv-o-actions button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
   await ctx.close();
 });
+
+test('the customer reacts to shouting and to what was actually said, not just to polite phrases', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('karim');
+  await page.goto(`${BASE}/advisor`);
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
+  await page.click('#live-setup button[type=submit]');
+  await page.locator('.live-msg.client').first().waitFor({ timeout: 20000 });
+  const reply = async (words) => {
+    const before = await page.locator('.live-msg.client').count();
+    await page.fill('#lv-text', words);
+    await page.click('#live-say button[type=submit]');
+    await page.waitForFunction((n) => document.querySelectorAll('.live-msg.client').length > n, before, { timeout: 20000 });
+    return page.locator('.live-msg.client').last().innerText();
+  };
+  const mood = async () => Number(await page.locator('#lv-mood-n').innerText());
+  const start = await mood();
+  assert.match(await reply('Why did you put $2,000?'), /\$2,000/);                               // she answers the amount that was said
+  assert.match(await reply('Hello, how are you today?'), /my bill|my roaming|my cancellation/);   // a greeting gets a greeting, and the subject
+  const calm = await mood();
+  const shouted = await reply('I WANT MY MONEY BACK NOW!!!');
+  assert.doesNotMatch(shouted, /Alright|Mm-hm|go on|Okay, sure/i);                                // not the empty filler she used to give
+  assert.match(await page.locator('.live-msg.client').last().innerText(), /She read this as: Raised your voice or was rude/);
+  assert.ok((await mood()) < calm - 10, `her mood must drop after shouting (${calm} -> ${await mood()}, started at ${start})`);
+  await ctx.close();
+});

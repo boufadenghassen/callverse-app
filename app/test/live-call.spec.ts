@@ -85,3 +85,18 @@ test('the http gateway sends the real calls to the Python agents and maps their 
     fake.close();
   }
 });
+
+test("a voice note's tone reaches the customer; a tone that is not valid is ignored", async () => {
+  const karim = await client(app, 'karim'), token = await tokenOf(karim);
+  const post = (path: string, body: object) => karim.post(path).set('X-CSRF-Token', token).send(body);
+  const call = async () => (await post('/advisor/live/start', start).expect(200)).body.id as string;
+  const words = 'I am sorry about that, I understand.';
+  const calm = (await post('/advisor/live/say', { id: await call(), text: words }).expect(200)).body;
+  const shouted = (await post('/advisor/live/say', { id: await call(), text: words, tone: { emotion: 'anger', mood: 12 } }).expect(200)).body;
+  assert.equal(calm.moveLabel, 'Acknowledge the frustration and use her history');
+  assert.equal(shouted.moveLabel, 'Raised your voice or was rude');
+  assert.ok(shouted.mood < calm.mood);
+  for (const tone of [{ emotion: 'furious', mood: 5 }, { emotion: 'anger', mood: 5.5 }, { emotion: 'anger', mood: 500 }, 'anger', []]) {
+    assert.equal((await post('/advisor/live/say', { id: await call(), text: words, tone }).expect(200)).body.moveLabel, calm.moveLabel);
+  }
+});

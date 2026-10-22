@@ -38,6 +38,7 @@ export const MOVES = {
   CHECK_POLICY: { label: 'Check the refund policy before promising' },
   PROMISE: { label: 'Promise the refund right away' },
   FOLLOW_UP: { label: 'Confirm the fix in writing and set a follow-up' },
+  RUDE: { label: 'Raised your voice or was rude' }, // only reached by typed or spoken replies; has no button
   OTHER: { label: 'Said something else' }, // only reached by typed replies that match no move; has no button
 } as const;
 export type MoveKey = keyof typeof MOVES;
@@ -66,7 +67,7 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
 
   const opening = INTENTS[intent].opening + (memory ? ' This is the third time I call about it.' : '');
   const turns: Turn[] = [];
-  let effort = 0, checked = false, risky = false, closed = false, hungUp = false;
+  let effort = 0, checked = false, risky = false, rude = false, closed = false, hungUp = false;
   const neg = d.penalty;
 
   for (const [i, m] of moves.entries()) {
@@ -78,6 +79,7 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
       case 'TRANSFER': dm = -8 * neg; dp = -(8 + 10 * speed) * neg; effort++; break;
       case 'CHECK_POLICY': dm = 2; dp = -(4 + 6 * speed) * neg; checked = true; break;
       case 'PROMISE': dm = 14; dp = 5; if (!checked) risky = true; break;
+      case 'RUDE': dm = -18 * neg; dp = -(18 + 8 * speed) * neg; rude = true; break; // a raised voice or insults: she reacts at once
       case 'OTHER': dm = 1; dp = -3; break; // small talk: time passes, nothing is solved
       default: dm = 8 + 6 * empathy; dp = 6; closed = true;
     }
@@ -90,11 +92,12 @@ export function replay(persona: PersonaKey, mix: PersonaKey | null, difficulty: 
 
   let outcome: Outcome | null = null;
   if (hungUp || closed || turns.length >= MAX_MOVES) {
-    const met = closed && !risky && !hungUp && mood >= 55;
-    const churnRisk = clamp(100 - mood * 0.55 - patience * 0.35 + effort * 7 + (risky ? 12 : 0) + (hungUp ? 25 : 0));
+    const met = closed && !risky && !rude && !hungUp && mood >= 55;
+    const churnRisk = clamp(100 - mood * 0.55 - patience * 0.35 + effort * 7 + (risky ? 12 : 0) + (rude ? 10 : 0) + (hungUp ? 25 : 0));
     const notes: string[] = [];
     if (effort > 0) notes.push(`Customer effort: the client had to repeat or be transferred ${effort} time(s).`);
     if (risky) notes.push('Compliance risk: a refund was promised before the policy was checked.');
+    if (rude) notes.push('Conduct: the advisor raised their voice or was rude to the client.');
     if (memory && moves.includes('ASK_REPEAT')) notes.push('Memory ignored: the history was on file but the client was asked to repeat.');
     if (!closed && !hungUp) notes.push('The call ended without a written follow-up.');
     const verdict = hungUp ? 'The client hung up.'

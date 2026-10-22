@@ -258,3 +258,50 @@ def test_the_schedule_endpoint():
     body = r.json()
     assert {"baselineSla", "plannedSla", "queues", "overtime", "overtimeHours", "method"} <= set(body)
     assert len(body["queues"]) == 5 and all("_lunch" not in q for q in body["queues"])
+
+
+def test_she_hears_a_raised_voice_rude_words_and_shouting():
+    angry, calm = {"emotion": "anger", "mood": 14}, {"emotion": "happy", "mood": 85}
+    assert customer.read_advisor("I am sorry about that.", angry) == "RUDE"        # polite words, angry voice
+    assert customer.read_advisor("I am sorry about that.", calm) == "EMPATHY"
+    assert customer.read_advisor("I am sorry about that.", {"emotion": "anger", "mood": 60}) == "EMPATHY"   # a weak reading is not enough
+    assert customer.read_advisor("I am sorry about that.", {"emotion": "sad", "mood": 5}) == "EMPATHY"      # only anger or disgust counts
+    assert customer.read_advisor("Don't be stupid.") == "RUDE" and customer.read_advisor("shut up and listen") == "RUDE"
+    assert customer.read_advisor("I WANT MY MONEY BACK NOW") == "RUDE" and customer.read_advisor("What are you doing!!!") == "RUDE"
+    assert customer.read_advisor("Please send the SMS and USB details.") == "OTHER"                       # acronyms are not shouting
+
+
+def test_a_raised_voice_costs_patience_ends_the_call_badly_and_is_noted():
+    kw = dict(persona="IMPATIENT", mix=None, difficulty="MEDIUM", intent="BILLING", memory=False)
+    calm = customer.replay(**kw, moves=["EMPATHY"], said=["I am sorry."])
+    rude = customer.replay(**kw, moves=["RUDE"], said=["I am sorry."])
+    assert rude.mood < calm.mood - 15 and rude.patience < calm.patience - 15
+    done = customer.replay(**kw, moves=["RUDE", "EMPATHY", "CHECK_POLICY", "FOLLOW_UP"], said=[None] * 4)
+    assert done.outcome and done.outcome["expectationMet"] is False and any("Conduct" in n for n in done.outcome["notes"])
+    assert customer.replay(**kw, moves=["RUDE", "RUDE", "RUDE"], said=[None] * 3).outcome["verdict"] == "The client hung up."
+
+
+def test_she_answers_what_was_actually_said_when_it_matches_no_move():
+    def line(said, mood=50):
+        return customer.customer_line("NEW_SUBSCRIBER", "BILLING", "OTHER", mood, False, False, 0, said)
+    assert "$2,000" in line("Why did you put $2,000?") and "45 TND" in line("Is this about 45 TND?")
+    assert "my bill" in line("Hello, how are you today?") and "my bill" in line("Can you give me your name?")
+    assert "my bill" not in line("The weather is nice today.") and "my bill" not in line(None)
+    assert line("Why did you put $2,000?") == line("Why did you put $2,000?")                                        # same words, same answer
+    assert line("Why did you put $2,000?", 10) != line("Why did you put $2,000?", 90)                                # and her mood shapes it
+
+
+def test_the_tone_of_a_voice_note_reaches_her_over_http():
+    kw = {"persona": "IMPATIENT", "difficulty": "MEDIUM", "intent": "BILLING"}
+
+    def say(sid, body):
+        return client.post(f"/customer/sessions/{sid}/say", json=body).json()
+
+    a, b = client.post("/customer/sessions", json=kw).json(), client.post("/customer/sessions", json=kw).json()
+    calm = say(a["id"], {"text": "I am sorry about that."})
+    shouted = say(b["id"], {"text": "I am sorry about that.", "tone": {"emotion": "anger", "mood": 12}})
+    assert calm["move"] == "EMPATHY" and shouted["move"] == "RUDE" and shouted["moveLabel"] == "Raised your voice or was rude"
+    assert shouted["mood"] < calm["mood"] and shouted["client"] != calm["client"]
+    for bad in ({"emotion": "furious", "mood": 10}, {"emotion": "anger", "mood": 101}, {"emotion": "anger"}):
+        assert client.post(f"/customer/sessions/{a['id']}/say", json={"text": "hi", "tone": bad}).status_code == 422
+

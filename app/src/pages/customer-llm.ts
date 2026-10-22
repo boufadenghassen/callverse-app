@@ -1,3 +1,4 @@
+import type { Tone } from '../agents/models';
 import type { DifficultyKey, IntentKey, MoveKey, PersonaKey } from './client-simulator';
 
 /**
@@ -20,8 +21,16 @@ const READERS: [MoveKey, RegExp][] = [
   ['EMPATHY', /\b(sorry|apolog\w+|i understand|understandable|i can (see|imagine|hear)|that must be|frustrat\w+|annoying|thank you for (your )?patience|thanks for (your )?patience|i hear you|appreciate)\b/i],
 ];
 
-/** Turns what the advisor typed into the simulator move it most resembles; OTHER when it matches none. */
-export function readAdvisor(text: string): MoveKey {
+/** Insults, three or more words in capitals, three or more exclamation marks: she hears shouting even in a typed reply. */
+const RUDE_WORDS = /\b(shut up|stupid|idiot|dumb|useless|moron|bullshit|bloody|damn|crap|shit|fuck\w*|what the (hell|heck)|are you (deaf|stupid|kidding me)|nonsense)\b/i;
+const SHOUTING = /!{3,}|(?:\b[A-Z]{3,}\b\W+){2,}\b[A-Z]{3,}\b/;
+
+/** A raised voice: the emotion model heard anger or disgust in a voice note, and the mood it computes is low. */
+export const raisedVoice = (tone?: Tone | null) => !!tone && (tone.emotion === 'anger' || tone.emotion === 'disgust') && tone.mood <= 30;
+
+/** Turns what the advisor said (typed, or a voice note with its tone) into the simulator move it most resembles; OTHER when it matches none. */
+export function readAdvisor(text: string, tone?: Tone | null): MoveKey {
+  if (raisedVoice(tone) || RUDE_WORDS.test(text) || SHOUTING.test(text)) return 'RUDE';
   return READERS.find(([, re]) => re.test(text))?.[0] ?? 'OTHER';
 }
 
@@ -58,6 +67,11 @@ const LINES: Record<MoveKey, [string[], string[], string[]]> = {
     ['Okay, that works for me.', 'Alright, thank you. I will look out for it.', "Good, I'd like to have that in writing.", 'Okay. Thanks for following through.'],
     ["Perfect. That's all I needed.", 'Great, thank you. You have been very helpful.', "Wonderful, that's exactly what I hoped for.", "Thank you, I'm glad we sorted this out."],
   ],
+  RUDE: [
+    ["Don't shout at me! I'm the one with the problem.", 'How dare you speak to me like that?', 'I want to speak to your supervisor. Right now.', 'That tone is unacceptable.'],
+    ["Excuse me? There's no need to raise your voice.", 'Was that really necessary? I only want this fixed.', 'I would like you to speak to me politely, please.'],
+    ['Oh... did I say something wrong? You sound upset.', 'Sorry, I did not mean to annoy you. Is everything alright?', 'Um, okay. Is there a problem?'],
+  ],
   OTHER: [
     ["I'm not sure what that means for my problem.", "Okay... and? What are you going to do about it?", "That doesn't answer my question."],
     ["Hm, okay. And then?", "I'm not sure I follow. Can you be more specific?", "Alright... go on."],
@@ -73,6 +87,38 @@ const FLAVOUR: Record<PersonaKey, [string, string, string]> = {
   LOYAL_AT_RISK: [' I have been with you for six years, you know.', ' I would hate to leave after all this time.', ' This is why I stayed with you.'],
   NEW_SUBSCRIBER: [" I'm still new, I don't know how any of this works.", ' Sorry, I am still learning how it all works.', ''],
 };
+
+// When the advisor says something that matches no move she still answers what was said: an amount, a greeting or a question.
+const TOPIC: Record<IntentKey, string> = { BILLING: 'my bill', ROAMING: 'my roaming bundle', CANCELLATION: 'my cancellation' };
+const AMOUNT = /[$€£]\s?\d[\d,.]*|\b\d[\d,.]*\s?(?:tnd|dinars?|dollars?|euros?|usd|eur)\b/i;
+const GREETING = /^\W*(hello|hi|hey|good (morning|afternoon|evening))\b/i;
+const QUESTION = /\?|^\s*(what|why|how|when|where|who|which|do|does|did|are|is|can|could|would|will)\b/i;
+const REACTIONS: Record<'amount' | 'greeting' | 'question', [string[], string[], string[]]> = {
+  amount: [
+    ['Why are you talking about {a}? That is not what I called about.', '{a}? Where did that come from? Read my file properly!'],
+    ["Sorry, {a}? I don't think that is the amount I'm asking about.", 'Hm, {a}... that does not match what I see. Can you check?'],
+    ['Sorry, did you say {a}? I may have misunderstood, could you explain?', 'Oh, {a}? I was not expecting that figure, can you tell me more?'],
+  ],
+  greeting: [
+    ['Yes, hello. Can we get to {t} now?', 'Hello. I have been waiting, can we talk about {t}?'],
+    ['Hello. So, about {t}?', 'Hi. Can you help me with {t}?'],
+    ['Hello! Thank you for taking my call. It is about {t}.', 'Hi there. I am calling about {t}.'],
+  ],
+  question: [
+    ['Why are you asking me that? I called about {t}.', 'That is not an answer. I am calling about {t}!'],
+    ["Hm, I'm not sure how to answer that. Is it about {t}?", "I'm not sure what you mean. Can we go back to {t}?"],
+    ["Sure, I can try to answer. Is it about {t}?", "Of course. Just so we're on the same page, this is about {t}."],
+  ],
+};
+
+/** The lines that answer what the advisor actually said, or null when it was nothing she can react to. */
+function reaction(c: LineContext, band: Band): string[] | null {
+  const said = c.advisorSaid;
+  if (c.move !== 'OTHER' || !said) return null;
+  const amount = AMOUNT.exec(said)?.[0].trim();
+  const kind = amount ? 'amount' : GREETING.test(said) && said.trim().split(/\s+/).length <= 8 ? 'greeting' : QUESTION.test(said) ? 'question' : null;
+  return kind && REACTIONS[kind][band].map((l) => l.replace('{a}', amount ?? '').replace('{t}', TOPIC[c.intent]));
+}
 
 const HANG_UP = ["That's it. I'm done, goodbye.", "I've had enough. Goodbye.", 'This is pointless. I am hanging up.'];
 
@@ -92,7 +138,7 @@ export function customerLine(c: LineContext): string {
   const seed = `${c.persona}|${c.intent}|${c.move}|${c.turn}|${c.advisorSaid ?? ''}`;
   if (c.hungUp) return HANG_UP[pickIndex(seed, HANG_UP.length)];
   const band: Band = c.mood < 30 ? 0 : c.mood < 60 ? 1 : 2;
-  const options = [...LINES[c.move][band]];
+  const options = reaction(c, band) ?? [...LINES[c.move][band]];
   // a repeat contact who is asked to repeat herself has something specific to say
   if (c.move === 'ASK_REPEAT' && c.memory && band < 2) options.push('You have my history right there. This is the third time I call about it.');
   let line = options[pickIndex(seed, options.length)];

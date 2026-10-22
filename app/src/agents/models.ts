@@ -3,6 +3,8 @@ export interface Evidence { source: string; score: number; excerpt: string }
 /** `intents` and `evidence` come from the real advisor agent; the demo data leaves them out. */
 export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
 export interface Transcript { text: string; seconds: number }
+/** How the advisor's voice sounded (the emotion model on a voice note): one of anger, disgust, fear, happy, neutral, sad and a 0-100 mood. */
+export interface Tone { emotion: string; mood: number }
 export interface SpeakRequest { text: string; role: 'advisor' | 'customer'; persona: string | null; mood: number }
 export interface RoutingQueue { queue: string; name: string; calls: number; priority: number; advisors: number; recommended: number; baselineSla: number; recommendedSla: number; baselineWaitSec: number; recommendedWaitSec: number }
 export interface RoutingMove { advisor: string; skills: string[]; fromQueue: string; toQueue: string; gain: number; text: string }

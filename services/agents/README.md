@@ -43,7 +43,8 @@ into `models/voices/`. Without them the service still runs, `/voice/speak` answe
 ```
 
 `tests/golden_customer.json` was produced from the compiled TypeScript simulator; regenerate it if the rules in
-`app/src/pages/client-simulator.ts` or `customer-llm.ts` change (and change `customer.py` the same way).
+`app/src/pages/client-simulator.ts` or `customer-llm.ts` change (and change `customer.py` the same way):
+`npm run build` in `app/`, then `node services/agents/tests/regenerate_golden.mjs` from the repository root.
 
 ## Limits
 

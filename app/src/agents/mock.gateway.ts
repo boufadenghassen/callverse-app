@@ -40,12 +40,12 @@ export class MockAgentGateway extends AgentGateway {
     return { id, persona: PERSONAS[cfg.persona as PersonaKey].label, opening: r.opening, mood: r.mood, patience: r.patience };
   }
 
-  async say(id: string, text: string): Promise<m.CallReply> {
+  async say(id: string, text: string, tone?: m.Tone | null): Promise<m.CallReply> {
     const call = this.calls.get(id);
     if (!call) throw new UnknownCallError(id);
     const before = this.replayOf(call);
     if (before.outcome) return { ended: true, outcome: before.outcome, mood: before.mood, patience: before.patience, client: null, move: null, moveLabel: null };
-    const move = readAdvisor(text);
+    const move = readAdvisor(text, tone);
     call.moves.push(move); call.said.push(text);
     const r = this.replayOf(call), t = r.turns[r.turns.length - 1];
     return { ended: !!r.outcome, outcome: r.outcome, mood: t.mood, patience: t.patience, client: t.client, move, moveLabel: MOVES[move].label };
