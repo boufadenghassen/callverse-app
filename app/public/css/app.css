@@ -1050,3 +1050,16 @@ table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4
   .review, .panel { break-inside: avoid; box-shadow: none; }
   details.lost, details.transcript { break-inside: avoid; }
 }
+
+/* What moved this score: what the advisor said that lowered it, and what protected it */
+.drivers { margin-top: var(--s4); }
+.drivers summary { font-weight: 700; cursor: pointer; }
+.driver-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); margin: var(--s3) 0; }
+@media (max-width: 760px) { .driver-cols { grid-template-columns: 1fr; } }
+.driver-cols h3 { margin: 0 0 var(--s2); font-size: .9375rem; }
+.driver-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.driver-list li { display: grid; grid-template-columns: 3.2rem 1fr; gap: var(--s2); align-items: start; padding: var(--s2) var(--s3); border-radius: 12px; background: var(--paper); font-size: .875rem; }
+.driver-list q { display: block; color: var(--ink-2); }
+.eff { font: 750 1rem var(--sans); text-align: center; padding: .15rem 0; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.eff.neg { background: var(--danger-soft); color: var(--danger); }
+.eff.pos { background: var(--ok-soft); color: var(--ok); }

@@ -64,18 +64,31 @@ def _feedback(call_ids: list[str] | None = None) -> dict[str, dict[tuple[str, in
 
 def _adjusted(review: dict, fb: dict[tuple[str, int], str] | None) -> dict:
     """The stored review as the human reviewer left it: each finding shows its verdict, and disputed findings no longer count."""
-    if not fb:
-        return review
     review = dict(review)
-    review["errors"] = [dict(e, verdict=fb.get((e["rule"], e["turn"]))) for e in review["errors"]]
-    disputed = {k for k, v in fb.items() if v == "disagree"}
-    return q.rescore(review, disputed) if disputed else review
+    if fb:
+        review["errors"] = [dict(e, verdict=fb.get((e["rule"], e["turn"]))) for e in review["errors"]]
+    disputed = _disputed(fb)
+    return q.rescore(review, disputed, with_drivers=False) if disputed else review
+
+
+def _disputed(fb) -> set[tuple[str, int]]:
+    return {k for k, v in (fb or {}).items() if v == "disagree"}
+
+
+def _shown(review: dict, fb) -> dict:
+    """A review ready to show: with what moved its score. The explanation costs a few re-scorings per call, so only the calls shown get it
+    (the analytics never do); reviews stored before it existed, and reviews a reviewer has disputed, get it worked out now."""
+    disputed = _disputed(fb)
+    return q.explained(review, disputed) if disputed or "drivers" not in review else review
 
 
 def get(call_id: str) -> dict | None:
     with _conn() as c:
         row = c.execute("select review from calls where call_id = ?", (call_id,)).fetchone()
-    return _adjusted(json.loads(row[0]), _feedback([call_id]).get(call_id)) if row else None
+    if not row:
+        return None
+    fb = _feedback([call_id]).get(call_id)
+    return _shown(_adjusted(json.loads(row[0]), fb), fb)
 
 
 def recent(limit: int = 20, advisor: str | None = None, rule: str | None = None, below: int | None = None) -> list[dict]:
@@ -92,7 +105,7 @@ def recent(limit: int = 20, advisor: str | None = None, rule: str | None = None,
         reviews = [r for r in reviews if any(e["rule"] == rule and e.get("verdict") != "disagree" for e in r["errors"])]
     if below:
         reviews = [r for r in reviews if r["overall"] < below]
-    return reviews[:limit]
+    return [_shown(r, fb.get(r["callId"])) for r in reviews[:limit]]
 
 
 def count() -> int:

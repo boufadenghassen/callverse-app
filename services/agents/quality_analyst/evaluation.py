@@ -15,7 +15,7 @@ def evaluate(split: str | None = None) -> dict:
     stats = {r: dict(tp=0, fn=0, fp=0, tn=0) for r in quality.RULES}
     mistakes = []
     for c in cases:
-        fired = {e["rule"] for e in quality.review(c["turns"], "Eval", c["id"])["errors"]}
+        fired = {e["rule"] for e in quality.review(c["turns"], "Eval", c["id"], with_drivers=False)["errors"]}
         for rule in c["expect"]:
             hit = rule in fired
             stats[rule]["tp" if hit else "fn"] += 1

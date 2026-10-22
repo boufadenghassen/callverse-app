@@ -130,5 +130,5 @@ def build(today: dt.date | None = None) -> None:
             calls.append((when, name, turns, outcome))
     calls.sort(key=lambda c: c[0])
     for n, (when, name, turns, outcome) in enumerate(calls):
-        review = quality.review(turns, name, f"CALL-{quality_store.FIRST_ID + n}", source="simulated", outcome=outcome, date=when.date().isoformat())
+        review = quality.review(turns, name, f"CALL-{quality_store.FIRST_ID + n}", source="simulated", outcome=outcome, date=when.date().isoformat(), with_drivers=False)   # the explanation is worked out when a call is shown
         quality_store.save(review, created=when.replace(microsecond=0).isoformat())

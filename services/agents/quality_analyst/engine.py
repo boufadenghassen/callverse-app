@@ -375,17 +375,77 @@ def criteria_rows(issues: list[dict], good: list[dict], scores: dict[str, int]) 
     return rows
 
 
-def rescore(review: dict, disputed: set[tuple[str, int]]) -> dict:
+# What each strength protects the call from: the findings that would appear if that reply had been neutral.
+PREVENTS = {"check_first": ("promise_before_check",), "identity": ("no_identity_check",), "empathy": ("no_empathy",), "greeting": ("no_greeting",),
+            "follow_up": ("no_follow_up",), "closing": ("no_closing",), "mood_up": ()}
+
+
+MOVE_OF = {"check_first": "CHECK_POLICY", "identity": "IDENTITY", "empathy": "EMPATHY", "greeting": "GREETING", "follow_up": "FOLLOW_UP", "closing": "CLOSING"}
+
+
+def _without(text: str, move: str) -> str:
+    """The reply with the sentences that make that move taken out (everything else the advisor said stays)."""
+    rest = [s for s in SPLIT.split(text) if s.strip() and move not in turn_flags(s)]
+    return " ".join(rest) or "…"
+
+
+def explained(review: dict, disputed=frozenset()) -> dict:
+    """Adds the answer to "what did the advisor say that raised or lowered this score?" to a review.
+
+    Every number is a what-if worked out by really scoring the call again. A finding's effect is minus what the overall score gains when that
+    finding is left out. A strength's effect is what the call would have lost had the advisor not made that move (its sentences taken out of the
+    reply, the rest kept): the mistakes it protected the call from. Effects are not additive: a criterion stops at 0, so two mistakes in it can share the same points; a finding that
+    changes nothing on its own is marked `floored`."""
+    turns = review["turns"]
+    kept = [e for e in review["errors"] if (e["rule"], e["turn"]) not in disputed]
+    base = overall(score(kept))
+    first_c = next((t["text"] for t in turns if t["speaker"] == "customer"), turns[0]["text"])
+
+    def quote(i: int) -> str:
+        text = turns[i]["text"]
+        return text if len(text) <= 160 else text[:157] + "..."
+
+    errors = []
+    for e in review["errors"]:
+        if any(e is k for k in kept):
+            gain = overall(score([k for k in kept if k is not e])) - base
+            errors.append(dict(e, effect=-gain, floored=gain == 0 and e["points"] > 0))
+        else:
+            errors.append(dict(e, effect=0, floored=False))
+    have = {(e["rule"], e["turn"]) for e in kept} | set(disputed)
+    appears: dict[tuple[int, str], list[dict]] = {}   # the findings that would show up if the advisor had not made this move in this reply
+    strengths = []
+    for g in review["strengths"]:
+        effect, labels = 0, []
+        if PREVENTS.get(g["rule"]):
+            if (g["turn"], g["rule"]) not in appears:
+                neutral = [dict(t) for t in turns]
+                neutral[g["turn"]]["text"] = _without(turns[g["turn"]]["text"], MOVE_OF[g["rule"]])
+                appears[(g["turn"], g["rule"])] = [f for f in find_issues(neutral, first_c, None)[0] if (f["rule"], f["turn"]) not in have]
+            new = [f for f in appears[(g["turn"], g["rule"])] if f["rule"] in PREVENTS[g["rule"]]]
+            if new:
+                effect, labels = base - overall(score(kept + new)), sorted({RULE_LABELS[f["rule"]] for f in new})
+        strengths.append(dict(g, effect=effect, prevents=labels))
+    hurt = sorted((dict(turn=e["turn"], timestamp=e["timestamp"], rule=e["rule"], label=e["reason"], criterion=e["criterion"], points=e["points"],
+                        effect=e["effect"], quote=e.get("quote", ""), floored=e["floored"])
+                   for e in errors if (e["rule"], e["turn"]) not in disputed), key=lambda d: (d["effect"], -d["points"]))
+    helped = sorted((dict(turn=g["turn"], timestamp=g["timestamp"], rule=g["rule"], label=g["text"], effect=g["effect"], prevents=g["prevents"], quote=quote(g["turn"]))
+                     for g in strengths), key=lambda d: -d["effect"])
+    return dict(review, errors=errors, strengths=strengths, drivers=dict(hurt=hurt, helped=helped))
+
+
+def rescore(review: dict, disputed: set[tuple[str, int]], with_drivers: bool = True) -> dict:
     """The review as a human reviewer decided it: findings marked "not an error" are left out and the scores, evidence and counterfactual are worked out again."""
     kept = [e for e in review["errors"] if (e["rule"], e["turn"]) not in disputed]
     scores = score(kept)
     out = dict(review)
     out.update(overall=overall(scores), criteria=criteria_rows(kept, review["strengths"], scores), counterfactual=counterfactual(kept, scores),
                originalOverall=review["overall"], adjusted=True)
-    return out
+    return explained(out, disputed) if with_drivers else out
 
 
-def review(turns: list[dict], advisor_name: str, call_id: str, source: str = "api", outcome: dict | None = None, date: str | None = None) -> dict:
+def review(turns: list[dict], advisor_name: str, call_id: str, source: str = "api", outcome: dict | None = None, date: str | None = None,
+           with_drivers: bool = True) -> dict:
     """Score a call. Returns the contract's QualityReview plus the transcript, errors, strengths and coaching."""
     turns, mood_source = normalize(turns)
     if not any(t["speaker"] == "advisor" for t in turns) and not turns:
@@ -407,10 +467,11 @@ def review(turns: list[dict], advisor_name: str, call_id: str, source: str = "ap
             seen.add(f["rule"])
             coaching.append(dict(rule=f["rule"], criterion=f["criterion"], tip=RULES[f["rule"]]["tip"], scenario=RULES[f["rule"]]["scenario"]))
     intents = kb.detect_intents(first_c)
-    return dict(
+    result = dict(
         callId=call_id, advisor=advisor_name, overall=overall(scores), criteria=criteria, counterfactual=counterfactual(issues, scores),
         source=source, date=date, durationSec=round(turns[-1]["end"]), intent=intents[0] if intents else "Other", moodSource=mood_source,
         errors=sorted(({k: v for k, v in f.items()} for f in issues), key=lambda f: (-f["points"], f["turn"])),
         strengths=[dict(turn=g["turn"], timestamp=g["timestamp"], text=g["text"], rule=g["rule"]) for g in good], coaching=coaching, turns=turns,
         moodCurve=[[t["start"], t["mood"]] for t in turns if t["speaker"] == "customer"],
     )
+    return explained(result) if with_drivers else result

@@ -559,6 +559,10 @@ test('quality: a live call sent by the advisor shows up as a review for Nour', a
   assert.equal(await card.count(), 1);
   assert.match(await card.innerText(), /live call/);
   assert.equal(await nour.page.locator('article.review').first().getAttribute('id'), id, 'the focused call comes first');
+  const drivers = card.locator('.drivers');
+  assert.match(await drivers.innerText(), /Lowered the score/);
+  assert.match(await drivers.locator('.driver-list li', { hasText: 'Promised a refund before checking' }).first().innerText(), /^−\d+/, 'its cost on the score');
+  assert.match(await drivers.locator('.driver-list li', { hasText: 'Promised a refund before checking' }).first().locator('q').innerText(), /refund you right away/);
   await card.locator('summary', { hasText: 'points were lost' }).click();
   assert.match(await card.locator('.lost').first().innerText(), /Promised a refund before checking/);
   await card.locator('summary', { hasText: 'Transcript' }).click();
