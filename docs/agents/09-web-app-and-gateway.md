@@ -47,7 +47,7 @@ A **stateless TypeScript twin** of the Python customer simulator, so the page wo
 ## The AgentGateway: the one door to the agents
 The pages never talk to an agent directly. They call the abstract class `AgentGateway` (`app/src/agents/agent.gateway.ts`), which offers one method per thing a page needs:
 
-`customerContext`, `suggestAnswer` (advisor) · `startCall`, `say` (customer simulator) · `speak`, `transcribe` (voice) · `routing`, `schedule`, `forecast`, `simulate` (workforce) · `recentReviews`, `qualityEvaluation`, `qualityFeedback`, `qualityReview`, `qualityAnalytics`, `reviewCall`, `reviewAudio`, `sampleCall` (quality) · `opportunities`, `salesDetect`, `salesOutcome`, `salesAnalytics` (sales) · `openComplaints` (complaints) · `scenarios` (training).
+`customerContext`, `suggestAnswer` (advisor) · `startCall`, `say` (customer simulator) · `speak`, `transcribe` (voice) · `routing`, `schedule`, `forecast`, `simulate` (workforce) · `recentReviews`, `qualityEvaluation`, `qualityFeedback`, `qualityReview`, `qualityAnalytics`, `reviewCall`, `reviewAudio`, `sampleCall` (quality) · `opportunities`, `salesDetect`, `salesOutcome`, `salesAnalytics` (sales) · `openComplaints` (complaints) · `scenarios`, `scenario`, `scenarioLineage`, `generateScenario`, `replayScenario`, `mutateScenario`, `deleteScenario`, `trainingPlan` (training).
 
 The shared types of everything that crosses this door are in `app/src/agents/models.ts`; together with the table in `app/README.md` they are **the contract between the web app and the agents** (a change to either is announced to the team first).
 
