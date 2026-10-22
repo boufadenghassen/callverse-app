@@ -1,18 +1,20 @@
 # Architecture
 
 What exists today is marked **built**. Everything else is the recommended next step, in priority order.
+The agents themselves are documented one by one in [`docs/agents/`](docs/agents/README.md) (what each does, formulas, data, endpoints, tests, limits).
 
 ## The shape
 
 ```mermaid
 flowchart LR
   B[Browser] -->|HTML, CSS, TypeScript script| W["app<br/>NestJS, server-rendered<br/><b>built</b>"]
-  W -->|"AgentGateway (REST/JSON)"| A["services/agents<br/>Python FastAPI<br/>planned"]
-  A --> E["Emotion model<br/>WavLM + classifier<br/>from notebooks/"]
-  A --> R["Knowledge search (RAG)<br/>planned"]
-  A --> L["LLM API<br/>planned"]
+  W -->|"AgentGateway (REST/JSON)"| A["services/agents<br/>Python FastAPI<br/><b>built</b>: customer, advisor, workforce,<br/>quality analyst, sales, voice"]
+  W -->|"Call review"| E["models/src/serve.py<br/>fine-tuned WavLM<br/><b>built</b>"]
+  A -->|"mood of the customer's voice"| E
+  A --> R["Knowledge search<br/>built: TF-IDF over an invented KB"]
+  A --> L["LLM API<br/>planned (no LLM today)"]
   W --- S[("Session store<br/>memory now, Redis later")]
-  A --- D[("Postgres<br/>planned")]
+  A --- D[("SQLite files today<br/>Postgres planned")]
 ```
 
 The web app never contains machine-learning code. It asks the **AgentGateway** (`app/src/agents`) for data, and

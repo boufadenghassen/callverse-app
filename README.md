@@ -10,7 +10,7 @@ quality analyst, training lead, complaint manager, sales). Student project.
 | `notebooks` | Jupyter notebooks for speech-emotion training. | **no, pushed empty** |
 | `datasets` | CREMA-D and RAVDESS audio. | **no, pushed empty** |
 
-Also: [`ARCHITECTURE.md`](ARCHITECTURE.md) (how the pieces fit and what to build next), [`MLOPS.md`](MLOPS.md) (the model pipeline), [`DATA_COLLECTION.md`](DATA_COLLECTION.md) (recording and labelling real calls, plus where to find public data) and `.github/workflows/ci.yml`
+Also: [`docs/agents`](docs/agents/README.md) (documentation of every agent: what was built, how it works, how to run and test it), [`ARCHITECTURE.md`](ARCHITECTURE.md) (how the pieces fit and what to build next), [`MLOPS.md`](MLOPS.md) (the model pipeline), [`DATA_COLLECTION.md`](DATA_COLLECTION.md) (recording and labelling real calls, plus where to find public data) and `.github/workflows/ci.yml`
 (builds and tests the app on every push).
 
 ## Run the web app
