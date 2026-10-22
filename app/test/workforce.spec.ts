@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AgentDownError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
-import { client, startApp } from './helpers';
+import { client, post, startApp } from './helpers';
 
 let app: NestExpressApplication;
 before(async () => { app = await startApp(); });
@@ -58,6 +58,7 @@ test('the http gateway fetches the routing plan and the lunch schedule from the 
     seen.push(req.url!);
     res.end(req.url === '/workforce/routing' ? '{"baselineSla":0.68,"optimizedSla":0.72,"moves":3,"hours":[],"method":"Local search"}' : '{"plannedSla":0.85}');
   });
+
   await new Promise<void>((ok) => fake.listen(0, ok));
   process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
   try {
@@ -71,4 +72,46 @@ test('the http gateway fetches the routing plan and the lunch schedule from the 
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();
   }
+});
+
+test('the http gateway fetches training scenarios from the Scenario Gen adapter', async () => {
+  const seen: string[] = [];
+  const fake = createServer((req, res) => {
+    seen.push(`${req.method} ${req.url}`);
+    res.setHeader('Content-Type', 'application/json');
+    res.end('[{"id":"sc_1","title":"Double billing","profile":"Unsatisfied","difficulty":"Hard","origin":"Template library"}]');
+  });
+
+  await new Promise<void>((ok) => fake.listen(0, ok));
+  process.env.CALLVERSE_AGENTS_URL = `http://localhost:${(fake.address() as { port: number }).port}`;
+  try {
+    const gw = new HttpAgentGateway();
+    assert.deepEqual(await gw.scenarios(), [{
+      id: 'sc_1', title: 'Double billing', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'Template library',
+    }]);
+    await gw.scenarios();
+    assert.deepEqual(seen, ['GET /training/scenarios']);
+  } finally {
+    delete process.env.CALLVERSE_AGENTS_URL;
+    fake.close();
+  }
+});
+
+test('the Coach training flow changes advisor data and supports scenario details, what-if, and delete', async () => {
+  const coach = await client(app, 'rim');
+  const karim = await coach.get('/training?advisor=Karim%20B.').expect(200);
+  const hela = await coach.get('/training?advisor=Hela%20M.').expect(200);
+  assert.match(karim.text, /Coach plan for Karim B\./);
+  assert.match(karim.text, /Compliance/);
+  assert.match(hela.text, /Coach plan for Hela M\./);
+  assert.match(hela.text, /Accuracy/);
+
+  await coach.get('/training/scenarios/SC-31').expect(200);
+  const mutation = await post(coach, '/training/scenarios/SC-31/mutate', '/training/scenarios/SC-31', { op: 'harder' });
+  assert.equal(mutation.status, 302);
+  const mutatedPath = mutation.headers.location as string;
+  await coach.get(mutatedPath).expect(200);
+  const deleted = await post(coach, `${mutatedPath.split('?')[0]}/delete`, mutatedPath, {});
+  assert.equal(deleted.status, 302);
+  await coach.get(mutatedPath).expect(404);
 });

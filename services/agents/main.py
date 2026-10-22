@@ -24,6 +24,8 @@ import voice
 import routing
 import scheduling
 import workforce
+from scenario_gen.router import router as scenario_gen_router
+from scenario_gen.router import training_router as scenario_gen_training_router
 
 
 @asynccontextmanager
@@ -40,6 +42,8 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="orqestra agents", lifespan=lifespan)
+app.include_router(scenario_gen_router)
+app.include_router(scenario_gen_training_router)
 
 Persona = Literal["IMPATIENT", "ANXIOUS", "ANGRY_PREMIUM", "LOYAL_AT_RISK", "NEW_SUBSCRIBER"]
 
