@@ -1014,7 +1014,7 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .live-msg strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
 .live-say textarea { width: 100%; display: block; margin: var(--s2) 0 var(--s3); }
 .evidence { margin: var(--s3) 0; padding-left: var(--s4); font-size: .875rem; }
-#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden] { display: none; }
+#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden], #live-offer[hidden], #lv-o-top[hidden], #lv-o-none[hidden], #lv-o-risk[hidden] { display: none; }
 .live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
 .listen { margin-left: var(--s2); font-size: .8125rem; }
 .listen.speaking { color: var(--accent-ink); font-weight: 700; }

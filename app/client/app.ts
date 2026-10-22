@@ -315,6 +315,20 @@
     });
   }
 
+  // The reasons of a score, one line each with its points (sales offers and churn risk)
+  interface Factor { name: string; points: number; why: string }
+  const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+  const factorList = (factors: Factor[]) => {
+    const ul = make('ul', { className: 'driver-list' });
+    for (const f of factors) {
+      const li = make('li'), body = make('span');
+      body.append(make('strong', { textContent: f.name }), `: ${f.why}`);
+      li.append(make('span', { className: `eff ${f.points >= 0 ? 'pos' : 'neg'}`, textContent: sign(f.points) }), body);
+      ul.append(li);
+    }
+    return ul;
+  };
+
   // Sales: read a conversation, and record what the customer did with an offer
   const sales = byId('sales');
   if (sales) {
@@ -325,23 +339,11 @@
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       return data;
     };
-    interface Factor { name: string; points: number; why: string }
     interface Offer {
       offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string };
       acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string };
     }
     interface Policy { label: string; offers: number; accepted: number; declined: number; rate: number | null; revenue: number }
-    const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
-    const factorList = (factors: Factor[]) => {
-      const ul = make('ul', { className: 'driver-list' });
-      for (const f of factors) {
-        const li = make('li'), body = make('span');
-        body.append(make('strong', { textContent: f.name }), `: ${f.why}`);
-        li.append(make('span', { className: `eff ${f.points >= 0 ? 'pos' : 'neg'}`, textContent: sign(f.points) }), body);
-        ul.append(li);
-      }
-      return ul;
-    };
     sales.addEventListener('click', async (e) => {
       const s = hit<HTMLButtonElement>(e, '[data-sample]');
       if (s) {
@@ -445,7 +447,53 @@
     if (sayMine) { sayMine.checked = store.get('cv-sayme') !== 'off'; sayMine.addEventListener('change', () => store.set('cv-sayme', sayMine.checked ? 'on' : 'off')); }
     const recBtn = byId<HTMLButtonElement>('lv-rec');
     // voice: `after` makes the customer wait until the advisor's own voice has finished; `url` is a recorded voice note
+    // the conversation as the sales agent reads it, and the offer worth keeping in mind
+    let convo: { speaker: string; text: string; mood?: number }[] = [], offerSeq = 0;
+    const offerBox = byId('live-offer')!;
+    const showOffers = async () => {
+      const mine = ++offerSeq;
+      try {
+        const d = await post('/advisor/live/offers', { turns: convo });
+        if (mine !== offerSeq) return;
+        interface Shown { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; need: { key: string };
+          acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string } }
+        const offers = d.offers as Shown[], churn = d.churn as { score: number; level: string } | undefined;
+        const risk = byId('lv-o-risk')!;
+        risk.hidden = !churn;
+        if (churn) { risk.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`; risk.className = `risk ${churn.level.toLowerCase()}`; }
+        const heard = (d.signals as { label: string; source: string }[]).filter((s) => s.source === 'conversation').map((s) => s.label);
+        byId('lv-o-heard')!.textContent = heard.length ? `Heard: ${heard.join(', ')}.` : '';
+        byId('lv-o-top')!.hidden = !offers.length;
+        byId('lv-o-none')!.hidden = !!offers.length;
+        if (offers.length) {
+          const o = offers[0], wait = o.timing.cue === 'after_resolution';
+          byId('lv-o-name')!.textContent = `${o.offer} (${o.relevance}/100)${o.price ? ` · ${o.price}` : ''}`;
+          const timing = byId('lv-o-timing')!;
+          timing.className = `timing ${wait ? 'wait' : 'go'}`;
+          timing.replaceChildren(make('strong', { textContent: wait ? 'Wait: solve the problem first.' : 'Good moment to offer.' }), ` ${o.timing.why}`);
+          byId('lv-o-figures')!.textContent = o.acceptance && o.expected ? `Chance of a yes ${Math.round(o.acceptance.probability * 100)}% · worth ${o.expected.ifYes} TND over 12 months if yes · expected ${o.expected.tnd} TND` : '';
+          byId('lv-o-why')!.replaceChildren(factorList(o.factors), ...(o.acceptance && o.expected ? [make('p', { className: 'muted small', textContent: `Chance of a yes: ${o.acceptance.basis}. Worth: ${o.expected.how}.` })] : []));
+          const actions = byId('lv-o-actions')!;
+          actions.querySelectorAll<HTMLButtonElement>('[data-outcome]').forEach((b) => {
+            b.disabled = false;
+            Object.assign(b.dataset, { customer: d.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key });
+          });
+        }
+        offerBox.hidden = false;
+      } catch { if (mine === offerSeq) offerBox.hidden = true; }   // demo mode or no agents: the panel simply stays away
+    };
+    byId('lv-o-actions')!.addEventListener('click', async (e) => {
+      const b = hit<HTMLButtonElement>(e, '[data-outcome]');
+      if (!b) return;
+      const group = b.parentElement!.querySelectorAll<HTMLButtonElement>('[data-outcome]');
+      group.forEach((x) => { x.disabled = true; });
+      try {
+        await post('/sales/outcome', { customerId: b.dataset.customer || null, offerId: b.dataset.offer, outcome: b.dataset.outcome, relevance: Number(b.dataset.relevance), cue: b.dataset.cue, need: b.dataset.need ?? '' });
+        toast(`Recorded: ${b.dataset.outcome}. It counts in the track record.`);
+      } catch (err) { group.forEach((x) => { x.disabled = false; }); toast((err as Error).message); }
+    });
     const say = (who: string, msg: string, extra = '', mood = 50, voice?: { url?: string; after?: Promise<unknown> }) => {
+      convo.push(who === 'client' ? { speaker: 'customer', text: msg, mood } : { speaker: 'advisor', text: msg });
       if (who === 'client' && voiceOn?.checked) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
       const li = make('li', { className: `live-msg ${who}` });
       li.append(make('strong', { textContent: who === 'client' ? 'Customer' : voice?.url ? 'You (voice note)' : 'You' }), make('span', { textContent: msg }));
@@ -482,7 +530,9 @@
       try {
         const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
         callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        convo = []; offerBox.hidden = true;
         say('client', d.opening, d.persona, d.mood);
+        void showOffers();
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
       } catch (err) { status.textContent = (err as Error).message; }
@@ -498,7 +548,7 @@
       text.value = '';
       try {
         const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
-        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken });
+        if (d.client) { say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken }); void showOffers(); }
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {
           const o = d.outcome, box = byId('live-outcome')!;

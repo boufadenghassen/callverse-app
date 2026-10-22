@@ -67,9 +67,10 @@ interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alia
 | POST | `/quality/feedback` ✔ | reviewer verdict (agree / disagree / clear) on one finding |
 | GET | `/complaints/open` | ComplaintCase[] |
 | GET | `/training/scenarios` | Scenario[] |
-| GET | `/sales/opportunities` ✔ | Opportunity[] (real agent adds `factors`, `timing`, `counterfactual`...) |
+| GET | `/sales/opportunities` ✔ | Opportunity[] (real agent adds `factors`, `timing`, `counterfactual`, `churn`, `acceptance`, `expected`...) |
 | POST | `/sales/detect` `{customer_id?, turns}` ✔, `/sales/outcome` ✔ | the needs found in a conversation and the ranked offers; what happened to an offer |
 | GET | `/sales/analytics` ✔ | which offers convert |
+| POST | `/sales/simulate` `{calls, share, min_relevance, good_moment_only}` ✔ | what a month of calls earns under a selling rule, replayed on the history |
 
 ## Voice
 

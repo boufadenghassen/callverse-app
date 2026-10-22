@@ -7,6 +7,18 @@ import type { SalesTurn } from '../agents/models';
 const START = { calls: 1000, share: 30, minRelevance: 0, goodMomentOnly: false };   // what the simulation shows before anyone changes it
 
 const CUSTOMER_ID = /^[A-Z]{2}-\d{4}$/;
+/** A conversation from the browser as clean turns: known speakers, no control characters, at most 60 turns of 600 characters; a customer's mood is kept when it is a whole 0 to 100. */
+export function cleanTurns(turns: unknown): SalesTurn[] {
+  const clean: SalesTurn[] = [];
+  for (const t of (Array.isArray(turns) ? turns : []).slice(0, 60)) {
+    const x = t as Record<string, unknown>;
+    const text = typeof x.text === 'string' ? x.text.replace(/\p{Cc}/gu, ' ').trim().slice(0, 600) : '';
+    if (!((x.speaker === 'customer' || x.speaker === 'advisor') && text)) continue;
+    const mood = x.speaker === 'customer' && typeof x.mood === 'number' && Number.isInteger(x.mood) && x.mood >= 0 && x.mood <= 100 ? { mood: x.mood } : {};
+    clean.push({ speaker: x.speaker, text, ...mood });
+  }
+  return clean;
+}
 const initials = (name: string) => { const [a, b = ''] = name.split(' '); return a.charAt(0) + b.charAt(0); };
 
 /** Conversations to try the detector on: the customer's words are what the agent reads. */
@@ -37,20 +49,14 @@ export class SalesController {
   /** A conversation as turns ({speaker, text}): the needs the customer voiced and the offers that answer them. */
   @Roles('SALES') @HttpCode(200) @Post('sales/detect')
   async detect(@Body() b: Record<string, unknown>, @Res() res: Response) {
-    const turns = Array.isArray(b.turns) ? b.turns : [];
-    const clean: SalesTurn[] = [];
-    for (const t of turns.slice(0, 60)) {
-      const x = t as Record<string, unknown>;
-      const text = typeof x.text === 'string' ? x.text.replace(/\p{Cc}/gu, ' ').trim().slice(0, 600) : '';
-      if ((x.speaker === 'customer' || x.speaker === 'advisor') && text) clean.push({ speaker: x.speaker, text });
-    }
+    const clean = cleanTurns(b.turns);
     const id = typeof b.customerId === 'string' && b.customerId ? b.customerId : null;
     if (!clean.length || (id && !CUSTOMER_ID.test(id))) return res.status(400).json({ error: 'Type or choose a conversation first.' });
     return this.run(res, () => this.agents.salesDetect(id, clean));
   }
 
-  /** The customer accepted or declined an offer: it feeds the ranking and the analytics. */
-  @Roles('SALES') @HttpCode(200) @Post('sales/outcome')
+  /** The customer accepted or declined an offer: it feeds the ranking and the analytics. The advisor reports it too, from the live call. */
+  @Roles('SALES', 'ADVISOR') @HttpCode(200) @Post('sales/outcome')
   async outcome(@Body() b: Record<string, unknown>, @Res() res: Response) {
     const id = typeof b.customerId === 'string' && b.customerId ? b.customerId : null;
     const ok = typeof b.offerId === 'string' && /^[a-z][a-z-]{2,30}$/.test(b.offerId) && (b.outcome === 'accepted' || b.outcome === 'declined')

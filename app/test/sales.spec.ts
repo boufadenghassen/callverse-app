@@ -33,7 +33,7 @@ class FakeSalesGateway extends MockAgentGateway {
   async salesDetect(id: string | null, turns: m.SalesTurn[]): Promise<m.SalesDetection> {
     seen.detects.push({ id, turns });
     if (id === 'ZZ-0000') throw new RejectedError('no such customer');
-    return { customerId: id, customer: 'Yasmine Toumi', mood: 55, signals: [], offers: [OFFER], skipped: [] };
+    return { customerId: id, customer: 'Yasmine Toumi', mood: 55, churn: OFFER.churn, signals: [], offers: [OFFER, { ...OFFER, offerId: 'data-booster' }, { ...OFFER, offerId: 'autopay' }], skipped: [] };
   }
   async salesOutcome(o: m.SalesOutcome) { seen.outcomes.push(o); }
   async salesSimulate(r: m.SalesSimulationRequest) { seen.sims.push(r); return SIM; }
@@ -180,4 +180,36 @@ test('the http gateway reads the Python sales agent and maps its refusals', asyn
     if (was === undefined) delete process.env.CALLVERSE_AGENTS_URL; else process.env.CALLVERSE_AGENTS_URL = was;
     fake.close();
   }
+});
+
+test('during a live call the advisor gets at most two offers, read from the conversation so far, with the customer mood', async () => {
+  const karim = await client(real, 'karim');
+  const token = tokenOf((await karim.get('/advisor')).text);
+  const send = (b: object) => karim.post('/advisor/live/offers').set('X-CSRF-Token', token).send(b);
+  await send({ turns: [] }).expect(400);
+  await send({ turns: [{ speaker: 'robot', text: 'hi' }] }).expect(400);
+  await karim.post('/advisor/live/offers').send({ turns: [{ speaker: 'customer', text: 'hi' }] }).expect(403);                       // no CSRF token
+  await (await client(real, 'leila')).post('/advisor/live/offers').send({}).expect(403);                                             // not the advisor's console
+  const ok = await send({ turns: [
+    { speaker: 'customer', text: 'I was charged twice .', mood: 30 }, { speaker: 'advisor', text: 'I am sorry.', mood: 90 },
+    { speaker: 'customer', text: 'Thanks.', mood: 140 }, { speaker: 'customer', text: 'Still here.', mood: 41.5 }] }).expect(200);
+  assert.equal(ok.body.offers.length, 2);
+  assert.equal(ok.body.churn.level, 'Low');
+  assert.deepEqual(seen.detects.at(-1), { id: 'YT-1042', turns: [
+    { speaker: 'customer', text: 'I was charged twice .', mood: 30 }, { speaker: 'advisor', text: 'I am sorry.' },       // a mood only comes with a customer's words
+    { speaker: 'customer', text: 'Thanks.' }, { speaker: 'customer', text: 'Still here.' }] });                                     // and only a whole 0 to 100
+  const demoKarim = await client(demo, 'karim');
+  const demoToken = tokenOf((await demoKarim.get('/advisor')).text);
+  assert.match((await demoKarim.post('/advisor/live/offers').set('X-CSRF-Token', demoToken).send({ turns: [{ speaker: 'customer', text: 'hi' }] }).expect(503)).body.error, /real agents/);
+});
+
+test('the advisor can report what the customer did with an offer, a client cannot', async () => {
+  const karim = await client(real, 'karim');
+  const token = tokenOf((await karim.get('/advisor')).text);
+  const good = { customerId: 'YT-1042', offerId: 'plan-upgrade', outcome: 'accepted', relevance: 40, cue: 'after_resolution', need: 'plan_change' };
+  await karim.post('/sales/outcome').set('X-CSRF-Token', token).send(good).expect(200);
+  assert.equal(seen.outcomes.at(-1)?.outcome, 'accepted');
+  const yasmine = await client(real, 'yasmine');
+  const yToken = /name="csrf-token" content="([^"]+)"/.exec((await yasmine.get('/client')).text)![1];
+  await yasmine.post('/sales/outcome').set('X-CSRF-Token', yToken).send(good).expect(403);
 });

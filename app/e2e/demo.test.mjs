@@ -742,3 +742,28 @@ test('sales: offers come with their reasons in points, a conversation is read, a
   await page.waitForFunction(() => /2000 calls/.test(document.querySelector('#sim-caption')?.textContent ?? ''), null, { timeout: 15000 });
   await ctx.close();
 });
+
+test('sales in the live call: an offer to keep in mind appears with its timing and the advisor reports the outcome', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('karim');
+  await page.goto(`${BASE}/advisor`);
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
+  assert.equal(await page.locator('#live-offer').isVisible(), false, 'no offer before a call');
+  await page.click('#live-setup button[type=submit]');
+  await page.locator('#live-offer').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#lv-o-name').innerText(), /Upgrade to Premium Unlimited \(\d+\/100\)/);
+  assert.match(await page.locator('#lv-o-timing').innerText(), /Wait: solve the problem first/);   // the customer file has an open ticket
+  assert.match(await page.locator('#lv-o-risk').innerText(), /Risk of losing this customer: \d+ · (Low|Medium|High)/);
+  assert.match(await page.locator('#lv-o-figures').innerText(), /Chance of a yes \d+% · worth \d+ TND over 12 months if yes · expected \d+ TND/);
+  await page.locator('#live-offer summary', { hasText: 'Why this offer' }).click();
+  assert.match(await page.locator('#lv-o-why').innerText(), /What the file says[\s\S]*The moment/);
+  // the advisor answers; the panel follows the conversation and the outcome can be reported once
+  await page.fill('#lv-text', 'I am sorry about this. Let me check the refund policy before I promise anything.');
+  await page.click('#live-say button[type=submit]');
+  await page.locator('.live-msg.client').nth(1).waitFor({ timeout: 20000 });
+  await page.locator('#lv-o-name').waitFor({ state: 'visible' });
+  await page.click('#lv-o-actions button[data-outcome=declined]');
+  await page.locator('.toast', { hasText: 'Recorded: declined' }).waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#lv-o-actions button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
+  await ctx.close();
+});

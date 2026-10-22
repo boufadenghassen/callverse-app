@@ -141,7 +141,7 @@ def acceptance(offer_id: str, relevance: int, cue: str, rates: dict | None, cell
     n, a = (cells or {}).get((offer_id, band(relevance), cue), (0, 0))
     p = max(0.02, min(0.95, (a + 5 * base) / (n + 5)))
     moment = "good moment" if cue == "now" else "problem not solved yet"
-    basis = (f"{n} similar offers in the history (relevance {band(relevance)}, {moment}): {a} accepted; this offer overall: {round(100 * base)}% of {offered}" if n
+    basis = (f"{n} similar offer{'s' if n != 1 else ''} in the history (relevance {band(relevance)}, {moment}): {a} accepted; this offer overall: {round(100 * base)}% of {offered}" if n
              else f"no similar offer in the history yet, so the offer's overall rate is used: {round(100 * base)}% of {offered}")
     return dict(probability=round(p, 2), similar=n, similarAccepted=a, basis=basis)
 
