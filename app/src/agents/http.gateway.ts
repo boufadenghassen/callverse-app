@@ -13,13 +13,13 @@ export class HttpAgentGateway extends MockAgentGateway {
   private readonly base = process.env.CALLVERSE_AGENTS_URL ?? 'http://localhost:8000';
   private readonly cache = new Map<string, { at: number; value: unknown }>();
 
-  private async call<T>(path: string, body?: unknown, cacheable = false): Promise<T> {
+  private async call<T>(path: string, body?: unknown, cacheable = false, method?: 'GET' | 'POST' | 'DELETE'): Promise<T> {
     const hit = this.cache.get(path);
     if (cacheable && hit && Date.now() - hit.at < 30_000) return hit.value as T;
     let res: Response;
     try {
       res = await fetch(this.base + path, {
-        method: body === undefined ? 'GET' : 'POST',
+        method: method ?? (body === undefined ? 'GET' : 'POST'),
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(5000),
@@ -30,6 +30,7 @@ export class HttpAgentGateway extends MockAgentGateway {
     if (res.status === 404 && path.startsWith('/customer/sessions/')) throw new UnknownCallError(path);
     if (res.status === 404 && path.startsWith('/advisor/customers/')) throw new CustomerNotFoundError(path);
     if (!res.ok) throw new AgentDownError(`${path} answered ${res.status}`);
+    if (res.status === 204) return undefined as T;
     const value = (await res.json()) as T;
     if (cacheable) this.cache.set(path, { at: Date.now(), value });
     return value;
@@ -162,4 +163,23 @@ export class HttpAgentGateway extends MockAgentGateway {
   }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string, tone?: m.Tone | null) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, tone ? { text, tone } : { text }); }
+  scenarios() { return this.call<m.Scenario[]>('/training/scenarios', undefined, true); }
+  generateScenario(difficulty: number | null) { return this.call<m.ScenarioDetail>('/scenario-gen/scenarios/generate', difficulty === null ? {} : { difficulty }); }
+  scenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`); }
+  scenarioLineage(id: string) { return this.call<m.ScenarioDetail[]>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/lineage`); }
+  replayScenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/replay`, {}); }
+  mutateScenario(id: string, operation: 'harder' | 'easier' | 'add_second_problem') {
+    return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/mutate`, { ops: [{ op: operation }] });
+  }
+  async deleteScenario(id: string): Promise<void> {
+    await this.call<void>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`, undefined, false, 'DELETE');
+  }
+  trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]) {
+    return this.call<m.TrainingPlan>('/scenario-gen/training-plan', {
+      advisor_id: advisorId,
+      weaknesses,
+      size: 6,
+      current_level: 2,
+    });
+  }
 }

@@ -1112,3 +1112,8 @@ html[data-theme="dark"] .lane-low { --lane: #9fd0b0; } html[data-theme="dark"] .
 .timeline-log { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
 .todo li { margin-bottom: var(--s2); }
 #tri-form select, #tri-form textarea { width: 100%; max-width: 40rem; font: inherit; padding: .5rem .75rem; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; }
+
+
+.history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.history-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.inline-form { display: inline; margin: 0; }

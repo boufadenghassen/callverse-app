@@ -32,6 +32,7 @@ venv/
 # ---- local config and tools ----
 .env
 .env.*
+!.env.example
 .vscode/
 .github/modernize/
 .DS_Store

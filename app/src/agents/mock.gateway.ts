@@ -11,6 +11,8 @@ const MAX_CALLS = 200; // ponytail: oldest call is dropped past this
 /** Realistic fake data so the UI can be built and demoed before the agents are ready. */
 @Injectable()
 export class MockAgentGateway extends AgentGateway {
+  private readonly scenarioVariants = new Map<string, m.ScenarioDetail>();
+
   async customerContext(id: string): Promise<m.CustomerContext> {
     return { id, name: 'Yasmine Toumi', profile: 'Loyal customer, 6 years', intents: ['Billing', 'Plan change'],
       contract: 'Mobile Plus 40 GB', openTickets: 1, transfers: 1, mood: 'Impatient' };
@@ -101,14 +103,25 @@ export class MockAgentGateway extends AgentGateway {
 
   async qualityAnalytics(): Promise<m.QualityAnalytics> {
     const crit = { Accuracy: 8.5, Compliance: 7, Communication: 9, Resolution: 7.5 };
+    const base = {
+      calls: 1, avgOverall: 62, vsTeam: -13, avgByCriterion: crit, weeks: [null, null, null, null, null, null, null, 62],
+      trend: null, weakest: { criterion: 'Compliance', avg: 4 }, strongest: { criterion: 'Communication', avg: 9 },
+      topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
+      coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }],
+      lastCalls: ['CALL-3381'],
+    };
+    const names = ['Karim B.', 'Hela M.', 'Sami R.', 'Rania K.', 'Mehdi T.', 'Ines F.'];
     return {
       method: 'Demo data: the real quality agent scores every stored call.',
       team: { calls: 2, avgOverall: 75, avgByCriterion: crit, weeks: [null, null, null, null, null, null, 62, 88], causes: [{ cause: 'Process skipped', calls: 1, share: 1 }], byIntent: [{ intent: 'Billing', calls: 2, avg: 75 }],
         topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }] },
-      advisors: [{ advisor: 'Karim B.', calls: 1, avgOverall: 62, vsTeam: -13, avgByCriterion: crit, weeks: [null, null, null, null, null, null, null, 62], trend: null,
-        weakest: { criterion: 'Compliance', avg: 4 }, strongest: { criterion: 'Communication', avg: 9 },
-        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
-        coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }], lastCalls: ['CALL-3381'] }],
+      advisors: names.map((advisor, index) => ({
+        ...base,
+        advisor,
+        avgOverall: Math.max(45, 62 + index * 7),
+        vsTeam: Math.max(-13, -13 + index * 7),
+        weakest: index % 2 ? { criterion: 'Accuracy', avg: 5 } : base.weakest,
+      })),
     };
   }
 
@@ -173,6 +186,75 @@ export class MockAgentGateway extends AgentGateway {
       { id: 'SC-30', title: 'First call from a new subscriber about data limits', profile: 'New', difficulty: 'Easy', origin: 'Template library' },
       { id: 'SC-29', title: 'Premium customer, two intents, transferred once', profile: 'Premium', difficulty: 'Medium', origin: 'What-if mutation' },
     ];
+  }
+
+  private generated = 0;
+  /** Demo generator: a scenario from a short list, so the builder works without the Python agents. */
+  async generateScenario(difficulty: number | null): Promise<m.ScenarioDetail> {
+    const level = difficulty ?? 3, n = 32 + this.generated;
+    const [title, segment, profile] = [
+      ['Double charge, customer asks for an immediate refund', 'dissatisfied', 'Unsatisfied'], ['First call from a new subscriber about data limits', 'new', 'New'],
+      ['Roaming bundle unusable abroad, premium customer', 'premium', 'Premium'], ['Cancellation fee disputed by a loyal customer', 'loyal', 'Loyal'],
+    ][this.generated++ % 4];
+    const scenario: m.ScenarioDetail = {
+      id: `SC-${n}`, title, profile, difficulty: level >= 4 ? 'Hard' : level === 3 ? 'Medium' : 'Easy', origin: 'Template library', kind: 'generated', mutation_log: [],
+      spec: { segment, difficulty: level }, customer_card: 'Demo scenario: the real generator writes the customer situation here.',
+      trainer_brief: `Practise: ${title.toLowerCase()} (demo data).`, complications: [], success_criteria: ['Acknowledges the problem', 'Checks the policy before promising', 'Confirms in writing'],
+    };
+    this.scenarioVariants.set(scenario.id, scenario);
+    return scenario;
+  }
+
+  async scenario(id: string): Promise<m.ScenarioDetail> {
+    const variant = this.scenarioVariants.get(id);
+    if (variant) return variant;
+    const found = (await this.scenarios()).find((item) => item.id === id);
+    if (!found) throw new Error(`Unknown scenario ${id}`);
+    return { ...found, kind: 'generated', mutation_log: [] };
+  }
+
+  async scenarioLineage(id: string): Promise<m.ScenarioDetail[]> {
+    const current = await this.scenario(id);
+    return current.parent_id ? [await this.scenario(current.parent_id), current] : [current];
+  }
+
+  async replayScenario(id: string): Promise<m.ScenarioDetail> {
+    return this.scenario(id);
+  }
+
+  async mutateScenario(id: string, operation: 'harder' | 'easier' | 'add_second_problem'): Promise<m.ScenarioDetail> {
+    const original = await this.scenario(id);
+    const mutated = {
+      ...original,
+      id: `${original.id}-whatif`,
+      difficulty: operation === 'harder' ? 'Hard' : operation === 'easier' ? 'Easy' : original.difficulty,
+      origin: 'What-if mutation',
+      parent_id: original.id,
+      mutation_log: [operation],
+    };
+    this.scenarioVariants.set(mutated.id, mutated);
+    return mutated;
+  }
+
+  async deleteScenario(id: string): Promise<void> {
+    this.scenarioVariants.delete(id);
+  }
+
+  async trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan> {
+    const focus = weaknesses
+      .filter((w) => w.score < 7)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3)
+      .map((w) => ({ skill: w.criterion.toLowerCase(), gap: Number(((10 - w.score) / 10).toFixed(2)), criteria: [w.criterion] }));
+    return {
+      advisor_id: advisorId,
+      needs_training: focus.length > 0,
+      focus,
+      scenarios: (await this.scenarios()).map((s) => ({ ...s, origin: focus.length ? 'QA weakness' : s.origin })),
+      rationale: focus.length
+        ? focus.map((f) => `${f.skill}: coaching scenario recommended from ${f.criteria.join(', ')}.`)
+        : ['No QA criterion is below the coaching threshold.'],
+    };
   }
 
   async opportunities(): Promise<m.Opportunity[]> {

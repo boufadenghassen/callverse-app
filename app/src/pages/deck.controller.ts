@@ -87,7 +87,7 @@ export class DeckController {
 
   // ---- Yasmine: client simulator -------------------------------------------------------------
 
-  @Roles('CLIENT') @Get('client') @Render('client')
+  @Roles('CLIENT', 'TRAINER') @Get('client') @Render('client')
   client(@Query() q: Record<string, unknown>) {
     const call = parseCall(q);
     const s = replay(call.persona, call.mix, call.difficulty, call.intent, call.memory, call.moves, call.said);

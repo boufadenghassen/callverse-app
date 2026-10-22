@@ -28,6 +28,8 @@ import voice
 import routing
 import scheduling
 import workforce
+from scenario_gen.router import router as scenario_gen_router
+from scenario_gen.router import training_router as scenario_gen_training_router
 
 
 @asynccontextmanager
@@ -58,6 +60,8 @@ def _warm_up():
 
 app = FastAPI(title="orqestra agents", lifespan=lifespan)
 app.include_router(complaints_router)
+app.include_router(scenario_gen_router)
+app.include_router(scenario_gen_training_router)
 
 Persona = Literal["IMPATIENT", "ANXIOUS", "ANGRY_PREMIUM", "LOYAL_AT_RISK", "NEW_SUBSCRIBER"]
 
@@ -95,7 +99,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints"], "voice": voice.available(), "listen": stt.available()}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available()}
 
 
 @app.post("/voice/speak")
