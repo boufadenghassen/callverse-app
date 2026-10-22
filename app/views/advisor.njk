@@ -31,12 +31,11 @@
         <article class="answer">
           <h3>Suggested answer</h3>
           <p data-speak>{{ answer.text }}</p>
-          <p class="muted">Sources: <span>{{ answer.sources | join(', ') }}</span>
-            · confidence <span>{{ answer.confidence | pct }}</span></p>
+          <p class="muted">Sources: <span>{{ answer.sources | join(', ') }}</span></p>
         </article>
         {% if answer.evidence and answer.evidence | length %}
         <ul class="evidence" aria-label="Passages the answer comes from">
-          {% for e in answer.evidence %}<li><span>{{ e.source }}</span> · {{ e.excerpt }} <span class="muted">· match {{ e.score }}</span></li>{% endfor %}
+          {% for e in answer.evidence %}<li><span>{{ e.source }}</span> · {{ e.excerpt }}</li>{% endfor %}
         </ul>
         {% endif %}
         {% if answer.policyWarning %}<p class="warning" role="note">{{ answer.policyWarning }}</p>{% endif %}

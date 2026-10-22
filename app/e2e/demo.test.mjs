@@ -692,7 +692,32 @@ test('call review: the emotion answer comes with a map of which parts of the rec
   await page.click('#review-form button[type=submit]');
   await page.locator('#r-why-box').waitFor({ state: 'visible', timeout: 90000 });
   assert.ok(await page.locator('#r-why li').count() >= 5, 'one block per half second');
-  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: .* s \(.* points of confidence\)|No single part/);
+  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: [\d.]+ to [\d.]+ s|No single part/);
   assert.match(await page.locator('#r-why li').first().getAttribute('aria-label'), /s: (supports|argues against|no effect on) /);
+  await ctx.close();
+});
+
+test('sales: offers come with their reasons in points, a conversation is read, and an outcome is recorded', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('leila');
+  await page.goto(`${BASE}/sales`);
+  assert.ok(await page.locator('#opps .opp').count() >= 3, 'an offer for each customer on file');
+  const first = page.locator('#opps .opp').first();
+  await first.locator('summary', { hasText: 'Why this offer' }).click();
+  assert.match(await first.locator('.driver-list').innerText(), /What the file says[\s\S]*Fit with the contract/);
+  assert.ok(await first.locator('.driver-list .eff').count() >= 3, 'every factor has its points');
+  // a conversation: the customer says she is travelling, the agent finds the need and the roaming offer
+  await page.click('button[data-sample-customer="YT-1042"]');
+  assert.match(await page.inputValue('#sales-text'), /travelling to Paris/);
+  await page.click('#sales-form button[type=submit]');
+  await page.locator('#sales-result').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#sales-signals').innerText(), /Travelling abroad[\s\S]*Paris/);
+  const offers = page.locator('#sales-offers > li');
+  assert.match(await offers.first().innerText(), /Roaming Pass 5 GB: \d+\/100/);
+  assert.match(await offers.first().locator('.driver-list').innerText(), /What the customer said/);
+  await offers.first().locator('button[data-outcome=accepted]').click();
+  await page.locator('.toast', { hasText: 'Recorded: accepted' }).waitFor({ timeout: 10000 });
+  assert.equal(await offers.first().locator('button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
+  assert.ok(await page.locator('table.conv').count() >= 4, 'what converts');
   await ctx.close();
 });

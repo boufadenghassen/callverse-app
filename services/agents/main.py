@@ -19,6 +19,8 @@ from quality_analyst import engine as quality
 from quality_analyst import evaluation as quality_eval
 from quality_analyst import semantic as quality_semantic
 from quality_analyst import store as quality_store
+from sales_agent import engine as sales
+from sales_agent import store as sales_store
 import stt
 import voice
 import routing
@@ -30,6 +32,7 @@ import workforce
 async def lifespan(_app):
     # load the voice model in the background, so the first spoken line does not wait for it
     quality_store.ensure_history()
+    sales_store.ensure_history()
     if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
         threading.Thread(target=lambda: (quality_semantic.scores('Ready.'), quality_eval.report()), daemon=True).start()
     if voice.available():
@@ -267,3 +270,56 @@ def quality_feedback(body: FeedbackIn):
         raise HTTPException(404, "No such finding.")
     quality_store.set_feedback(body.callId, body.rule, body.turn, body.verdict, body.by)
     return quality_store.get(body.callId)
+
+
+# ---- sales: needs spotted in a conversation, offers ranked with their reasons, what converts
+class SalesTurn(BaseModel):
+    speaker: Literal["advisor", "customer"]
+    text: str = Field(min_length=1, max_length=600)
+    start: float | None = Field(None, ge=0, le=7200)
+    mood: int | None = Field(None, ge=0, le=100)
+
+
+class DetectIn(BaseModel):
+    customer_id: str | None = Field(None, pattern=r"^[A-Z]{2}-\d{4}$")
+    turns: list[SalesTurn] = Field(min_length=1, max_length=100)
+
+
+class OutcomeIn(BaseModel):
+    customer_id: str | None = Field(None, pattern=r"^[A-Z]{2}-\d{4}$")
+    offer_id: str = Field(pattern=r"^[a-z][a-z-]{2,30}$")
+    outcome: Literal["accepted", "declined"]
+    relevance: int = Field(0, ge=0, le=100)
+    cue: Literal["now", "after_resolution"] = "now"
+    need: str = Field("", max_length=30)
+
+
+@app.get("/sales/opportunities")
+def sales_opportunities():
+    """The best offer for each customer on file today, with the reasons in points."""
+    return sales.opportunities(sales_store.rates())
+
+
+@app.post("/sales/detect")
+def sales_detect(body: DetectIn):
+    """The needs the customer voiced (and what their file says) and the offers that answer them, ranked, with timing advice."""
+    if body.customer_id and advisor.get_customer(body.customer_id) is None:
+        raise HTTPException(404, f"No customer with id {body.customer_id}.")
+    return sales.detect([t.model_dump() for t in body.turns], body.customer_id, sales_store.rates())
+
+
+@app.post("/sales/outcome")
+def sales_outcome(body: OutcomeIn):
+    """What happened to an offer that was made: it feeds the track record of the ranking and the analytics."""
+    if body.offer_id not in sales.OFFERS:
+        raise HTTPException(404, f"No offer {body.offer_id}.")
+    if body.customer_id and advisor.get_customer(body.customer_id) is None:
+        raise HTTPException(404, f"No customer with id {body.customer_id}.")
+    sales_store.record(body.customer_id or "unknown", body.offer_id, body.outcome, body.relevance, body.cue, body.need)
+    return {"recorded": True}
+
+
+@app.get("/sales/analytics")
+def sales_analytics():
+    """Which offers convert, and under which conditions (relevance, moment, need)."""
+    return sales_store.analytics()

@@ -290,38 +290,107 @@
         if (!res.ok) { status.textContent = d.error ?? 'Something went wrong.'; return; }
         status.textContent = '';
         byId('r-emotion')!.textContent = d.emotion;
-        byId('r-detail')!.textContent = `${Math.round(d.confidence * 100)}% sure · mood ${d.mood}/100 · ${d.durationSec}s of speech`;
-        const rows = Object.entries<number>(d.probabilities).sort((a, b) => b[1] - a[1]);
-        byId('r-bars')!.replaceChildren(...rows.map(([name, p]) => {
-          const li = make('li'), fill = make('span', { className: 'fill' });
-          fill.style.width = `${Math.round(p * 100)}%`;
-          const track = make('span', { className: 'track' });
-          track.append(fill);
-          li.append(make('span', { textContent: name }), track, make('span', { textContent: `${Math.round(p * 100)}%` }));
-          return li;
-        }));
+        byId('r-detail')!.textContent = `mood ${d.mood}/100 · ${d.durationSec}s of speech`;
         byId('r-timeline')!.replaceChildren(...d.timeline.map((t: { startSec: number; emotion: string }) =>
           make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
         // why: which blocks of the recording the model leaned on (occlusion, see models/src/explain.py)
         const why = d.explanation as { target: string; blockSec: number; blocks: { startSec: number; endSec: number; drop: number; rel: number }[]; top: { startSec: number; endSec: number; drop: number }[] } | null;
         byId('r-why-box')!.hidden = !why;
         if (why) {
-          const pts = (x: number) => `${Math.abs(x * 100).toFixed(1)} points`;
           byId('r-why-lead')!.textContent = `Each block is ${why.blockSec} s of the recording. The darker the block, the more it mattered to the answer “${why.target}”.`;
           byId('r-why')!.replaceChildren(...why.blocks.map((b) => {
             const li = make('li', { className: b.drop > 0 ? 'for' : b.drop < 0 ? 'against' : '' }), bar = make('span', { className: 'bar' });
             bar.style.opacity = String(0.25 + 0.75 * Math.abs(b.rel));
-            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}${b.drop ? `, ${pts(b.drop)}` : ''}`);
+            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}`);
             li.append(bar);
             return li;
           }));
           byId('r-why-end')!.textContent = `${d.durationSec} s`;
           byId('r-why-top')!.textContent = why.top.length
-            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s (${pts(t.drop)} of confidence)`).join(', ')}.`
+            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s`).join(', ')}.`
             : 'No single part of the recording stands out.';
         }
         out.hidden = false;
       } catch { status.textContent = 'The app could not be reached. Try again.'; }
+    });
+  }
+
+  // Sales: read a conversation, and record what the customer did with an offer
+  const sales = byId('sales');
+  if (sales) {
+    const csrf = sales.dataset.csrf!;
+    const post = async (path: string, body: object) => {
+      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
+      return data;
+    };
+    interface Factor { name: string; points: number; why: string }
+    interface Offer { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string } }
+    const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+    const factorList = (factors: Factor[]) => {
+      const ul = make('ul', { className: 'driver-list' });
+      for (const f of factors) {
+        const li = make('li'), body = make('span');
+        body.append(make('strong', { textContent: f.name }), `: ${f.why}`);
+        li.append(make('span', { className: `eff ${f.points >= 0 ? 'pos' : 'neg'}`, textContent: sign(f.points) }), body);
+        ul.append(li);
+      }
+      return ul;
+    };
+    sales.addEventListener('click', async (e) => {
+      const s = hit<HTMLButtonElement>(e, '[data-sample]');
+      if (s) {
+        byId<HTMLTextAreaElement>('sales-text')!.value = s.dataset.sample!;
+        byId<HTMLSelectElement>('sales-customer')!.value = s.dataset.sampleCustomer ?? '';
+        return;
+      }
+      const b = hit<HTMLButtonElement>(e, '[data-outcome]');
+      if (!b) return;
+      const group = b.parentElement!.querySelectorAll<HTMLButtonElement>('[data-outcome]');
+      group.forEach((x) => { x.disabled = true; });
+      try {
+        await post('/sales/outcome', { customerId: b.dataset.customer || null, offerId: b.dataset.offer, outcome: b.dataset.outcome, relevance: Number(b.dataset.relevance), cue: b.dataset.cue, need: b.dataset.need ?? '' });
+        toast(`Recorded: ${b.dataset.outcome}. It counts in the track record.`);
+      } catch (err) { group.forEach((x) => { x.disabled = false; }); toast((err as Error).message); }
+    });
+    byId<HTMLFormElement>('sales-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = byId('sales-status')!, out = byId('sales-result')!, customer = byId<HTMLSelectElement>('sales-customer')!.value;
+      const turns = byId<HTMLTextAreaElement>('sales-text')!.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+        const m = /^([CA])\s*:\s*(.*)$/i.exec(l);
+        return { speaker: m && m[1].toUpperCase() === 'A' ? 'advisor' : 'customer', text: m ? m[2] : l };
+      }).filter((t) => t.text);
+      status.textContent = 'Reading the conversation…';
+      out.hidden = true;
+      try {
+        const d = await post('/sales/detect', { customerId: customer || null, turns });
+        status.textContent = '';
+        const signals = d.signals as { label: string; quote: string; time: string | null; mentions: number; strength: number; source: string }[];
+        byId('sales-signals')!.replaceChildren(...(signals.length ? signals : [null]).map((s) => {
+          const li = make('li'), body = make('span');
+          if (!s) { body.textContent = 'No need found in this conversation.'; li.append(make('span', { className: 'eff', textContent: '–' }), body); return li; }
+          body.append(make('strong', { textContent: s.label }), s.source === 'conversation' ? `: “${s.quote}”${s.time ? ` at ${s.time}` : ''}${s.mentions > 1 ? `, said in ${s.mentions} replies` : ''}` : `: ${s.quote} (from the file)`);
+          li.append(make('span', { className: 'eff pos', textContent: `${Math.round(s.strength * 100)}%` }), body);
+          return li;
+        }));
+        byId('sales-offers')!.replaceChildren(...(d.offers as Offer[]).map((o) => {
+          const li = make('li'), wait = o.timing.cue === 'after_resolution';
+          li.append(make('h4', { textContent: `${o.offer}: ${o.relevance}/100` }), make('p', { className: `timing ${wait ? 'wait' : 'go'}`, textContent: `${wait ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }), factorList(o.factors));
+          if (o.counterfactual) li.append(make('p', { className: 'muted small', textContent: o.counterfactual }));
+          const actions = make('div', { className: 'actions' });
+          for (const outcome of ['accepted', 'declined']) {
+            const btn = make('button', { type: 'button', className: outcome === 'accepted' ? 'btn' : 'btn-quiet', textContent: outcome === 'accepted' ? 'Customer accepted' : 'Declined' });
+            Object.assign(btn.dataset, { outcome, customer: d.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key });
+            actions.append(btn);
+          }
+          li.append(actions);
+          return li;
+        }));
+        byId('sales-skipped')!.textContent = d.skipped.length ? `Set aside: ${(d.skipped as { offer: string; why: string }[]).map((s) => `${s.offer} (${s.why})`).join('; ')}.` : '';
+        if (!d.offers.length) byId('sales-offers')!.replaceChildren(make('li', { textContent: `No offer fits. The customer's mood was read as ${d.mood}/100.` }));
+        out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
     });
   }
 
@@ -370,7 +439,7 @@
       useBtn.disabled = !s;
       if (!s) return;
       byId('lv-s-text')!.textContent = s.text;
-      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'} · match ${s.confidence}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
+      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
       const w = byId('lv-s-warn')!;
       w.hidden = !s.policyWarning;
       w.textContent = s.policyWarning ?? '';

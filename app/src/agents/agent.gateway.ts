@@ -52,4 +52,9 @@ export abstract class AgentGateway {
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
   abstract scenarios(): Promise<m.Scenario[]>;
   abstract opportunities(): Promise<m.Opportunity[]>;
+  /** The needs a customer voiced in a conversation and the offers that answer them, with the reasons. Throws NeedsRealAgentsError (demo mode) or RejectedError (unknown customer). */
+  abstract salesDetect(customerId: string | null, turns: m.SalesTurn[]): Promise<m.SalesDetection>;
+  /** What happened to an offer that was made. Throws NeedsRealAgentsError or RejectedError. */
+  abstract salesOutcome(outcome: m.SalesOutcome): Promise<void>;
+  abstract salesAnalytics(): Promise<m.SalesAnalytics | null>;
 }

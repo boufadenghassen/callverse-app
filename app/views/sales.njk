@@ -7,24 +7,85 @@
     <header class="page-head">
       <p class="eyebrow">Leila · Sales agent</p>
       <h1>Sales opportunities</h1>
-      <p class="lede">Offers that answer what the client just said, not a generic pitch.</p>
+      <p class="lede">Offers that answer what the client just said, not a generic pitch. {% if real %}Every relevance score is a sum of reasons, in points.{% endif %}</p>
+      {% if real %}<p class="head-actions"><span class="badge cov live">Real agent, invented offers and customers</span></p>{% endif %}
     </header>
-    <ul class="opps">
+
+    <div id="sales" data-csrf="{{ csrf }}">
+    <ul class="opps" id="opps">
       {% for o in opportunities %}
       <li class="opp">
         <div class="opp-top">
           <span class="avatar" aria-hidden="true">{{ o.initials }}</span>
-          <div><h2>{{ o.customer }}</h2><p class="muted small">Live conversation</p></div>
+          <div><h2>{{ o.customer }}</h2><p class="muted small">{% if real %}From the customer file{% else %}Live conversation{% endif %}</p></div>
           <div class="relevance">{{ m.ring(o.relevance) }}<span class="small muted">Relevance</span></div>
         </div>
         <p class="offer-label small muted">Suggested offer</p>
-        <p class="offer">{{ o.offer }}</p>
+        <p class="offer">{{ o.offer }}{% if o.price %} <span class="price">{{ o.price }}</span>{% endif %}</p>
         <blockquote class="heard">{{ o.reason }}</blockquote>
+        {% if o.timing %}<p class="timing {{ 'wait' if o.timing.cue == 'after_resolution' else 'go' }}"><strong>{{ 'Wait: solve the problem first' if o.timing.cue == 'after_resolution' else 'Good moment to offer' }}.</strong> <span class="muted">{{ o.timing.why }}</span></p>{% endif %}
+        {% if o.factors %}
+        <details class="why">
+          <summary>Why this offer</summary>
+          <ul class="driver-list">{% for f in o.factors %}
+            <li><span class="eff {{ 'pos' if f.points >= 0 else 'neg' }}">{{ '+' ~ f.points if f.points > 0 else ('−' ~ (0 - f.points) if f.points < 0 else '0') }}</span>
+              <span><strong>{{ f.name }}</strong>: {{ f.why }}</span></li>
+          {% endfor %}</ul>
+          {% if o.counterfactual %}<p class="muted small">{{ o.counterfactual }}</p>{% endif %}
+          {% if o.alternatives | length %}<p class="muted small">Next best: {% for a in o.alternatives %}{{ a.offer }} ({{ a.relevance }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+        </details>
+        <div class="actions">
+          <button type="button" class="btn" data-outcome="accepted" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Customer accepted</button>
+          <button type="button" class="btn-quiet" data-outcome="declined" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Declined</button>
+        </div>
+        {% else %}
         <div class="actions">
           <button type="button" class="btn" data-toast="Offer {{ o.offer }} queued for {{ o.customer }} (demo)">Offer now</button>
           <button type="button" class="btn-quiet" data-toast="Reminder set for {{ o.customer }} (demo)">Not now</button>
         </div>
+        {% endif %}
       </li>
       {% endfor %}
     </ul>
+
+    {% if real %}
+    <section class="panel" aria-labelledby="rd">
+      <h2 id="rd">Read a conversation</h2>
+      <p class="muted">The agent reads what the customer says, finds the needs behind it, and ranks the offers that answer them. Lines start with <code>C:</code> (customer) or <code>A:</code> (advisor).</p>
+      <p class="samples">{% for s in samples %}<button type="button" class="btn-line" data-sample="{{ s.text }}" data-sample-customer="{{ s.customerId }}">{{ s.label }}</button> {% endfor %}</p>
+      <form id="sales-form">
+        <label for="sales-customer">Customer</label>
+        <select id="sales-customer"><option value="">Not on file</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+        <label for="sales-text">Conversation</label>
+        <textarea id="sales-text" rows="6" maxlength="4000" required placeholder="C: I am travelling to Paris next week."></textarea>
+        <p><button type="submit" class="btn">Find opportunities</button></p>
+      </form>
+      <p id="sales-status" role="status" class="muted"></p>
+      <div id="sales-result" hidden>
+        <h3>What the customer needs</h3>
+        <ul class="driver-list" id="sales-signals"></ul>
+        <h3>Offers, most relevant first</h3>
+        <ol class="sales-offers" id="sales-offers"></ol>
+        <p class="muted small" id="sales-skipped"></p>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if analytics %}
+    <section class="panel" aria-labelledby="cv">
+      <h2 id="cv">Which offers convert</h2>
+      <p class="muted">{{ analytics.accepted }} of {{ analytics.total }} offers accepted ({{ ((analytics.rate or 0) * 100) | round }}%). {% if analytics.simulated %}<span class="badge">{{ analytics.simulated }} simulated</span>{% endif %}</p>
+      <div class="conv-grid">
+        {% for block in [['By offer', analytics.byOffer, 'Offer'], ['By relevance', analytics.byRelevance, 'Relevance'], ['By moment', analytics.byMoment, 'Moment'], ['By need', analytics.byNeed, 'Need']] %}
+        <table class="conv">
+          <caption>{{ block[0] }}</caption>
+          <thead><tr><th scope="col">{{ block[2] }}</th><th scope="col">Offered</th><th scope="col">Accepted</th></tr></thead>
+          <tbody>{% for r in block[1] %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.offered }}</td><td>{{ r.accepted }}{% if r.rate !== null %} <span class="muted">({{ (r.rate * 100) | round }}%)</span>{% endif %}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% endfor %}
+      </div>
+      <details class="how"><summary>How this was computed</summary><p class="muted">{{ analytics.method }}</p></details>
+    </section>
+    {% endif %}
+    </div>
 {% endblock %}
