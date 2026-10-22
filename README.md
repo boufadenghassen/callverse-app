@@ -5,15 +5,21 @@ quality analyst, training lead, complaint manager, sales). Student project.
 
 | Folder | What it holds | In git? |
 |---|---|---|
-| [`app`](app) | The web interface: NestJS server, server-rendered pages, browser script (all TypeScript). Runs today with mock agent data. | yes |
+| [`app`](app) | The web interface: NestJS server, server-rendered pages, browser script (all TypeScript). Runs with built-in demo data, or with the real agents (`AGENTS_MODE=http`). | yes |
 | [`models`](models) | Trained model files the app will load later (`.joblib`, `.h5`, ...). | yes |
 | `notebooks` | Jupyter notebooks for speech-emotion training. | **no, pushed empty** |
 | `datasets` | CREMA-D and RAVDESS audio. | **no, pushed empty** |
 
-Also: [`docs/agents`](docs/agents/README.md) (documentation of every agent: what was built, how it works, how to run and test it), [`ARCHITECTURE.md`](ARCHITECTURE.md) (how the pieces fit and what to build next), [`MLOPS.md`](MLOPS.md) (the model pipeline), [`DATA_COLLECTION.md`](DATA_COLLECTION.md) (recording and labelling real calls, plus where to find public data) and `.github/workflows/ci.yml`
+Also: [`docs/agents`](docs/agents/README.md) (documentation of every agent: what was built, how it works, how to run and test it), [`docs/PRESENTATION_FACTS.md`](docs/PRESENTATION_FACTS.md) and [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) (the facts behind the presentation, the demo script), [`ARCHITECTURE.md`](ARCHITECTURE.md) (how the pieces fit and what to build next), [`MLOPS.md`](MLOPS.md) (the model pipeline), [`DATA_COLLECTION.md`](DATA_COLLECTION.md) (recording and labelling real calls, plus where to find public data) and `.github/workflows/ci.yml`
 (builds and tests the app on every push).
 
-## Run the web app
+## Run everything (Windows)
+
+Double-click `start-all.bat` (or run `.\start-all.ps1`). It builds the web app and starts the agents (port 8000), the emotion model (8001) and the web app (8080), waits until they answer, and prints the accounts.
+`start-all.bat -Clean` first starts from the clean demo state (rehearsal data is moved to a backup folder, not deleted); `-Reset` only restarts the clock of the complaint cases; `-Stop` stops everything.
+It needs Node.js 22+ and the Python environment `..\venv`. For the presentation: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) and [`docs/PRESENTATION_FACTS.md`](docs/PRESENTATION_FACTS.md).
+
+## Run the web app alone (demo data, no agents)
 
 Needs Node.js 22 or newer.
 

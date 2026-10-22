@@ -62,6 +62,8 @@ flowchart LR
 
 ## Run everything (Windows, from the repository root)
 
+**One command:** `start-all.bat` (or `.\start-all.ps1`) builds the web app, starts the three services below, waits until they answer and prints the accounts. `-Clean` starts from the clean demo state (rehearsal data moved to `services\agents\data\backup-<date>`, nothing deleted), `-Reset` restarts the clock of the complaint cases, `-Stop` stops everything. The same steps by hand:
+
 ```powershell
 # 1. the agents (port 8000)
 Start-Process "..\venv\Scripts\python.exe" -ArgumentList '-m','uvicorn','main:app','--port','8000' -WorkingDirectory "services\agents" -WindowStyle Hidden

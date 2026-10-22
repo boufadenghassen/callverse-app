@@ -8,7 +8,7 @@ The agents themselves are documented one by one in [`docs/agents/`](docs/agents/
 ```mermaid
 flowchart LR
   B[Browser] -->|HTML, CSS, TypeScript script| W["app<br/>NestJS, server-rendered<br/><b>built</b>"]
-  W -->|"AgentGateway (REST/JSON)"| A["services/agents<br/>Python FastAPI<br/><b>built</b>: customer, advisor, workforce,<br/>quality analyst, sales, voice"]
+  W -->|"AgentGateway (REST/JSON)"| A["services/agents<br/>Python FastAPI<br/><b>built</b>: the seven agents (customer, advisor,<br/>workforce, quality, sales, complaints, training)<br/>and the voice"]
   W -->|"Call review"| E["models/src/serve.py<br/>fine-tuned WavLM<br/><b>built</b>"]
   A -->|"mood of the customer's voice"| E
   A --> R["Knowledge search<br/>built: TF-IDF over an invented KB"]
@@ -25,7 +25,7 @@ Replacing mock data with a real agent therefore changes one environment variable
 
 | Decision | Why it is the efficient choice here |
 |---|---|
-| **One monorepo, four top-level folders**: `app` (deployed web), `models` (trained files the app loads), `notebooks` and `datasets` (local only, pushed empty); Python `services/` is added next to them when the first agent is built | One pull request can change the page, the gateway and the agent together. A student team of 4 to 8 does not need several repositories. Data and notebooks stay off GitHub (size, licences). |
+| **One monorepo, four top-level folders**: `app` (deployed web), `models` (trained files the app loads), `notebooks` and `datasets` (local only, pushed empty); the Python agents live in `services/agents` next to them | One pull request can change the page, the gateway and the agent together. A student team of 4 to 8 does not need several repositories. Data and notebooks stay off GitHub (size, licences). |
 | **NestJS as a thin web layer (BFF)**, pages rendered on the server | Fast first paint, no client framework to maintain, the strict CSP (no inline scripts) stays easy to keep. All pages load their agents in parallel (`Promise.all`), so a page waits for the slowest agent, not the sum. |
 | **Python for agents**, separate process | The ML libraries (PyTorch, scikit-learn, transformers) live in Python. A separate service can be restarted, scaled and given a GPU independently of the web app. |
 | **One Python service with one router per agent** at first, split later | One deployment and one loaded copy of each model in memory. Split an agent out only when it needs different scaling (the emotion model on a GPU is the likely first one). |
@@ -53,19 +53,20 @@ real sign-in (OIDC, for example Keycloak or Microsoft Entra), and never commit `
 
 * CI (`.github/workflows/ci.yml`): type-checked build and the unit/HTTP tests on every push and pull request.
 * Browser tests (`app/e2e`, Playwright): run before a demo or release.
-* When Python services exist: `pytest`, and the same test cases run against the mock and the HTTP gateway so they cannot diverge.
+* Python agents: `pytest` in `services/agents` (205 tests), the same test cases run against the mock and the HTTP gateway so they cannot diverge; `models/tests` (4).
+* Today in total: 372 automated tests (117 web, 46 browser, 205 Python, 4 models), and an axe accessibility audit of every page (`app/e2e/audit.mjs`). The facts behind every number of the presentation are in [`docs/PRESENTATION_FACTS.md`](docs/PRESENTATION_FACTS.md).
 * Models: report actor-wise cross-validation with confidence intervals and a cross-dataset score (see `notebooks/`).
 
 ## Deployment path
 
 1. Now: `docker build` in `app`, run on a laptop or one VM.
-2. With the first Python agent: add a `docker-compose.yml` at the root (web + agents) so the whole thing starts with one command.
+2. Today `start-all.bat` (see `start-all.ps1`) starts the agents, the emotion model and the web app on one Windows machine, and `start-all.bat -Clean` starts from the clean demo state. Still to do: a `docker-compose.yml` at the root (web + agents) so the whole thing starts with one command anywhere.
 3. Production: the same two images on any container platform, a managed Postgres, Redis for sessions, and a health check on `/actuator/health`.
 
 ## Next steps, in order
 
-1. Push the repo, turn on branch protection for `main` (CI must pass).
-2. Finish the emotion experiment, pick the final model, write its `model_card.json`.
-3. Create `services/agents` (FastAPI) with the emotion endpoint first, wire it through `HttpAgentGateway`, add the contract types.
-4. Add `docker-compose.yml`; add the other agents one router at a time, following the mock data already in the web app.
-5. Real sign-in before any outside user sees it.
+1. Merge the local branches into `main` through pull requests, one topic each (sales, complaints, training, quality strengths, the automatic call), and tell the team about the contract additions in `app/src/agents/models.ts`.
+2. Real sign-in before any outside user sees it (the demo password and in-memory sessions are for a local demo only).
+3. `docker-compose.yml` (web + agents + emotion model); a real database instead of SQLite files.
+4. An LLM-style judge next to the rules of the quality analyst, compared on the same calls; an advisor agent that reacts to the customer's mood (today a fixed routine).
+5. Real labelled calls and the human-agreement study, then trials with real advisors and analysts. Learn the churn, chance-of-a-yes and escalation scores from real data (today hand-weighted).
