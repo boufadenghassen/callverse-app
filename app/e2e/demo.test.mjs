@@ -137,16 +137,21 @@ test('no page scrolls sideways on a phone', async () => {
   await ctx.close();
 });
 
-test('the training builder adds a scenario and what-if compares one change', async () => {
+test('the training builder makes a scenario on the server, and what-if makes a harder copy that can be deleted', async () => {
   const { ctx, page } = await signIn('admin');
   await page.goto(`${BASE}/training`);
+  assert.equal(await page.locator('#whatif').count(), 0, 'the old in-page builder is gone');
   await page.selectOption('#gen-diff', 'Hard');
   await page.click('#generate');
-  assert.equal(await page.locator('#scenarios .scn').count(), 4);
-  assert.match(await page.textContent('#scenarios .scn:first-child .chips'), /Hard/);
-  await page.click('#scenarios .scn:first-child [data-act="whatif"]');
-  assert.equal(await page.locator('#whatif').isVisible(), true);
-  assert.ok((await page.textContent('#wi-note')).length > 20);
+  await page.waitForURL(/\/training\/scenarios\//);
+  assert.match(await page.textContent('main'), /Difficulty 4\/5/);
+  const original = page.url();
+  await page.click('button:has-text("Make harder")');
+  await page.waitForURL((u) => /\/training\/scenarios\//.test(u.pathname) && u.href !== original);
+  assert.ok(await page.locator('h2', { hasText: 'Scenario history' }).count(), 'the history shows the original and the copy');
+  assert.ok((await page.locator('ol a').count()) >= 2);
+  await page.click('button:has-text("Delete scenario")');                                        // leave the store as it was found
+  await page.waitForURL(`${BASE}/training`);
   await ctx.close();
 });
 

@@ -178,6 +178,23 @@ export class MockAgentGateway extends AgentGateway {
     ];
   }
 
+  private generated = 0;
+  /** Demo generator: a scenario from a short list, so the builder works without the Python agents. */
+  async generateScenario(difficulty: number | null): Promise<m.ScenarioDetail> {
+    const level = difficulty ?? 3, n = 32 + this.generated;
+    const [title, segment, profile] = [
+      ['Double charge, customer asks for an immediate refund', 'dissatisfied', 'Unsatisfied'], ['First call from a new subscriber about data limits', 'new', 'New'],
+      ['Roaming bundle unusable abroad, premium customer', 'premium', 'Premium'], ['Cancellation fee disputed by a loyal customer', 'loyal', 'Loyal'],
+    ][this.generated++ % 4];
+    const scenario: m.ScenarioDetail = {
+      id: `SC-${n}`, title, profile, difficulty: level >= 4 ? 'Hard' : level === 3 ? 'Medium' : 'Easy', origin: 'Template library', kind: 'generated', mutation_log: [],
+      spec: { segment, difficulty: level }, customer_card: 'Demo scenario: the real generator writes the customer situation here.',
+      trainer_brief: `Practise: ${title.toLowerCase()} (demo data).`, complications: [], success_criteria: ['Acknowledges the problem', 'Checks the policy before promising', 'Confirms in writing'],
+    };
+    this.scenarioVariants.set(scenario.id, scenario);
+    return scenario;
+  }
+
   async scenario(id: string): Promise<m.ScenarioDetail> {
     const variant = this.scenarioVariants.get(id);
     if (variant) return variant;

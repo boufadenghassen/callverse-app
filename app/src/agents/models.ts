@@ -63,6 +63,7 @@ export interface QualityAnalytics {
 export interface ComplaintCase { id: string; summary: string; severity: string; escalationRisk: number; cluster: string; hoursLeft: number }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
 export interface ScenarioDetail extends Scenario {
+  customer_card?: string; trainer_brief?: string; complications?: string[]; success_criteria?: string[];
   kind?: string;
   parent_id?: string | null;
   mutation_log?: string[];

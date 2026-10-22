@@ -51,6 +51,8 @@ export abstract class AgentGateway {
   abstract sampleCall(): Promise<Buffer>;
   abstract openComplaints(): Promise<m.ComplaintCase[]>;
   abstract scenarios(): Promise<m.Scenario[]>;
+  /** A new scenario from the generator (`difficulty` 1 to 5, or null for any). */
+  abstract generateScenario(difficulty: number | null): Promise<m.ScenarioDetail>;
   abstract scenario(id: string): Promise<m.ScenarioDetail>;
   abstract scenarioLineage(id: string): Promise<m.ScenarioDetail[]>;
   abstract replayScenario(id: string): Promise<m.ScenarioDetail>;

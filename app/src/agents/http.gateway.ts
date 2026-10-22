@@ -137,6 +137,7 @@ export class HttpAgentGateway extends MockAgentGateway {
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
   say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
   scenarios() { return this.call<m.Scenario[]>('/training/scenarios', undefined, true); }
+  generateScenario(difficulty: number | null) { return this.call<m.ScenarioDetail>('/scenario-gen/scenarios/generate', difficulty === null ? {} : { difficulty }); }
   scenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`); }
   scenarioLineage(id: string) { return this.call<m.ScenarioDetail[]>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/lineage`); }
   replayScenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/replay`, {}); }

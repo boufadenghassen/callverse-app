@@ -561,92 +561,10 @@
     byId('no-ideas')!.hidden = !!document.querySelector('.idea:not([hidden])');
   }));
 
-  // Training: scenario builder, replay and what-if (demo data; the Training agent would supply these)
+  // Training: choosing another advisor reloads the coach plan
   const advisorPicker = byId<HTMLSelectElement>('advisor');
   if (advisorPicker) advisorPicker.addEventListener('change', () => advisorPicker.form?.submit());
 
-  const deck = byId('scenarios');
-  if (deck) {
-    interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
-    interface Variant { title: string; profile: string; difficulty: string }
-    const customers: [string, string][] = [['New', 'a new subscriber'], ['Premium', 'a premium client'],
-      ['Unsatisfied', 'a long-time client who is unhappy'], ['Anxious', 'an anxious first-time caller']];
-    const problems = ['is charged twice on the monthly bill', 'cannot use the roaming bundle abroad', 'wants to cancel and disputes the fee',
-      'sees data limits that do not match the plan', 'was transferred twice and lost the context'];
-    const goals = ['wants an immediate refund', 'wants a written confirmation', 'wants a lower price on the same plan', 'asks for a supervisor'];
-    const levels = ['Easy', 'Medium', 'Hard'];
-    const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
-    const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-
-    const card = (s: Scenario) => {
-      const li = make('li', { className: 'scn fresh' });
-      Object.assign(li.dataset, { id: s.id, title: s.title, profile: s.profile, difficulty: s.difficulty });
-      const top = li.appendChild(make('div', { className: 'scn-top' }));
-      top.append(make('span', { className: 'case-id', textContent: s.id }));
-      const diff = top.appendChild(make('span', { className: 'diff', role: 'img', ariaLabel: `Difficulty ${s.difficulty}` }));
-      for (let k = 0; k < 3; k++) diff.append(make('i', { className: k <= levels.indexOf(s.difficulty) ? 'on' : '' }));
-      li.append(make('h3', { textContent: s.title }));
-      const chips = li.appendChild(make('p', { className: 'chips' }));
-      [s.profile, s.difficulty].forEach((t) => chips.append(make('span', { className: 'chip', textContent: t })));
-      li.append(make('p', { className: 'origin muted small', textContent: s.origin }));
-      const act = li.appendChild(make('div', { className: 'actions' }));
-      const replay = make('button', { type: 'button', className: 'btn', textContent: 'Replay' });
-      replay.dataset.act = 'replay';
-      const whatIf = make('button', { type: 'button', className: 'btn-line', textContent: 'What-if' });
-      whatIf.dataset.act = 'whatif';
-      act.append(replay, whatIf);
-      return li;
-    };
-
-    byId('generate')!.addEventListener('click', () => {
-      const [profile, who] = pick(customers);
-      const wanted = byId<HTMLSelectElement>('gen-diff')!.value;
-      const n = Math.max(0, ...([...deck.children] as HTMLElement[]).map((c) => parseInt((c.dataset.id ?? '').replace(/\D/g, ''), 10) || 0)) + 1;
-      const s: Scenario = { id: `SC-${n}`, profile, difficulty: wanted || pick(levels), origin: 'Template library',
-        title: cap(`${who} ${pick(problems)} and ${pick(goals)}`) };
-      deck.prepend(card(s));
-      toast(`Generated ${s.id}`);
-    });
-
-    deck.addEventListener('click', (e) => {
-      const btn = hit(e, '[data-act]');
-      if (!btn) return;
-      const li = btn.closest<HTMLElement>('.scn')!;
-      const { id, title, profile, difficulty } = li.dataset as Record<string, string>;
-      if (btn.dataset.act === 'replay') { toast(`Replaying ${id}: same client, same events`); return; }
-
-      // what-if: change exactly one parameter, then compare
-      const kind = pick(['difficulty', 'profile', 'event']);
-      const after: Variant = { title, profile, difficulty };
-      let note: string;
-      if (kind === 'difficulty') {
-        const i = levels.indexOf(difficulty);
-        after.difficulty = levels[i === 2 ? 1 : i + 1];
-        note = `Difficulty ${difficulty} to ${after.difficulty}. Same client and problem, so any change in handling is down to the pressure.`;
-      } else if (kind === 'profile') {
-        after.profile = pick(customers.map((c) => c[0]).filter((p) => p !== profile));
-        note = `Client profile ${profile} to ${after.profile}. Same problem, a different personality.`;
-      } else {
-        after.title = `${title} The client is calling for the third time.`;
-        note = 'Added one event: a repeat contact. Compare how memory changes the call.';
-      }
-      const show = (box: HTMLElement, v: Variant, changed: string | null) => {
-        box.replaceChildren();
-        box.append(`${v.title} `);
-        [['profile', v.profile], ['difficulty', v.difficulty]].forEach(([k, val], idx) => {
-          if (idx) box.append(' · ');
-          const el = changed === k ? document.createElement('mark') : document.createElement('span');
-          el.textContent = `${k}: ${val}`; box.append(el);
-        });
-      };
-      show(byId('wi-before')!, { title, profile, difficulty }, null);
-      show(byId('wi-after')!, after, kind);
-      byId('wi-note')!.textContent = note;
-      const panel = byId('whatif')!;
-      panel.hidden = false;
-      panel.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
-    });
-  }
 
   // Workforce: scrub through the day. Moves a marker on the chart and highlights the hour in the heat strip.
   // Wait and SLA are estimates from the mock model (240 s and 71% at the 72 calls/h peak).
