@@ -189,13 +189,14 @@ export class HttpAgentGateway extends MockAgentGateway {
   async deleteScenario(id: string): Promise<void> {
     await this.call<void>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`, undefined, false, 'DELETE');
   }
-  trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]) {
+  trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[], seed?: number) {
     return this.call<m.TrainingPlan>('/scenario-gen/training-plan', {
       advisor_id: advisorId,
       weaknesses,
       size: 6,
       current_level: 2,
       languages: ['en'],   // what the customer simulator can play
+      ...(seed === undefined ? {} : { seed }),
     });
   }
 }

@@ -1,0 +1,32 @@
+{
+  "model": "RandomForestRegressor",
+  "features": [
+    "accuracy",
+    "communication",
+    "compliance",
+    "procedure",
+    "relevance",
+    "satisfaction",
+    "sentiment"
+  ],
+  "targets": [
+    "accuracy",
+    "active_listening",
+    "de_escalation",
+    "empathy",
+    "escalation_handling",
+    "procedure_compliance",
+    "resolution"
+  ],
+  "metrics": {
+    "dataset": "synthetic_catalog_v1",
+    "samples": 500,
+    "train_samples": 400,
+    "test_samples": 100,
+    "mae": 0.1379,
+    "rmse": 0.2102,
+    "r2": 0.4789,
+    "top_skill_accuracy": 0.59,
+    "implementation": "built-in fallback"
+  }
+}

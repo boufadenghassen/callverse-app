@@ -13,9 +13,9 @@
       <div class="panel-head">
         <div>
           <h2 id="coach-plan">Coach plan for {{ advisor }}</h2>
-          <p class="muted">Select an advisor first. The report, focus and scenarios below belong only to that advisor.</p>
+          <p class="muted">Review performance signals and prepare the next practice set.</p>
         </div>
-        <form method="get" action="/training">
+        <form method="get" action="/training" class="advisor-picker">
           <label for="advisor">Advisor</label>
           <select id="advisor" name="advisor">
             {% for name in advisorNames %}<option value="{{ name }}" {% if name == advisor %}selected{% endif %}>{{ name }}</option>{% endfor %}
@@ -29,7 +29,6 @@
           <p class="muted">{{ report.calls }} reviewed calls · average {{ report.avgOverall }}/100</p>
           <p><strong>Weakest:</strong> {{ report.weakest.criterion }} ({{ report.weakest.avg }}/10)</p>
           {% if report.coaching %}<ul>{% for item in report.coaching %}<li>{{ item.tip }} <span class="muted small">({{ item.scenario }})</span></li>{% endfor %}</ul>{% endif %}
-          {% if reviews %}<p class="muted small">Latest reports: {% for item in reviews %}<a href="/quality?call={{ item.callId }}">{{ item.callId }} ({{ item.overall }}/100)</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
         </article>
         <article class="scn">
           <h3>Offers to practise today</h3>
@@ -38,6 +37,10 @@
         </article>
         <article class="scn">
           <h3>Automatic focus</h3>
+          {% if plan.coach_model %}<p class="muted small">Plan model: {{ plan.coach_model }}</p>{% endif %}
+          {% if plan.coach_metrics %}<p class="muted small">Evaluation · MAE {{ plan.coach_metrics.mae }} · RMSE {{ plan.coach_metrics.rmse }} · R² {{ plan.coach_metrics.r2 }}</p>{% endif %}
+          {% if plan.coach_summary %}<p class="coach">{{ plan.coach_summary }}</p>{% endif %}
+          {% if plan.coach_actions %}<ul>{% for action in plan.coach_actions %}<li>{{ action }}</li>{% endfor %}</ul>{% endif %}
           {% if plan.focus %}<ul>{% for item in plan.focus %}<li>{{ item.skill }} · gap {{ item.gap }} · {{ item.criteria | join(', ') }}</li>{% endfor %}</ul>{% else %}<p class="muted">No weakness requires training right now.</p>{% endif %}
           {% for reason in plan.rationale %}<p class="muted small">{{ reason }}</p>{% endfor %}
         </article>
@@ -48,8 +51,18 @@
     </section>
 
     <section class="panel" aria-labelledby="targeted-simulations">
-      <h2 id="targeted-simulations">Targeted simulations</h2>
-      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. They are created automatically from the advisor's Quality Analyst weaknesses.</p>
+      <div class="panel-head targeted-head">
+        <div>
+          <h2 id="targeted-simulations">Targeted simulations</h2>
+          <p class="muted">Practice scenarios selected from {{ advisor }}'s performance priorities.</p>
+        </div>
+        <form method="post" action="/training/generate-targeted">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="advisor" value="{{ advisor }}">
+          <button class="btn" type="submit">Generate more scenarios</button>
+        </form>
+      </div>
+      {% if generated %}<p class="coach" role="status">A new practice set is ready.</p>{% endif %}
       {% if scenarios %}
       <ul class="deck-cards">{% for s in scenarios %}
         <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder"><button class="btn-line" type="submit">What-if harder</button></form></div></li>

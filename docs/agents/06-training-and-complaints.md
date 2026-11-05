@@ -28,6 +28,12 @@ Rim Ayari, the training lead, says *"I want new advisors to fail safely in train
 ### API (agents service, all under `/scenario-gen` except the adapter)
 `GET /catalog`, `POST /scenarios/generate`, `POST /scenarios/batch`, `POST /scenarios/ramp`, `GET /scenarios`, `GET /scenarios/{id}` and `/sim` and `/lineage`, `DELETE /scenarios/{id}`, `POST /scenarios/{id}/replay`, `POST /scenarios/{id}/mutate`, `POST /training-plan`, `POST /progress`, `GET /health`; and `GET /training/scenarios`, the flat five-field card list of the web contract (`id, title, profile, difficulty, origin`). Interactive documentation at `/docs`. Also `python -m scenario_gen generate ...` on the command line.
 
+`POST /training-plan` first uses a local `RandomForestRegressor` trained from augmented catalog QA-to-skill
+examples to predict the coaching focus. OpenRouter/Ollama are secondary fallbacks only if the ML coach
+cannot run. The response adds `coach_model`, `coach_summary` and `coach_actions`;
+model-generated scenario text is accepted only when every generated scenario ID is present and the
+Customer Simulator fields remain unchanged.
+
 ### In the web app (`/training`, role `rim`)
 * **Coach plan**: choose an advisor; the page shows that advisor's Quality Analyst report (weakest criterion, coaching tips, latest reports), the **offers to practise today** (the Sales agent's best offers of the day: they belong to customers, so the same list is shown for every advisor and the page says so), and the **automatic focus** (skills with a gap and the reasons).
 * **Targeted simulations**: the scenarios generated from that advisor's weaknesses, each opening a **detail page** (situation, trainer brief, complications, success criteria) with *Make harder*, *Make easier*, *Delete* and the lineage.

@@ -37,6 +37,13 @@ def test_plan_targets_the_weakest_skills(service):
     assert "procedure_compliance" in skills
     assert "accuracy" not in skills  # 92% is above the threshold
     assert len(plan.scenarios) == 6
+    assert plan.coach_model == "RandomForestRegressor"
+    assert plan.coach_metrics["dataset"] == "synthetic_catalog_v1"
+    assert plan.coach_metrics["samples"] == 500
+    assert 0 <= plan.coach_metrics["mae"] < 1
+    assert 0 <= plan.coach_metrics["rmse"] < 1
+    assert -1 <= plan.coach_metrics["r2"] <= 1
+    assert 0 <= plan.coach_metrics["top_skill_accuracy"] <= 1
     for scenario in plan.scenarios:
         assert scenario.kind == "adaptive"
         assert any(s in skills for s in scenario.skills)
@@ -152,6 +159,31 @@ def test_llm_enrichment_rewrites_the_texts(catalog):
     assert str(request.url) == "https://example.test/api/v1/chat/completions"
     sent = json.loads(request.content)
     assert sent["model"] == "test/model" and sent["messages"][0]["role"] == "system"
+
+
+def test_llm_coach_writes_guidance_and_scenario_copy(catalog):
+    def handler(request: httpx.Request) -> httpx.Response:
+        prompt = json.loads(request.content)["messages"][1]["content"]
+        scenario_id = json.loads(prompt)["scenarios"][0]["id"]
+        content = {
+            "summary": "Build empathy before solving the billing issue.",
+            "actions": ["Acknowledge the emotion.", "Confirm the account facts."],
+            "scenarios": [{
+                "id": scenario_id,
+                "customer_card": "You were charged twice for one service. You want a clear explanation and a fair next step.",
+                "trainer_brief": "Practise empathy before explaining the billing correction.",
+                "success_criteria": ["Acknowledge the concern.", "Explain the next step clearly."],
+            }],
+        }
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(content)}}]})
+
+    service = ScenarioService(catalog, ScenarioStore(), fake_llm(handler))
+    service.coach_model = None  # exercise the secondary LLM fallback
+    plan = service.plan(plan_req(weaknesses=[QAWeakness(criterion="sentiment", score=0.2)], size=1))
+    assert plan.coach_summary == "Build empathy before solving the billing issue."
+    assert plan.coach_actions == ["Acknowledge the emotion.", "Confirm the account facts."]
+    assert plan.scenarios[0].enrichment == "llm"
+    assert plan.scenarios[0].sim.problem_type == plan.scenarios[0].spec.intent
 
 
 def test_llm_without_key_falls_back_to_templates(catalog):
