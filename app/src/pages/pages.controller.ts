@@ -89,7 +89,7 @@ export class PagesController {
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------
 
   @Roles('TRAINER') @Get('training') @Render('training')
-  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string) {
+  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('generated') generated?: string) {
     const advisor = typeof advisorParam === 'string' && advisorParam.trim() ? advisorParam.trim().slice(0, 60) : 'Karim B.';
     const analytics = await this.agents.qualityAnalytics();
     const report = analytics.advisors.find((item) => item.advisor === advisor) ?? null;
@@ -97,10 +97,7 @@ export class PagesController {
     const weaknesses = report
       ? Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }))
       : [];
-    const [reviews, opportunities] = await Promise.all([
-      this.agents.recentReviews({ advisor: selectedAdvisor }),
-      this.agents.opportunities(),
-    ]);
+    const opportunities = await this.agents.opportunities();
     const plan = weaknesses.length
       ? await this.agents.trainingPlan(selectedAdvisor, weaknesses)
       : {
@@ -119,7 +116,19 @@ export class PagesController {
     }
     // Offers are the team's best of the day (they belong to customers, not to this advisor), so the same list is shown for every advisor.
     // (nunjucks' `slice(n)` splits a list into n columns, so the first items are taken here)
-    return { scenarios: scenarios.filter((s) => s.origin.startsWith('QA weakness')), history: scenarios.filter((s) => !s.origin.startsWith('QA weakness')).slice(0, 12), practice, advisor: selectedAdvisor, report, reviews: reviews.slice(0, 3), opportunities: opportunities.slice(0, 3), plan, advisorNames, action };
+    return { scenarios: scenarios.filter((s) => s.origin.startsWith('QA weakness')), history: scenarios.filter((s) => !s.origin.startsWith('QA weakness')).slice(0, 12), practice, advisor: selectedAdvisor, report, opportunities: opportunities.slice(0, 3), plan, advisorNames, action, generated: generated === '1' };
+  }
+
+  @Roles('TRAINER') @Post('training/generate-targeted')
+  async generateTargetedTraining(@Body() body: Record<string, unknown>, @Res() res: Response) {
+    const advisor = typeof body.advisor === 'string' ? body.advisor.trim().slice(0, 60) : '';
+    if (!advisor) throw new BadRequestException('Select an advisor');
+    const analytics = await this.agents.qualityAnalytics();
+    const report = analytics.advisors.find((item) => item.advisor === advisor);
+    if (!report) throw new NotFoundException('No Quality Analyst report for this advisor');
+    const weaknesses = Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }));
+    await this.agents.trainingPlan(advisor, weaknesses, Date.now() % 2147483647);
+    return res.redirect(`/training?advisor=${encodeURIComponent(advisor)}&generated=1`);
   }
 
   @Roles('TRAINER') @Get('training/scenarios/:id') @Render('training-scenario')

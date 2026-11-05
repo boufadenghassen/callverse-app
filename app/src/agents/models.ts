@@ -119,6 +119,9 @@ export interface TrainingPlan {
   focus: { skill: string; gap: number; criteria: string[] }[];
   scenarios: Scenario[];
   rationale: string[];
+  coach_summary?: string | null;
+  coach_actions?: string[];
+  coach_model?: string;
 }
 /** One reason an offer is suggested, in points of its 0-100 relevance (the sales agent's explanation). */
 export interface SalesFactor { name: string; points: number; why: string }

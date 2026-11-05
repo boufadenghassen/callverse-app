@@ -184,6 +184,9 @@ class TrainingPlan(BaseModel):
     focus: list[FocusItem]
     scenarios: list[TrainingScenario]
     rationale: list[str]
+    coach_summary: str | None = None
+    coach_actions: list[str] = Field(default_factory=list)
+    coach_model: str = "RandomForestRegressor"
 
 
 class ProgressRequest(BaseModel):

@@ -1,9 +1,11 @@
 """The Scenario Gen agent: one object that the API router, the CLI and the tests all use."""
 import random
 import secrets
+import logging
 
 from .adaptive import build_plan, compare_progress
 from .catalog import Catalog, CatalogError, intent_keys_from_file
+from .coach_ml import CoachMLModel
 from .config import Settings
 from .generator import ScenarioGenerator, derive_seed, MAX_SEED
 from .llm import LLMClient
@@ -28,6 +30,9 @@ class BadRequest(ValueError):
     """The request cannot be served (unknown intent, impossible mutation...). Maps to HTTP 422."""
 
 
+log = logging.getLogger("scenario_gen.service")
+
+
 class ScenarioService:
     def __init__(
         self,
@@ -39,6 +44,11 @@ class ScenarioService:
         self.store = store if store is not None else ScenarioStore()
         self.llm = llm
         self.generator = ScenarioGenerator(self.catalog)
+        try:
+            self.coach_model = CoachMLModel(self.catalog)
+        except (ImportError, ValueError, RuntimeError) as error:
+            log.exception("ML coach could not be initialized; using rules and LLM fallback: %s", error)
+            self.coach_model = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "ScenarioService":
@@ -132,7 +142,7 @@ class ScenarioService:
     # ------------------------------------------------------------------ adaptive training
     def plan(self, req: TrainingPlanRequest) -> TrainingPlan:
         try:
-            plan = build_plan(req, self.generator)
+            plan = build_plan(req, self.generator, self.coach_model)
         except CatalogError as error:
             raise BadRequest(str(error)) from error
         owned: list[TrainingScenario] = []
@@ -141,8 +151,17 @@ class ScenarioService:
                 "sim_extensions": {**scenario.sim_extensions, "advisor_id": req.advisor_id},
             }))
         plan = plan.model_copy(update={"scenarios": owned})
+        # LLMs are a secondary wording fallback only when the local ML coach fails.
+        if plan.coach_model == "rules" and self.llm and self.llm.available:
+            coached = self.llm.coach_plan(plan, req.weaknesses)
+            if coached:
+                summary, actions, scenarios = coached
+                plan = plan.model_copy(
+                    update={"coach_summary": summary, "coach_actions": actions, "scenarios": scenarios}
+                )
         for scenario in owned:
-            self.store.save(scenario)
+            final = next(item for item in plan.scenarios if item.id == scenario.id)
+            self.store.save(final)
         return plan
 
     def progress(self, req: ProgressRequest) -> ProgressReport:
