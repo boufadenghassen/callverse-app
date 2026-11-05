@@ -11,6 +11,8 @@ from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+import intent_model
+
 KB = json.loads((Path(__file__).parent / "knowledge" / "base.json").read_text(encoding="utf-8"))
 CUSTOMERS = json.loads((Path(__file__).parent / "knowledge" / "customers.json").read_text(encoding="utf-8"))
 _CUSTOMERS_BY_ID = {c["id"]: c for c in CUSTOMERS}
@@ -18,6 +20,7 @@ _vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="englis
 _matrix = _vec.fit_transform([f"{d['title']}. {d['text']}" for d in KB])
 
 MIN_SCORE = 0.08           # under this the best passage is probably unrelated: say so instead of guessing
+INTENT_BONUS = 0.3         # added to the passages that the trained intent model points to, times its confidence
 REFUND_LIMIT_TND = 50
 
 # intent chips: first words that point to an intent (several can match in one conversation)
@@ -32,7 +35,11 @@ INTENT_WORDS = {
 
 
 def detect_intents(text: str) -> list[str]:
-    return [name for name, rx in INTENT_WORDS.items() if re.search(rx, text, re.I)]
+    chips = [name for name, rx in INTENT_WORDS.items() if re.search(rx, text, re.I)]
+    understood = intent_model.predict(text)
+    if understood and understood["sure"] and understood["chip"] and understood["chip"] not in chips:
+        chips.append(understood["chip"])
+    return chips
 
 
 def get_customer(customer_id: str) -> dict | None:
@@ -41,7 +48,14 @@ def get_customer(customer_id: str) -> dict | None:
 
 
 def retrieve(query: str, k: int = 3) -> list[tuple[dict, float]]:
+    """The k best passages. Score = TF-IDF cosine, plus a bonus for the passages the trained intent model points to when it is sure
+    (so "my bill is wrong" finds "Disputing an invoice" even without a shared word). Without the model it is the TF-IDF cosine alone."""
     scores = cosine_similarity(_vec.transform([query]), _matrix)[0]
+    understood = intent_model.predict(query)
+    if understood and understood["sure"]:
+        for i, d in enumerate(KB):
+            if d["title"] in understood["passages"]:
+                scores[i] = max(scores[i], MIN_SCORE) + INTENT_BONUS * understood["confidence"]
     best = scores.argsort()[::-1][:k]
     return [(KB[i], float(scores[i])) for i in best]
 
@@ -57,10 +71,13 @@ def refund_warning(text: str) -> str | None:
 def suggest(query: str, customer_name: str | None = None) -> dict:
     hits = retrieve(query)
     intents = detect_intents(query)
+    understood = intent_model.predict(query)
     top, score = hits[0]
     if score < MIN_SCORE:
-        return dict(text="I could not find a reliable answer in the knowledge base for this. Please ask the customer to give more details, or escalate to a supervisor.",
-                    sources=[], policyWarning=None, confidence=round(score, 2), intents=intents, evidence=[])
+        text = "I could not find a reliable answer in the knowledge base for this. Please ask the customer to give more details, or escalate to a supervisor."
+        if understood and understood["sure"]:
+            text = f"The customer wants to {understood['label']}, but the knowledge base has no passage for it yet. Please escalate to a supervisor."
+        return dict(text=text, sources=[], policyWarning=None, confidence=round(score, 2), intents=intents, evidence=[], intentModel=understood)
     text = top["reply"]
     if customer_name:
         text = f"Hello {customer_name}. " + text
@@ -72,6 +89,7 @@ def suggest(query: str, customer_name: str | None = None) -> dict:
         confidence=round(score, 2),
         intents=intents,
         evidence=[dict(source=d["source"], score=round(s, 2), excerpt=d["title"]) for d, s in hits if s >= MIN_SCORE],
+        intentModel=understood,
     )
 
 

@@ -1,0 +1,4 @@
+# Optional: the trained models (docs/TRAINED_MODELS.md). Without them the agents run on their rules and TF-IDF.
+#   pip install -r requirements-models.txt
+onnxruntime>=1.17      # the advisor's intent model (ONNX int8)
+tokenizers>=0.15       # its tokenizer, without transformers or torch

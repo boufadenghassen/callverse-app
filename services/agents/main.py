@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 import advisor
 import advisor_agent
 import customer
+import intent_model
 import local_llm
 from quality_analyst import audio as quality_audio
 from quality_analyst import engine as quality
@@ -58,6 +59,8 @@ def _warm_up():
         steps.append(stt._pipeline)
     if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
         steps.append(lambda: (quality_semantic.scores("Ready."), quality_eval.report()))
+    if intent_model.model_dir():   # the advisor's trained intent model (~2 s to load)
+        steps.append(lambda: intent_model.predict("Ready."))
     steps.append(local_llm.warm)
     for step in steps:
         try:
@@ -109,7 +112,8 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available(), "writer": local_llm.model() if local_llm.available() else None}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available(), "writer": local_llm.model() if local_llm.available() else None,
+            "trainedModels": {"advisorIntent": intent_model.info()}}
 
 
 @app.post("/voice/speak")

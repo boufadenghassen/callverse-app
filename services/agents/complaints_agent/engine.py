@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 import advisor
+import intent_model
 from sales_agent import engine as sales
 
 _K = Path(__file__).resolve().parents[1] / "knowledge"
@@ -51,11 +52,33 @@ def parse_amount(text: str) -> float | None:
     return best
 
 
+# the advisor's trained intent model (intent_model.py) as a second reader: what each of its intents means as a root cause here
+INTENT_CLUSTER = {
+    "dispute_invoice": "billing_amount", "invoices": "billing_amount", "get_compensation": "billing_amount", "check_mobile_payments": "billing_amount",
+    "report_poor_signal_coverage": "network", "report_problem": "network", "check_signal_coverage": "network", "install_internet": "network",
+    "check_excess_data_charges": "data_usage", "check_usage": "data_usage", "set_usage_limits": "data_usage",
+    "activate_roaming": "roaming", "cancel_plan": "contract_terms", "check_cancellation_fee": "contract_terms", "change_provider": "contract_terms",
+    "activate_phone": "device", "deactivate_phone": "device",
+}
+
+
 def classify(text: str) -> tuple[str, list[str]]:
     """The root-cause cluster with the most pattern hits (the first one on a tie), and the other clusters that also matched."""
     hits = {k: len(c["rx"].findall(text)) for k, c in CLUSTERS.items()}
     ranked = sorted((k for k, n in hits.items() if n), key=lambda k: -hits[k])
     return (ranked[0], ranked[1:]) if ranked else ("other", [])
+
+
+def classify_explained(text: str) -> tuple[str, list[str], str]:
+    """classify(), and when no pattern matches, the trained intent model's reading (only when it is sure and the intent is a known root cause).
+    The third value says who decided: "rules", "intent model 93%" or "none"."""
+    key, extra = classify(text)
+    if key != "other":
+        return key, extra, "rules"
+    understood = intent_model.predict(text)
+    if understood and understood["sure"] and understood["intent"] in INTENT_CLUSTER:
+        return INTENT_CLUSTER[understood["intent"]], [], f"intent model {understood['confidence']:.0%} ({understood['label']})"
+    return "other", [], "none"
 
 
 def cluster_info(key: str) -> dict:
@@ -161,6 +184,7 @@ def escalation_risk(case: dict, customer: dict | None, sev: dict, contacts: int,
         add("Nobody owns it", 8, "still not taken after a quarter of the deadline")
     if case["status"] == "taken":
         add("Someone is on it", -8, f"taken by {case.get('assigned') or 'an agent'}")
+
     score = max(0, min(100, sum(f["points"] for f in factors)))
     return dict(score=score, factors=factors, churn=churn["score"])
 
@@ -204,7 +228,7 @@ def next_actions(case: dict, cluster: dict, amount: float | None, contacts: int,
 def analyse(case: dict, others: list[dict], now: dt.datetime) -> dict:
     """Everything the agent says about one case. `case` is a row of the store, `others` the other cases (to count repeat contacts)."""
     customer = advisor.get_customer(case["customer"]) if case.get("customer") else None
-    key, extra = classify(case["text"])
+    key, extra, decided_by = classify_explained(case["text"])
     cluster = cluster_info(key)
     n = contacts_of(case, others, now)
     sev = severity(case, customer, n)
@@ -214,7 +238,7 @@ def analyse(case: dict, others: list[dict], now: dt.datetime) -> dict:
     amount = parse_amount(case["text"])
     return dict(
         id=case["id"], summary=case["summary"], severity=level, escalationRisk=risk["score"], cluster=cluster["label"], hoursLeft=due["hoursLeft"],
-        clusterKey=key, otherClusters=[cluster_info(k)["label"] for k in extra], cause=cluster["cause"], team=cluster["team"],
+        clusterKey=key, clusterBy=decided_by, otherClusters=[cluster_info(k)["label"] for k in extra], cause=cluster["cause"], team=cluster["team"],
         customerId=case.get("customer"), customer=customer["name"] if customer else None, status=case["status"], assigned=case.get("assigned"),
         channel=case.get("channel", "call"), source=case.get("source", "agent"), opened=case["opened_at"].isoformat(timespec="minutes"),
         severityScore=sev["score"], computedLevel=sev["level"], overridden=level != sev["level"], severityFactors=sev["factors"],

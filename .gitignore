@@ -53,3 +53,6 @@ __pycache__/
 
 # quality analyst store and the generated sample call
 /services/agents/data/
+
+# ---- trained model folders unzipped next to the agents (see docs/TRAINED_MODELS.md) ----
+/services/agents/models/
