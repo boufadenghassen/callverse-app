@@ -1,19 +1,19 @@
 # Presentation facts: every claim, where it comes from, how to check it
 
 The rule for the presentation: **we say nothing that is not on this page.** Each line gives the claim as it is on a slide, the evidence, and how anyone can re-check it.
-State of the project: branch `integration/presentation`, checked on 2026-10-22 on one machine (Windows, RTX 4060). Slide numbers are those of the deck (26 slides).
+State of the project: branch `feat/advisor-training-upgrade`, checked on 2026-11-05 on one machine (Windows, RTX 4060). Slide numbers are those of the deck (26 slides). The deck itself still has to be updated: see `docs/DECK_UPDATE.md`.
 
 ## 1. Re-check everything in five commands
 
 | What | Command (from the repository root) | Expected |
 |---|---|---|
-| Python agents | `..\venv\Scripts\python.exe -m pytest -q` in `services\agents` | 205 passed (about 100 s) |
+| Python agents | `..\venv\Scripts\python.exe -m pytest -q` in `services\agents` | 224 passed (about 4 minutes) |
 | Models | `..\venv\Scripts\python.exe -m pytest -q models\tests` | 4 passed |
-| Web app | `npm test` in `app` | 117 pass |
+| Web app | `npm test` in `app` | 122 pass |
 | Browser, real agents | start everything (`start-all.bat`), then `npm test` in `app\e2e` | 46 tests: 45 pass, 1 skipped by design (the demo-mode complaints test skips itself when the real agents run; the next test covers the same page) |
 | Accessibility | `node audit.mjs` in `app\e2e` | `NO PROBLEMS FOUND` (axe, every page, light and dark) |
 
-**372 automated tests** = 205 + 4 + 117 + 46. None fails. The browser tests add reviews and cases to the local stores, so **run `start-all.bat -Clean` after testing and before presenting**.
+**396 automated tests** = 224 + 4 + 122 + 46. None fails. The browser tests add reviews and cases to the local stores, so **run `start-all.bat -Clean` after testing and before presenting**.
 
 ## 2. Claims by slide
 
@@ -24,17 +24,18 @@ State of the project: branch `integration/presentation`, checked on 2026-10-22 o
 | 5 | 28 ideas: 12 production, 12 prototype, 4 perspective | `app/src/pages/deck-content.ts`; test `deck-and-simulator.spec.ts` ("28") | `/ideas`, filter by decision |
 | 9 | 21 ideas demonstrated, 6 partial, 1 on the roadmap | the same file, column "coverage" | count the rows with LIVE, PARTIAL, ROADMAP (21, 6, 1) |
 | 7 | Node.js, NestJS, TypeScript, server-rendered; gateway demo or real; no Streamlit | `app/` (NestJS), `app/src/agents/` (gateway), `AGENTS_MODE` in `app/README.md` | `AGENTS_MODE=http` calls Python, default `mock` does not |
-| 7 | 372 tests: 117 web, 46 browser, 205 Python, 4 models | section 1 above | the five commands |
+| 7 | 396 tests: 122 web, 46 browser, 224 Python, 4 models | section 1 above | the five commands |
 | 7 | 0 accessibility violations on the tested pages | `app/e2e/audit.mjs` | `node audit.mjs` |
 | 7 | Agents, voice and emotion model run locally | Whisper `base.en` and Kokoro (`docs/agents/07-voice.md`), WavLM service on port 8001 (`docs/agents/08-emotion-model.md`) | `start-all.bat` starts all three on the machine (the models are downloaded once); the optional LLM enrichment of the Training agent is off |
 | 8 | What each agent does and what it is built on | chapters `docs/agents/01` to `06` | read the "What it is not" section of each |
 | 10 | Policy alert above 50 TND needs a supervisor | `services/agents/knowledge/base.json` (Billing policy §4.2), `docs/agents/02-customer-advisor.md` | the console shows "Refunds above 50 TND need supervisor approval" |
 | 11 | The customer answers live and out loud, with mood and patience | `docs/agents/01-customer-simulator.md`; voice: `docs/agents/07-voice.md` | `/advisor`, "Start call" |
 | 11 | The tone of the advisor's voice note changes the customer's reaction (a rude move when the emotion model hears anger or disgust and the mood is 30 or less) | `docs/agents/01-customer-simulator.md`, tests in `services/agents/tests/test_agents.py`, `app/test/customer.spec.ts` and `app/test/live-call.spec.ts` | record an angry voice note in the console |
-| 12 | Training agent: 15 problems, three languages (English, French, Tunisian Arabic), 17 complications; a seeded generator | `services/agents/scenario_gen/README.md`, `docs/agents/06-training-and-complaints.md` | `/training` |
+| 12 | Training agent: 15 problems, 17 complications, a seeded generator. The catalogue has three languages (English, French, Tunisian Arabic), but the live simulator speaks English, so the web app makes English scenarios | `services/agents/scenario_gen/README.md`, `docs/agents/06-training-and-complaints.md` | `/training` |
 | 12 | A scenario can be played in the console; the advisor agent can play it | `app/src/pages/scenario-sim.ts`, test `auto-call.spec.ts`, browser test "a training scenario can be played" | `/training`, open a scenario, "Play it in the console" |
 | 13 | The advisor agent reads the conversation: rules choose the step, a local language model (qwen2.5:7b, Ollama) writes the words from the sourced passage, and the quality analyst's rules check every reply; fixed wording when the model is off or a draft is refused. 30 real calls: all resolved, average 99.8, lowest 99, judged by our own rules against our own rule-based customer | `services/agents/advisor_agent.py`, `services/agents/local_llm.py`, `services/agents/tests/test_advisor_agent.py`, `docs/agents/02-customer-advisor.md` |
-| 13 | Careful advisor: 90 / 100, the customer leaves satisfied. Rushed advisor: 38 / 100, the customer hangs up, the call is listed as a possible complaint | browser tests "the advisor agent talks by itself" and "a rushed advisor ends the call badly, and the call shows up for the complaint agent"; both scores seen on the clean state on 2026-10-22 | run both buttons; **the score can differ by a few points on another run: read what the screen shows** |
+| 12 | A practice call comes back to the coach: score, what moved against the advisor's usual level, next step. It does not count in the quality averages | `services/agents/scenario_gen/practice.py`, `services/agents/tests/test_practice.py` | play a scenario, press "Send to quality review", open `/training` |
+| 13 | Careful advisor: 99 or 100 out of 100, the customer leaves satisfied. Rushed advisor: 38 / 100, the customer hangs up, the call is listed as a possible complaint | browser tests "the advisor agent talks by itself" and "a rushed advisor ends the call badly, and the call shows up for the complaint agent"; both scores seen on the clean state on 2026-10-22 | run both buttons; **the score can differ by a few points on another run: read what the screen shows** |
 | 14 | A two-channel recording: Whisper transcript by speaker, emotion of the customer's voice, 18 rules, five criteria, here **33 / 100**, coaching hint **+8** | `docs/agents/04-quality-analyst.md` (the 18 rules); the sample call of the Quality page | `/quality`, "Download a sample call", upload it as "Karim B.": re-checked on 2026-10-22, result 33 / 100 and "+8" |
 | 15, 16, 17 | Every effect is a what-if: the call is scored again with only that one thing changed; a dispute recomputes everything | `docs/agents/04-quality-analyst.md` ("What moved this score"), quality tests | open "What moved this score" on any review, mark a finding "Not an error" |
 | 16 | The slide's example (a call scored 80 / 100: −10 for 120 dinars without approval at 00:19, +12 for checking the policy) | a real screenshot of a call reviewed while building (`presentation-shots/quality-drivers.png`) | **not a button you can press**: on stage show the review of the call you have just made; its numbers differ, its structure is the same |
@@ -56,7 +57,8 @@ State of the project: branch `integration/presentation`, checked on 2026-10-22 o
 
 ## 3. What we do not claim
 
-* **No language model** anywhere by default: the customer, the advisor (also when it talks by itself), the scores and the scenario generator are rules, retrieval, formulas and templates. The optional enrichment of the Training agent through an LLM API is off.
+* **The language model decides nothing.** One local model (qwen2.5:7b through Ollama) writes the words of the advisor agent and rewrites the wording of a generated scenario. The customer, the choice of the advisor's next step, the scores and the facts remain rules, retrieval, formulas and templates, and everything works with the model off.
+* **A high automatic score proves little.** The advisor agent's 99 or 100 comes from our own rules reading replies that our own rules checked, against a rule-based customer. It shows the process is followed, not that real customers would be satisfied.
 * **No real data**: customers, calls, cases, offers, call history, the knowledge base and the complaint history are invented or simulated. The emotion model was trained on acted speech.
 * **No learned prediction** of churn, of a yes, of escalation or of complaints: they are sums of named points with hand-set weights.
 * **No reinforcement learning** in the workforce routing: it is a local search whose moves are checked by simulation.
@@ -72,7 +74,7 @@ State of the project: branch `integration/presentation`, checked on 2026-10-22 o
 | Complaint deadlines, time pressure, "past their deadline" | cases age in real time from the moment they are seeded | `start-all.bat -Clean` less than an hour before; right after it: 6 open cases, CMP-221 at 51 and 86 |
 | Sales replay, track record in the offer reasons | clicking "Customer accepted" or "Declined" adds to the history | `-Clean`, and do not click those buttons before the replay |
 | Quality team average, number of reviews, call ids | every live call, upload and browser test adds a review | `-Clean` (84 simulated calls) |
-| The score of an automatic call | the customer simulator has random moments and the advisor routine is fixed | run it once before; say "about 90" and "under 40", read the screen |
+| The score of an automatic call | the language model words each reply differently and the customer simulator has random moments | run it once before; say "close to 100" and "under 40", read the screen |
 | Scenario ids (`sc_...`) | the generator makes a new scenario when asked | none: the ids on the slides are examples |
 
 `-Clean` moves the three local stores to `services\agents\data\backup-<date>`; nothing is deleted.

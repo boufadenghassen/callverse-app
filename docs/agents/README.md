@@ -109,7 +109,7 @@ Open http://localhost:8080. Every account uses the demo password: `yasmine` (cli
 
 ## Honest summary of the limits
 
-* **No language model anywhere.** The customer's words, the advisor's suggestions, the quality rules, the needs found by the sales agent are rules, patterns, retrieval and small models. Each document says where an LLM would plug in.
+* **One language model, and it decides nothing.** A local model (qwen2.5:7b through Ollama) writes the advisor agent's replies on an automatic call and rewrites a generated scenario's wording. The customer's words, the advisor's suggestions in the console, the quality rules and the needs found by the sales agent are rules, patterns, retrieval and small models. Each document says where an LLM would plug in.
 * **Invented or simulated data.** The knowledge base (12 passages), the offers, the five customers, the call history of the workforce agent, the 84 past calls of the quality analytics and the history behind "which offers convert" are invented or simulated. The emotion model is trained on acted speech.
 * **Measured, not guaranteed.** The numbers quoted (F1 99 % on held-out calls, 74 % emotion accuracy) are measured on data we wrote or on acted corpora, so they are rough scores.
 * **Not built**: reinforcement-learning routing, learned (not hand-weighted) purchase, churn and escalation models, real sign-in (a shared demo password is used).

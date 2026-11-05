@@ -31,7 +31,7 @@ Full version: about 21 minutes. Short version (about 17 minutes): skip slides 4,
 | Slides | What | Time | You do |
 |---|---|---|---|
 | 1 to 6 | Opening, plan, problem, journey, ideation, solution | 4:00 | talk |
-| 7, 8 | Architecture, the seven agents | 2:00 | talk; say once: all seven run, all data is invented, no language model |
+| 7, 8 | Architecture, the seven agents | 2:00 | talk; say once: all seven run, all data is invented, and the only language model is local and decides nothing |
 | 9, 10 | What works today, preview of the console | 1:30 | talk |
 | **11** | **Demo 1: a live call** | 1:15 | tab `/advisor` (below) |
 | **12** | **Demo 2: a training scenario** | 0:45 | tab `/training` (below) |
@@ -55,12 +55,12 @@ Full version: about 21 minutes. Short version (about 17 minutes): skip slides 4,
 ### Demo 2, slide 12: a training scenario (45 s)
 1. `/training`: the coach plan for the advisor, then the scenarios. Open the first scenario.
 2. Read two lines of it: the customer situation, the success criteria. Say: this scenario was generated from the advisor's weak quality criteria; the generator is Selim's.
-3. Press **Play it in the console**. The advisor console opens with the settings already chosen and a box saying how the scenario was read; the call starts on arrival and the customer speaks its first sentence. Point at the box, then go straight to demo 3.
+3. Press **Play it in the console**. The advisor console opens with the settings already chosen and a box saying how the scenario was read; the call starts on arrival and the customer speaks its first sentence. Point at the box, then go straight to demo 3. If time allows, finish the call, press **Send to quality review**, and show **Practice results** on `/training`: the score, what moved against the advisor's usual level, and the next step.
 *If it fails:* the slide shows the scenario page.
 
 ### Demo 3, slide 13: the agents run a call by themselves (1 min 30 s)
 1. On the advisor console (the one that demo 2 just opened, with the scenario's settings): press **Let the advisor agent talk**. It starts a new call with the same settings; wait about 30 seconds while it plays out by itself.
-2. When "What the agents did on this call" appears, read it line by line: the simulator's outcome, the advisor's four steps, the sales agent's offer and its timing, the quality analyst's score (usually 95 to 100) with what lowered it and what went well, and the complaint agent's verdict (no complaint).
+2. When "What the agents did on this call" appears, read it line by line: the simulator's outcome, the advisor's four steps, the sales agent's offer and its timing, the quality analyst's score (usually 99 or 100) with what lowered it and what went well, and the complaint agent's verdict (no complaint).
 3. Press **Show a rushed advisor**. About 15 seconds later the same box reads: the customer hung up, the score is under 40, the complaint agent lists the call.
 4. Open `/complaints`: the call is under "Calls that may be complaints". (If the tab is open, press reload.)
 5. Say: the rules choose the step from the conversation and the customer's mood, a local language model writes the words from the sourced passage, and the quality analyst's rules check every reply before it is said. Under each reply you can read why that step was chosen and who wrote it. If Ollama is not running, the same steps use fixed wording.
@@ -94,7 +94,9 @@ On `/quality`: **Download a sample call**, then upload it (field "Advisor": Kari
 
 | Question | Answer |
 |---|---|
-| Is there a language model? | No. Rules, retrieval, formulas and templates. An LLM judge next to the rules, compared on the same calls, is the first next step. The Training agent can optionally use one; it is off. |
+| Is there a language model? | One, local (qwen2.5:7b through Ollama), and it only writes words: the advisor agent's replies and the wording of a generated scenario. Rules choose the step and check every reply, and everything works with it off. The customer and the scores stay rules. An LLM judge next to the rules, compared on the same calls, is the first next step. |
+| How can you trust the model's words? | We do not trust them on their own: the quality analyst's rules read every draft before it is said, and a refused draft falls back to fixed wording. Under each reply you can read who wrote it and what was checked. |
+| 99 out of 100 sounds too good. | It is. Our own rules checked the replies and our own rules scored them, against a rule-based customer. It shows the process is followed, not that real customers would be satisfied. |
 | Is the data real? | No: customers, calls, cases, offers and history are invented or simulated; the emotion model was trained on acted speech. |
 | How accurate is the quality analyst? | 99 % F1 on 91 held-out calls, but they are calls we wrote and labelled ourselves. An agreement study with two independent labellers is prepared; its results are missing. |
 | Does the emotion model work on real customers? | Not measured. 74 % on unseen actors, 71.5 % under phone-line degradations. |
@@ -117,7 +119,8 @@ On `/quality`: **Download a sample call**, then upload it (field "Advisor": Kari
 - [ ] Rehearsal 2 with a teammate who asks three questions from section 4.
 - [ ] `start-all.bat -Clean` ran without error; the three services answer (`http://localhost:8000/health`, `:8001/health`, `:8080`).
 - [ ] Demo 1, 2 and 3 each worked at least twice in a row.
-- [ ] Both automatic calls (careful about 90, rushed under 40) gave the results of slide 13; the rushed call appeared under Complaints.
+- [ ] Ollama is running (`http://localhost:8000/health` shows `"writer":"qwen2.5:7b"`; without it the replies are in fixed wording).
+- [ ] Both automatic calls (careful close to 100, rushed under 40) gave the results of slide 13; the rushed call appeared under Complaints.
 - [ ] Complaints: 6 open cases, CMP-221 at 51 and 86 (clean state, less than an hour old).
 - [ ] Sales replay shows 7,235 TND / 28 % and 52 % / 42 refusals (clean state, nothing accepted or declined).
 - [ ] Sound and the browser microphone permission tested in the room, or the voice demo skipped on purpose.

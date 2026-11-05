@@ -54,7 +54,7 @@ real sign-in (OIDC, for example Keycloak or Microsoft Entra), and never commit `
 * CI (`.github/workflows/ci.yml`): type-checked build and the unit/HTTP tests on every push and pull request.
 * Browser tests (`app/e2e`, Playwright): run before a demo or release.
 * Python agents: `pytest` in `services/agents` (205 tests), the same test cases run against the mock and the HTTP gateway so they cannot diverge; `models/tests` (4).
-* Today in total: 372 automated tests (117 web, 46 browser, 205 Python, 4 models), and an axe accessibility audit of every page (`app/e2e/audit.mjs`). The facts behind every number of the presentation are in [`docs/PRESENTATION_FACTS.md`](docs/PRESENTATION_FACTS.md).
+* Today in total: 396 automated tests (122 web, 46 browser, 224 Python, 4 models), and an axe accessibility audit of every page (`app/e2e/audit.mjs`). The facts behind every number of the presentation are in [`docs/PRESENTATION_FACTS.md`](docs/PRESENTATION_FACTS.md).
 * Models: report actor-wise cross-validation with confidence intervals and a cross-dataset score (see `notebooks/`).
 
 ## Deployment path
