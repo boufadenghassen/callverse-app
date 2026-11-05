@@ -12,7 +12,10 @@ import re
 
 import httpx
 
-import local_llm
+try:
+    import local_llm
+except ImportError:
+    local_llm = None
 
 from .config import Settings
 from .schemas import TrainingScenario
@@ -46,7 +49,7 @@ class LLMClient:
 
     @property
     def available(self) -> bool:
-        return bool(self.settings.openrouter_api_key) or local_llm.enabled()
+        return bool(self.settings.openrouter_api_key) or bool(local_llm and local_llm.enabled())
 
     def enrich(self, scenario: TrainingScenario) -> TrainingScenario | None:
         """Return a copy with rewritten texts, or None if enrichment was not possible."""
@@ -139,6 +142,8 @@ class LLMClient:
             except Exception as error:  # noqa: BLE001 - text generation must not break deterministic training
                 log.warning("Coach plan generation failed (%s): %s", type(error).__name__, error)
                 return None
+        if local_llm is None:
+            return None
         parsed = local_llm.chat_json(system, json.dumps(payload, ensure_ascii=False), temperature=0.6, max_tokens=2200)
         return self._validate_coach_plan(parsed, plan) if parsed else None
 
@@ -180,6 +185,8 @@ class LLMClient:
         return summary, actions, [updates[scenario.id] for scenario in plan.scenarios]
 
     def _local(self, scenario: TrainingScenario) -> TrainingScenario | None:
+        if local_llm is None:
+            return None
         parsed = local_llm.chat_json(SYSTEM_PROMPT, self._user_prompt(scenario), temperature=0.7, max_tokens=300)
         card, brief = clean_text((parsed or {}).get("customer_card"), MAX_CARD), clean_text((parsed or {}).get("trainer_brief"), MAX_BRIEF)
         if not card or not brief:
