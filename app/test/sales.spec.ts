@@ -19,7 +19,7 @@ const OFFER: m.Opportunity = {
   timing: { cue: 'after_resolution', why: '1 open ticket: solve it first' }, counterfactual: 'Without “The moment” (1 open ticket: solve it first), the relevance would be 50.', alternatives: [{ offer: 'Data Booster +20 GB', relevance: 31 }],
   acceptance: { probability: 0.43, similar: 6, similarAccepted: 3, basis: '6 similar offers in the history (relevance under 50, problem not solved yet): 3 accepted; this offer overall: 41% of 24' },
   expected: { ifYes: 96, chance: 0.43, tnd: 41, how: '8 TND more x 12 months' },
-  churn: { score: 17, level: 'Low', factors: [{ name: 'Starting point', points: 10, why: 'every customer has some risk' }, { name: 'Open tickets', points: 8, why: '1 open' }, { name: 'Years with us', points: -10, why: '6 years' }] },
+  churn: { score: 17, level: 'Low', factors: [{ name: 'Starting point', points: 10, why: 'every customer has some risk' }, { name: 'Open tickets', points: 8, why: '1 open' }, { name: 'Years with us', points: -10, why: '6 years' }], model: { source: 'IBM Telco Customer Churn', probability: 0.328, fields: ['tenure', 'monthly charge'] } },
 };
 const SIM: m.SalesSimulation = {
   calls: 1000, share: 30, opportunities: 300, simulated: 240, history: 240, method: 'Replays the history.',
@@ -93,6 +93,7 @@ test('the page shows the churn risk, the chance of a yes, what a yes is worth, a
   const html = (await (await client(real, 'leila')).get('/sales').expect(200)).text;
   assert.match(html, /class="risk low">Churn risk 17 · Low/);
   assert.match(html, /Why this churn risk/);
+  assert.doesNotMatch(html, /IBM Telco Customer Churn estimate|Separate learned estimate/);
   assert.match(html, /Chance of a yes <strong>43%<\/strong> · worth <strong>96 TND<\/strong> over 12 months if yes · expected <strong>41 TND<\/strong>/);
   assert.match(html, /6 similar offers in the history/);
   assert.match(html, /What a selling rule would earn/);

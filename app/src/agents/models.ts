@@ -131,8 +131,10 @@ export interface Opportunity {
   factors?: SalesFactor[]; timing?: SalesTiming; counterfactual?: string | null; alternatives?: { offer: string; relevance: number }[];
   acceptance?: SalesAcceptance | null; expected?: SalesExpected; churn?: SalesChurn;
 }
+/** Optional local-model estimate shown beside, never in place of, the readable policy score. */
+export interface SalesChurnModel { source: string; probability: number; fields: string[] }
 /** Risk (0-100) that the customer leaves, as a sum of named factors. */
-export interface SalesChurn { score: number; level: 'Low' | 'Medium' | 'High'; factors: SalesFactor[] }
+export interface SalesChurn { score: number; level: 'Low' | 'Medium' | 'High'; factors: SalesFactor[]; model?: SalesChurnModel | null }
 /** Chance of a yes, from what happened to similar offers in the history (null when there is no history yet). */
 export interface SalesAcceptance { probability: number; similar: number; similarAccepted: number; basis: string }
 /** What a yes is worth over twelve months (TND, revenue) and the expected value (chance x worth). */

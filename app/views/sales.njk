@@ -15,8 +15,8 @@
       {% if real %}<p class="head-actions"><span class="badge cov live">Real agent, invented offers and customers</span></p>{% endif %}
     </header>
 
-    <div id="sales" data-csrf="{{ csrf }}">
-    <ul class="opps" id="opps">
+    <div id="sales" data-csrf="{{ csrf }}" data-opportunities="{{ opportunitiesJson }}" data-real="{{ real }}">
+    <ul class="opps" id="opps" aria-live="polite" aria-busy="true">
       {% for o in opportunities %}
       <li class="opp">
         <div class="opp-top">
@@ -38,7 +38,7 @@
           {% if o.counterfactual %}<p class="muted small">{{ o.counterfactual }}</p>{% endif %}
           {% if o.alternatives | length %}<p class="muted small">Next best: {% for a in o.alternatives %}{{ a.offer }} ({{ a.relevance }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
         </details>
-        {% if o.churn %}<details class="why"><summary>Why this churn risk</summary>{{ factors(o.churn.factors) }}<p class="muted small">A sum of named parts read from the file and the conversation; nothing is learned.</p></details>{% endif %}
+        {% if o.churn %}<details class="why"><summary>Why this churn risk</summary>{{ factors(o.churn.factors) }}<p class="muted small">A sum of named parts read from the file and conversation.</p></details>{% endif %}
         <div class="actions">
           <button type="button" class="btn" data-outcome="accepted" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Customer accepted</button>
           <button type="button" class="btn-quiet" data-outcome="declined" data-customer="{{ o.customerId }}" data-offer="{{ o.offerId }}" data-relevance="{{ o.relevance }}" data-cue="{{ o.timing.cue }}" data-need="{{ o.need.key }}">Declined</button>

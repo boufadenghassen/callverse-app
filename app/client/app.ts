@@ -333,6 +333,46 @@
   const sales = byId('sales');
   if (sales) {
     const csrf = sales.dataset.csrf!;
+    type CardOpportunity = {
+      initials: string; customer: string; customerId?: string; offer: string; offerId?: string; price?: string; relevance: number; reason: string;
+      need?: { key: string }; timing?: { cue: string; why: string }; factors?: Factor[]; counterfactual?: string | null; alternatives?: { offer: string; relevance: number }[];
+      acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string }; churn?: { score: number; level: string; factors: Factor[]; model?: { source: string; probability: number; fields: string[] } | null };
+    };
+    // Cards are hydrated from JSON produced by the authenticated server route.
+    // Rendering with textContent keeps customer/agent data out of HTML injection paths.
+    const cards = byId('opps');
+    const renderCards = () => {
+      if (!cards) return;
+      let opportunities: CardOpportunity[] = [];
+      try { opportunities = JSON.parse(sales.dataset.opportunities ?? '[]') as CardOpportunity[]; } catch { return; }
+      const real = sales.dataset.real === 'true';
+      cards.replaceChildren(...opportunities.map((o) => {
+        const li = make('li', { className: 'opp' });
+        const top = make('div', { className: 'opp-top' }), identity = make('div');
+        top.append(make('span', { className: 'avatar', textContent: o.initials, ariaHidden: 'true' }));
+        identity.append(make('h2', { textContent: o.customer }), make('p', { className: 'muted small', textContent: real ? 'From the customer file' : 'Live conversation' }));
+        if (o.churn) identity.append(make('p', { className: `risk ${o.churn.level.toLowerCase()}`, textContent: `Churn risk ${o.churn.score} · ${o.churn.level}` }));
+        top.append(identity);
+        top.append(make('div', { className: 'relevance', textContent: `${o.relevance}/100 Relevance` }));
+        li.append(top, make('p', { className: 'offer-label small muted', textContent: 'Suggested offer' }), make('p', { className: 'offer', textContent: `${o.offer}${o.price ? ` ${o.price}` : ''}` }), make('blockquote', { className: 'heard', textContent: o.reason }));
+        if (o.timing) li.append(make('p', { className: `timing ${o.timing.cue === 'after_resolution' ? 'wait' : 'go'}`, textContent: `${o.timing.cue === 'after_resolution' ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }));
+        if (o.acceptance && o.expected) li.append(make('p', { className: 'figures', textContent: `Chance of a yes ${Math.round(o.acceptance.probability * 100)}% · worth ${o.expected.ifYes} TND over 12 months if yes · expected ${o.expected.tnd} TND` }));
+        if (o.factors) {
+          const why = make('details', { className: 'why' }); why.append(make('summary', { textContent: 'Why this offer' }), factorList(o.factors));
+          if (o.acceptance && o.expected) why.append(make('p', { className: 'muted small', textContent: `Chance of a yes: ${o.acceptance.basis}. Worth: ${o.expected.how}.` }));
+          if (o.counterfactual) why.append(make('p', { className: 'muted small', textContent: o.counterfactual }));
+          if (o.alternatives?.length) why.append(make('p', { className: 'muted small', textContent: `Next best: ${o.alternatives.map((a) => `${a.offer} (${a.relevance})`).join(', ')}.` }));
+          li.append(why);
+        }
+        if (o.churn) { const why = make('details', { className: 'why' }); why.append(make('summary', { textContent: 'Why this churn risk' }), factorList(o.churn.factors), make('p', { className: 'muted small', textContent: 'A sum of named parts read from the file and conversation.' })); li.append(why); }
+        const actions = make('div', { className: 'actions' });
+        if (o.offerId && o.timing && o.need) for (const outcome of ['accepted', 'declined']) { const b = make('button', { type: 'button', className: outcome === 'accepted' ? 'btn' : 'btn-quiet', textContent: outcome === 'accepted' ? 'Customer accepted' : 'Declined' }); Object.assign(b.dataset, { outcome, customer: o.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key }); actions.append(b); }
+        else { actions.append(make('button', { type: 'button', className: 'btn', textContent: 'Offer now', dataset: { toast: `Offer ${o.offer} queued for ${o.customer} (demo)` } })); }
+        li.append(actions); return li;
+      }));
+      cards.setAttribute('aria-busy', 'false');
+    };
+    renderCards();
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
@@ -372,7 +412,7 @@
       try {
         const d = await post('/sales/detect', { customerId: customer || null, turns });
         status.textContent = '';
-        const churn = d.churn as { score: number; level: string; factors: Factor[] } | undefined;
+        const churn = d.churn as { score: number; level: string; factors: Factor[]; model?: { source: string; probability: number; fields: string[] } | null } | undefined;
         byId('sales-churn-box')!.hidden = !churn;
         if (churn) {
           byId('sales-churn')!.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`;
@@ -458,7 +498,7 @@
         if (mine !== offerSeq) return;
         interface Shown { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; need: { key: string };
           acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string } }
-        const offers = d.offers as Shown[], churn = d.churn as { score: number; level: string } | undefined;
+        const offers = d.offers as Shown[], churn = d.churn as { score: number; level: string; model?: { source: string; probability: number } | null } | undefined;
         const risk = byId('lv-o-risk')!;
         risk.hidden = !churn;
         if (churn) { risk.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`; risk.className = `risk ${churn.level.toLowerCase()}`; }

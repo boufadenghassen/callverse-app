@@ -43,7 +43,9 @@ export class SalesController {
     const real = opportunities.some((o) => o.factors);
     const customers = real ? opportunities.filter((o) => o.customerId).map((o) => ({ id: o.customerId!, name: o.customer })) : [];
     const simulation = real ? await this.agents.salesSimulate(START).catch(() => null) : null;
-    return { opportunities, analytics, real, customers, samples: real ? SAMPLES : [], simulation };
+    // The card list is hydrated by the browser; Nunjucks still owns the page,
+    // authentication, forms and all data fetching stay on the server.
+    return { opportunities, opportunitiesJson: JSON.stringify(opportunities), analytics, real, customers, samples: real ? SAMPLES : [], simulation };
   }
 
   /** A conversation as turns ({speaker, text}): the needs the customer voiced and the offers that answer them. */
