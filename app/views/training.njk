@@ -29,7 +29,6 @@
           <p class="muted">{{ report.calls }} reviewed calls · average {{ report.avgOverall }}/100</p>
           <p><strong>Weakest:</strong> {{ report.weakest.criterion }} ({{ report.weakest.avg }}/10)</p>
           {% if report.coaching %}<ul>{% for item in report.coaching %}<li>{{ item.tip }} <span class="muted small">({{ item.scenario }})</span></li>{% endfor %}</ul>{% endif %}
-          {% if reviews %}<p class="muted small">Latest reports: {% for item in reviews | slice(0, 3) %}<a href="/quality?call={{ item.callId }}">{{ item.callId }} ({{ item.overall }}/100)</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
         </article>
         <article class="scn">
           <h3>Sales recommendations</h3>
@@ -48,7 +47,18 @@
 
     <section class="panel" aria-labelledby="targeted-simulations">
       <h2 id="targeted-simulations">Targeted simulations</h2>
-      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. They are created automatically from the advisor's Quality Analyst weaknesses.</p>
+      <div class="panel-head targeted-head">
+        <div>
+          <h2 id="targeted-simulations">Targeted simulations</h2>
+          <p class="muted">Practice scenarios selected from {{ advisor }}'s performance priorities.</p>
+        </div>
+        <form method="post" action="/training/generate-targeted">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="advisor" value="{{ advisor }}">
+          <button class="btn" type="submit">Generate more scenarios</button>
+        </form>
+      </div>
+      {% if generated %}<p class="coach" role="status">A new practice set is ready.</p>{% endif %}
       {% if scenarios %}
       <ul class="deck-cards">{% for s in scenarios %}
         <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form></div></li>

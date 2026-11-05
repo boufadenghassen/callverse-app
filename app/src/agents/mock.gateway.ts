@@ -253,7 +253,7 @@ export class MockAgentGateway extends AgentGateway {
     this.scenarioOwners.delete(id);
   }
 
-  async trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan> {
+  async trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[], _seed?: number): Promise<m.TrainingPlan> {
     const focus = weaknesses
       .filter((w) => w.score < 7)
       .sort((a, b) => a.score - b.score)
@@ -269,6 +269,7 @@ export class MockAgentGateway extends AgentGateway {
       rationale: focus.length
         ? focus.map((f) => `${f.skill}: coaching scenario recommended from ${f.criteria.join(', ')}.`)
         : ['No QA criterion is below the coaching threshold.'],
+      coach_model: 'Mock training coach',
     };
   }
 

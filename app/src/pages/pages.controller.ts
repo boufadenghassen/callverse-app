@@ -87,7 +87,7 @@ export class PagesController {
   }
 
   @Roles('TRAINER') @Get('training') @Render('training')
-  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string) {
+  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string, @Query('generated') generated?: string) {
     const advisor = typeof advisorParam === 'string' && advisorParam.trim() ? advisorParam.trim().slice(0, 60) : 'Karim B.';
     const analytics = await this.agents.qualityAnalytics();
     const report = analytics.advisors.find((item) => item.advisor === advisor) ?? null;
@@ -119,7 +119,19 @@ export class PagesController {
       : whatIfId ? await this.agents.mutateScenario(whatIfId, operation === 'easier' || operation === 'add_second_problem' ? operation : 'harder')
       : null;
     const history = scenarios;
-    return { scenarios, advisor: selectedAdvisor, report, reviews, opportunities: coachOpportunities, plan, advisorNames, action, history };
+    return { scenarios, advisor: selectedAdvisor, report, reviews, opportunities: coachOpportunities, plan, advisorNames, action, history, generated: generated === '1' };
+  }
+
+  @Roles('TRAINER') @Post('training/generate-targeted')
+  async generateTargetedTraining(@Body() body: Record<string, unknown>, @Res() res: Response) {
+    const advisor = typeof body.advisor === 'string' ? body.advisor.trim().slice(0, 60) : '';
+    if (!advisor) throw new BadRequestException('Select an advisor');
+    const analytics = await this.agents.qualityAnalytics();
+    const report = analytics.advisors.find((item) => item.advisor === advisor);
+    if (!report) throw new NotFoundException('No Quality Analyst report for this advisor');
+    const weaknesses = Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }));
+    await this.agents.trainingPlan(advisor, weaknesses, Date.now() % 2147483647);
+    return res.redirect(`/training?advisor=${encodeURIComponent(advisor)}&generated=1`);
   }
 
   @Roles('TRAINER') @Post('training/scenarios/generate')

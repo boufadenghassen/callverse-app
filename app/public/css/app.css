@@ -291,6 +291,8 @@ blockquote { margin: 0 0 var(--s3); padding: var(--s3) var(--s4); border-radius:
 .builder { display: flex; align-items: center; justify-content: space-between; gap: var(--s6); flex-wrap: wrap; }
 .builder h2 { margin-bottom: var(--s1); } .builder p { margin: 0; }
 .builder-actions { display: flex; gap: var(--s3); align-items: center; } .builder-actions select { width: auto; }
+.advisor-picker { margin-left: var(--s6); }
+.targeted-head { margin-bottom: var(--s4); }
 .deck-cards { list-style: none; margin: 0; padding: 7px; display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: var(--s6); }
 .scn { background: var(--surface); border-radius: var(--r-card); padding: var(--s6); box-shadow: var(--ring), var(--lift); transition: transform .7s var(--ease), box-shadow .7s var(--ease); animation: rise .8s var(--ease) both; }
 .scn:nth-child(3n+1) { transform: rotate(-.8deg); } .scn:nth-child(3n+2) { transform: translateY(8px); } .scn:nth-child(3n) { transform: rotate(.8deg); }

@@ -57,6 +57,6 @@ export abstract class AgentGateway {
   abstract replayScenario(id: string): Promise<m.ScenarioDetail>;
   abstract mutateScenario(id: string, operation: 'harder' | 'easier' | 'add_second_problem'): Promise<m.ScenarioDetail>;
   abstract deleteScenario(id: string): Promise<void>;
-  abstract trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan>;
+  abstract trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[], seed?: number): Promise<m.TrainingPlan>;
   abstract opportunities(): Promise<m.Opportunity[]>;
 }

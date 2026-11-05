@@ -5,11 +5,52 @@ passage and its source is listed, so the advisor can check it (explainability). 
 of the best passage, not a probability. Replace retrieve() with a vector search over the real FAQ when it exists.
 """
 import json
+import math
 import re
+from collections import Counter
 from pathlib import Path
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+except (ImportError, ValueError):
+    class TfidfVectorizer:
+        """Small fallback for environments with broken optional sklearn binaries."""
+
+        def __init__(self, **_options):
+            self.vocabulary: dict[str, int] = {}
+            self.idf: list[float] = []
+
+        @staticmethod
+        def _terms(text: str) -> list[str]:
+            words = re.findall(r"[a-z0-9]+", text.lower())
+            return words + [f"{a} {b}" for a, b in zip(words, words[1:])]
+
+        def fit_transform(self, texts: list[str]):
+            documents = [self._terms(text) for text in texts]
+            all_terms = sorted({term for terms in documents for term in terms})
+            self.vocabulary = {term: index for index, term in enumerate(all_terms)}
+            total = len(documents)
+            self.idf = [
+                math.log((1 + total) / (1 + sum(term in terms for terms in documents))) + 1
+                for term in all_terms
+            ]
+            return self.transform(texts)
+
+        def transform(self, texts: list[str]):
+            vectors = []
+            for text in texts:
+                counts = Counter(self._terms(text))
+                vector = [0.0] * len(self.vocabulary)
+                for term, count in counts.items():
+                    if term in self.vocabulary:
+                        vector[self.vocabulary[term]] = (1 + math.log(count)) * self.idf[self.vocabulary[term]]
+                norm = math.sqrt(sum(value * value for value in vector)) or 1.0
+                vectors.append([value / norm for value in vector])
+            return vectors
+
+    def cosine_similarity(left, right):
+        return [[sum(a * b for a, b in zip(row, candidate)) for candidate in right] for row in left]
 
 KB = json.loads((Path(__file__).parent / "knowledge" / "base.json").read_text(encoding="utf-8"))
 CUSTOMERS = json.loads((Path(__file__).parent / "knowledge" / "customers.json").read_text(encoding="utf-8"))
@@ -42,7 +83,7 @@ def get_customer(customer_id: str) -> dict | None:
 
 def retrieve(query: str, k: int = 3) -> list[tuple[dict, float]]:
     scores = cosine_similarity(_vec.transform([query]), _matrix)[0]
-    best = scores.argsort()[::-1][:k]
+    best = sorted(range(len(scores)), key=lambda index: scores[index], reverse=True)[:k]
     return [(KB[i], float(scores[i])) for i in best]
 
 

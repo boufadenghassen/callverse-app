@@ -76,4 +76,7 @@ export interface TrainingPlan {
   focus: { skill: string; gap: number; criteria: string[] }[];
   scenarios: Scenario[];
   rationale: string[];
+  coach_summary?: string | null;
+  coach_actions?: string[];
+  coach_model?: string;
 }

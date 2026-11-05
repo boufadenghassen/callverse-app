@@ -74,10 +74,13 @@ def allocate(gaps: list[FocusItem], size: int) -> dict[str, int]:
     return counts
 
 
-def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator) -> TrainingPlan:
+def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator, coach_model=None) -> TrainingPlan:
     cat = generator.catalog
-    gaps, notes = normalize_weaknesses(cat, req.weaknesses, req.threshold)
-    ranked = sorted(gaps.values(), key=lambda g: g.gap, reverse=True)[: req.max_skills]
+    if coach_model is None:
+        gaps, notes = normalize_weaknesses(cat, req.weaknesses, req.threshold)
+        ranked = sorted(gaps.values(), key=lambda g: g.gap, reverse=True)[: req.max_skills]
+    else:
+        ranked, notes = coach_model.analyze(req.weaknesses, req.threshold, req.max_skills)
 
     if not ranked:
         rationale = notes + [
@@ -92,7 +95,8 @@ def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator) -> Traini
             kind="adaptive",
         )
         return TrainingPlan(
-            advisor_id=req.advisor_id, needs_training=False, focus=[], scenarios=[scenario], rationale=rationale
+            advisor_id=req.advisor_id, needs_training=False, focus=[], scenarios=[scenario], rationale=rationale,
+            coach_model=getattr(coach_model, "name", "rules"),
         )
 
     counts = allocate(ranked, req.size)
@@ -123,7 +127,8 @@ def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator) -> Traini
             scenarios.append(generator.assemble(spec, kind="adaptive"))
             index += 1
     return TrainingPlan(
-        advisor_id=req.advisor_id, needs_training=True, focus=ranked, scenarios=scenarios, rationale=rationale
+        advisor_id=req.advisor_id, needs_training=True, focus=ranked, scenarios=scenarios, rationale=rationale,
+        coach_model=getattr(coach_model, "name", "rules"),
     )
 
 

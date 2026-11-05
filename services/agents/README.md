@@ -15,6 +15,17 @@ The real agents behind the web app's `AgentGateway`. Built so far:
 The other agents (complaints, training, sales) still use demo data in the web app. `HttpAgentGateway` starts
 from the demo data and replaces only what exists here, so `AGENTS_MODE=http` already works.
 
+### Training Coach model
+
+The Scenario Gen service creates the safe scenario structure from its catalog. The adaptive plan is produced first by a local `RandomForestRegressor` trained at startup from augmented
+catalog QA-to-skill examples. It predicts the skills and gap strengths; scenario structure stays deterministic.
+If that ML model cannot be used, then when `OPENROUTER_API_KEY`
+is configured, `OPENROUTER_MODEL` is used as a secondary coach fallback: it writes the
+coach summary, practice actions, scenario cards, trainer briefs and success criteria. The model cannot
+change scenario IDs, difficulty, skills, catalog intents or the Customer Simulator payload. If the API
+is unavailable, the service keeps the deterministic plan and template wording. Ollama can be used
+instead by leaving the key unset and configuring `LOCAL_LLM_MODEL`.
+
 ## Run (from this folder)
 
 ```
