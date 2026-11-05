@@ -5,6 +5,20 @@ import { ForecastPoint, QualityReview } from '../agents/models';
  */
 const PAD_X = 40, PAD_TOP = 12, PAD_BOTTOM = 28;
 
+function loadColor(value: number, max: number) {
+  const ratio = loadRatio(value, max);
+  const hue = 132 - ratio * 132;
+  return `hsl(${hue.toFixed(1)} 62% 42%)`;
+}
+
+function loadRatio(value: number, max: number) {
+  return Math.max(0, Math.min(1, value / Math.max(1, max)));
+}
+
+function loadLevel(value: number, max: number) {
+  return Math.round(loadRatio(value, max) * 10);
+}
+
 export function lineChart(points: ForecastPoint[], width: number, height: number) {
   const n = points.length;
   const max = Math.max(1, ...points.map((p) => Math.max(p.forecast, p.actual ?? 0)));
@@ -14,17 +28,38 @@ export function lineChart(points: ForecastPoint[], width: number, height: number
   const pt = (x: number, yy: number) => `${x.toFixed(1)},${yy.toFixed(1)} `;
 
   let forecast = '', actual = '';
+  const forecastSegments: { points: string; color: string; level: number }[] = [];
+  const actualSegments: { points: string; color: string; level: number }[] = [];
   const labels: string[] = [], labelX: number[] = [];
+  const coordinates: { x: number; forecast: number; actual: number | null }[] = [];
   points.forEach((p, i) => {
     const x = PAD_X + (n === 1 ? 0 : (plotW * i) / (n - 1));
     labels.push(p.hour);
     labelX.push(Math.round(x));
+    coordinates.push({ x, forecast: p.forecast, actual: p.actual });
     forecast += pt(x, y(p.forecast));
     if (p.actual !== null) actual += pt(x, y(p.actual));
   });
+  coordinates.forEach((point, i) => {
+    if (i < coordinates.length - 1) {
+      const next = coordinates[i + 1];
+      const value = (point.forecast + next.forecast) / 2;
+      forecastSegments.push({ points: `${pt(point.x, y(point.forecast))}${pt(next.x, y(next.forecast))}`.trim(), color: loadColor(value, top), level: loadLevel(value, top) });
+    }
+    if (point.actual !== null && i < coordinates.length - 1 && coordinates[i + 1].actual !== null) {
+      const next = coordinates[i + 1];
+      const value = (point.actual + (next.actual ?? point.actual)) / 2;
+      actualSegments.push({ points: `${pt(point.x, y(point.actual))}${pt(next.x, y(next.actual ?? point.actual))}`.trim(), color: loadColor(value, top), level: loadLevel(value, top) });
+    }
+  });
   const gridValues: number[] = [], gridY: number[] = [];
   for (let v = 0; v <= top; v += 20) { gridValues.push(v); gridY.push(Math.round(y(v))); }
-  return { width, height, labels, labelX, forecastPoints: forecast.trim(), actualPoints: actual.trim(), gridValues, gridY, labelY: height - 8 };
+  return {
+    width, height, labels, labelX, forecastPoints: forecast.trim(), actualPoints: actual.trim(),
+    forecastSegments, actualSegments, loadColors: points.map((point) => loadColor(point.forecast, top)),
+    loadLevels: points.map((point) => loadLevel(point.forecast, top)),
+    gridValues, gridY, labelY: height - 8,
+  };
 }
 
 /** A review plus a timeline of the moments that cost points (x is in SVG units, viewBox 0..600). */

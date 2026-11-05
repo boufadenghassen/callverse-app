@@ -13,6 +13,8 @@ from functools import lru_cache
 
 import numpy as np
 
+import workforce_data
+
 HOURS = list(range(9, 18))      # the center is open 9:00 to 18:00
 NOW_HOUR = 13                   # the demo day is frozen at 13:00: hours up to 13h have an actual, later hours do not
 TARGET_SL = 0.80                # 80 % of calls answered...
@@ -82,7 +84,20 @@ def seasonal(queue: str) -> np.ndarray:
     return load_history(queue)[:, 2, :].mean(axis=0)
 
 
+@lru_cache(maxsize=5)
 def forecast(queue: str) -> list[dict]:
+    real = workforce_data.real_calls_by_hour()
+    if real:
+        baseline, actuals = workforce_data.real_forecast_and_actual()
+        return [
+            dict(
+                hour=f"{hour}h",
+                actual=max(1, actuals[hour][queue]),
+                forecast=max(1, baseline[hour][queue]),
+                source="real_daily_holdout",
+            )
+            for hour in HOURS
+        ]
     base, actual = seasonal(queue), today_actuals(queue)
     k = len(actual)
     # how is today running against its profile? Half of the gap is carried into the hours to come
@@ -99,6 +114,9 @@ def forecast(queue: str) -> list[dict]:
 def roster(queue: str) -> list[int]:
     """Advisors on duty each hour: what 85 % of the typical demand needs for 80 % of calls answered in 20 s."""
     q = QUEUES[queue]
+    real = workforce_data.real_calls_by_hour()
+    if real:
+        return [advisors_needed(real[hour][queue], q["aht"]) for hour in HOURS]
     return [advisors_needed(float(c) * PLAN_ON, q["aht"]) for c in seasonal(queue)]
 
 

@@ -707,19 +707,42 @@
     const cells = $$('.heat li');
     const marker = byId('marker') as unknown as SVGElement | null;
     const read = byId('scrub-read')!;
+    const previous = byId<HTMLButtonElement>('hour-prev');
+    const next = byId<HTMLButtonElement>('hour-next');
     const peak = cells.reduce((best, c, i) => (+c.dataset.forecast! > +cells[best].dataset.forecast! ? i : best), 0);
     const show = () => {
       const c = cells[+scrub.value];
       cells.forEach((x) => x.classList.toggle('on', x === c));
       marker?.setAttribute('x1', c.dataset.x ?? ''); marker?.setAttribute('x2', c.dataset.x ?? '');
       const f = +c.dataset.forecast!, wait = Math.round(f * 3.3), sla = Math.max(40, Math.round(100 - f * 0.4));
-      const load = f >= 60 ? 'overloaded' : f >= 40 ? 'busy' : 'calm';
+      const load = f >= 60 ? 'high load' : f >= 40 ? 'medium load' : 'low load';
       const actual = c.dataset.actual ? `, actual ${c.dataset.actual}` : '';
+      scrub.setAttribute('aria-valuetext', `${c.dataset.hour}, ${f} calls per hour`);
+      if (previous) previous.disabled = +scrub.value === 0;
+      if (next) next.disabled = +scrub.value === cells.length - 1;
       read.textContent = `${c.dataset.hour}: forecast ${f} calls/h${actual} · est. wait ${Math.floor(wait / 60)} min ${wait % 60} s · est. SLA ${sla}% · ${load}`;
     };
     scrub.value = String(peak);
     scrub.addEventListener('input', show);
+    previous?.addEventListener('click', () => { scrub.value = String(Math.max(0, +scrub.value - 1)); scrub.dispatchEvent(new Event('input')); });
+    next?.addEventListener('click', () => { scrub.value = String(Math.min(cells.length - 1, +scrub.value + 1)); scrub.dispatchEvent(new Event('input')); });
     show();
+  }
+
+  const advisorRange = byId<HTMLInputElement>('extraAdvisors-range');
+  const advisorNumber = byId<HTMLInputElement>('extraAdvisors');
+  const advisorOutput = byId<HTMLOutputElement>('extraAdvisors-value');
+  if (advisorRange && advisorNumber && advisorOutput) {
+    const sync = (value: string) => {
+      const bounded = Math.max(-5, Math.min(10, Number(value) || 0));
+      advisorRange.value = String(bounded);
+      advisorNumber.value = String(bounded);
+      advisorOutput.value = bounded > 0 ? `+${bounded}` : String(bounded);
+      advisorRange.style.setProperty('--advisor-position', `${((bounded + 5) / 15) * 100}%`);
+    };
+    advisorRange.addEventListener('input', () => sync(advisorRange.value));
+    advisorNumber.addEventListener('input', () => sync(advisorNumber.value));
+    sync(advisorNumber.value);
   }
 
   // Quality: upload a two-channel recording; the page then opens the new review

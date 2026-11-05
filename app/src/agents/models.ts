@@ -27,7 +27,7 @@ export interface CallStart { id: string; persona: string; opening: string; mood:
 export interface CallOutcome { verdict: string; expectationMet: boolean; churnRisk: number; effort: number; notes: string[] }
 export interface CallReply { ended: boolean; outcome: CallOutcome | null; mood: number; patience: number; client: string | null; move: string | null; moveLabel: string | null }
 /** `actual` is null for hours not reached yet. */
-export interface ForecastPoint { hour: string; actual: number | null; forecast: number }
+export interface ForecastPoint { hour: string; actual: number | null; forecast: number; source?: string }
 export interface SimulationRequest { queue: string; extraAdvisors: number; from: string; to: string }
 /** One hour of a simulation, so the numbers can be checked (the real workforce agent fills `hours` and `method`). */
 export interface SimulationHour { hour: string; calls: number; advisors: number; simulatedAdvisors: number; baselineWaitSec: number; simulatedWaitSec: number; baselineSla: number; simulatedSla: number; needed: number }

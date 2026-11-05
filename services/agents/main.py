@@ -1,6 +1,6 @@
 """orqestra agents service (FastAPI). Run from services/agents:  ../../../venv/Scripts/python.exe -m uvicorn main:app --port 8000
 
-Real today: the customer simulator, the customer advisor, the neural voice, speech to text and the workforce agent (Erlang C). The web app keeps using demo data for the other agents
+Real today: the customer simulator, the customer advisor, the neural voice, speech to text and the workforce agent (Erlang C plus a shadow RL policy). The web app keeps using demo data for the other agents
 (see HttpAgentGateway). The contract is the table in app/README.md.
 """
 import re
@@ -28,6 +28,7 @@ from complaints_agent.api import router as complaints_router
 import stt
 import voice
 import routing
+import rl_workforce
 import scheduling
 import workforce
 from scenario_gen import practice
@@ -210,6 +211,24 @@ def workforce_simulate(body: SimulateIn):
 def workforce_routing():
     """Who should work which queue for the rest of the day: ranked moves per hour, checked by a simulation."""
     return routing.plan()
+
+
+@app.get("/workforce/rl-routing")
+def workforce_rl_routing():
+    """Shadow RL recommendations with the deterministic routing plan as a safe fallback."""
+    return rl_workforce.shadow_plan()
+
+
+@app.get("/workforce/policy/health")
+def workforce_policy_health():
+    """Readiness and constraint metadata for the workforce RL policy."""
+    return rl_workforce.health()
+
+
+@app.get("/workforce/policy/evaluate")
+def workforce_policy_evaluate():
+    """Evaluate the shadow RL policy across real-derived demand scenarios."""
+    return rl_workforce.evaluate_scenarios()
 
 
 @app.get("/workforce/schedule")

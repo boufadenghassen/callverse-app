@@ -83,7 +83,9 @@ export class PagesController {
 
   private async workforcePage(queue: string, form: object, errors: Record<string, string> = {}, result: object | null = null) {
     const hours = await this.agents.forecast(queue);
-    return { queue, form, errors, result, hours, chart: lineChart(hours, CHART_W, CHART_H), plan: await this.agents.routing(), schedule: await this.agents.schedule() };
+    const source = hours.find((hour) => hour.source)?.source ?? 'demo';
+    const [plan, schedule] = await Promise.all([this.agents.routing(), this.agents.schedule()]);
+    return { queue, form, errors, result, hours, source, chart: lineChart(hours, CHART_W, CHART_H), plan, schedule };
   }
 
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------

@@ -20,32 +20,41 @@
             {% endfor %}
           </g>
           <line id="marker" class="marker" y1="12" y2="{{ chart.height - 28 }}" x1="40" x2="40"/>
-          <polyline class="line-forecast" points="{{ chart.forecastPoints }}"/>
-          <polyline class="line-actual" pathLength="1" points="{{ chart.actualPoints }}"/>
+          {% for segment in chart.forecastSegments %}
+          <polyline class="line-forecast load-level-{{ segment.level }}" points="{{ segment.points }}"/>
+          {% endfor %}
+          {% for segment in chart.actualSegments %}
+          <polyline class="line-actual load-level-{{ segment.level }}" points="{{ segment.points }}"/>
+          {% endfor %}
           {% for l in chart.labels %}
           <text class="axis" text-anchor="middle" x="{{ chart.labelX[loop.index0] }}" y="{{ chart.labelY }}">{{ l }}</text>
           {% endfor %}
         </svg>
-        <p class="legend"><span class="key forecast"></span>Forecast <span class="key actual"></span>Actual</p>
+        <p class="legend"><span class="key forecast"></span>Forecast <span class="key actual"></span>Actual <span class="key load-gradient"></span>Low-to-high load<span class="muted small">Real daily holdout disaggregated to the displayed hourly profile</span></p>
       </section>
       <section class="panel" aria-labelledby="sc">
         <h2 id="sc">Load by hour</h2>
 
         <div class="scrub">
           <label for="hour">Scrub through the day</label>
-          <input type="range" id="hour" min="0" max="{{ hours.length - 1 }}" value="0">
+          <div class="range-row">
+            <button type="button" class="btn-quiet range-step" id="hour-prev" aria-label="Previous hour">←</button>
+            <input type="range" id="hour" min="0" max="{{ hours.length - 1 }}" value="0" list="hour-ticks" aria-label="Hour of day">
+            <button type="button" class="btn-quiet range-step" id="hour-next" aria-label="Next hour">→</button>
+          </div>
+          <datalist id="hour-ticks">{% for h in hours %}<option value="{{ loop.index0 }}" label="{{ h.hour }}"></option>{% endfor %}</datalist>
           <p class="scrub-read" id="scrub-read" role="status">Drag to see each hour.</p>
         </div>
         <ol class="heat" aria-label="Expected load by hour">
           {% for h in hours %}
-          <li class="{{ 'hot' if h.forecast >= 60 else ('busy' if h.forecast >= 40 else 'calm') }}"
+          <li class="load-cell load-level-{{ chart.loadLevels[loop.index0] }}"
               data-hour="{{ h.hour }}" data-forecast="{{ h.forecast }}"{% if h.actual !== null %} data-actual="{{ h.actual }}"{% endif %} data-x="{{ chart.labelX[loop.index0] }}">
             <span class="heat-h">{{ h.hour }}</span>
             <span class="heat-v">{{ h.forecast }}</span>
           </li>
           {% endfor %}
         </ol>
-        <p class="muted small heat-key">Load against a 60 calls/hour capacity: calm, busy, overloaded. Wait and SLA are model estimates; with the real agent, the simulation below shows how they are computed.</p>
+        <p class="muted small heat-key">Low-to-high demand transitions from green to red. Forecast and actual values use the real daily holdout profile.</p>
       </section>
     </div>
     <section class="panel" aria-labelledby="wi">
@@ -57,8 +66,9 @@
               {% for qq in ['A', 'B', 'C', 'D', 'E'] %}<option value="{{ qq }}"{% if qq == form.queue %} selected{% endif %}>{{ qq }}</option>{% endfor %}
             </select>
             {% if errors.queue %}<p class="field-error">{{ errors.queue }}</p>{% endif %}</div>
-          <div><label for="extraAdvisors">Extra advisors</label>
-            <input id="extraAdvisors" name="extraAdvisors" type="number" min="-5" max="10" value="{{ form.extraAdvisors }}">
+          <div><label for="extraAdvisors">Extra advisors <output id="extraAdvisors-value" for="extraAdvisors-range">{{ form.extraAdvisors }}</output></label>
+            <input id="extraAdvisors-range" type="range" min="-5" max="10" step="1" value="{{ form.extraAdvisors }}" aria-label="Extra advisors">
+            <input id="extraAdvisors" name="extraAdvisors" type="number" min="-5" max="10" step="1" value="{{ form.extraAdvisors }}" inputmode="numeric">
             {% if errors.extraAdvisors %}<p class="field-error">{{ errors.extraAdvisors }}</p>{% endif %}</div>
           <div><label for="from">From</label><input id="from" name="from" type="time" value="{{ form.from }}">
             {% if errors.from %}<p class="field-error">{{ errors.from }}</p>{% endif %}</div>
