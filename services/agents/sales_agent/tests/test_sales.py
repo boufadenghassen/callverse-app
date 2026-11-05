@@ -35,6 +35,15 @@ def test_a_denied_need_is_not_a_need():
     assert "leaving" in engine.conversation_needs([C("If this goes on I will cancel my subscription.")])
 
 
+def test_the_learned_detector_handles_an_unseen_paraphrase_but_keeps_advisor_words_out():
+    needs = engine.conversation_needs([
+        C("I will be overseas for work and need my connection to work."),
+        dict(speaker="advisor", text="A family line could also be useful."),
+    ])
+    assert "travel" in needs
+    assert "family" not in needs
+
+
 def test_the_offers_follow_the_need_and_respect_the_contract():
     ines = advisor.get_customer("IK-2210")                            # Premium Unlimited: roaming and data are already covered
     ranked, skipped = engine.recommend(ines, engine.conversation_needs([C("I am going abroad next week and I will need data.")]), 60)

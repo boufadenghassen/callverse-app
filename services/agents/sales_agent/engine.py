@@ -7,7 +7,8 @@ offer is suggested and what would change it:
   customer value           up to 15   years with us, premium plan, a customer at risk for a retention offer
   the moment               -20 to +10 mood and open tickets: do not sell to someone who is upset, solve first
   track record             -10 to +10 how often this offer was accepted before (a smoothed rate)
-The needs are found with phrase patterns on what the customer said, not with a language model, and the offers, prices and customers are invented.
+ Needs come from a local, trainable multi-label NLP model. Business eligibility,
+ timing and commercial scores remain explicit policies rather than model guesses.
 
 Two more scores come with every customer and offer, built the same way (named parts you can read):
   churn risk         0 to 100, a sum of named factors: usage dropping, wanting to leave, open tickets, mood, years with us...
@@ -19,13 +20,14 @@ import re
 from pathlib import Path
 
 import advisor
+from . import intent_model
 
 _K = Path(__file__).resolve().parents[1] / "knowledge"
 CATALOG = json.loads((_K / "offers.json").read_text(encoding="utf-8"))
 PROFILES = {k: v for k, v in json.loads((_K / "sales_profiles.json").read_text(encoding="utf-8")).items() if not k.startswith("_")}
 OFFERS = {o["id"]: o for o in CATALOG["offers"]}
 VALUES = {k: v for k, v in CATALOG["values"].items() if not k.startswith("_")}
-NEEDS = {k: dict(label=v["label"], rx=re.compile(v["rx"], re.I)) for k, v in CATALOG["needs"].items()}
+NEEDS = {k: dict(label=v["label"]) for k, v in CATALOG["needs"].items()}
 
 MOOD_OF = {"Calm": 70, "Curious": 65, "Impatient": 45, "Frustrated": 30, "Angry": 20}
 NEGATIVE = re.compile(r"\b(angry|furious|unacceptable|terrible|awful|fed up|ridiculous|third time|unhappy|useless|disgusting|sick of)\b", re.I)
@@ -40,17 +42,26 @@ def mmss(seconds: float) -> str:
 
 
 def conversation_needs(turns: list[dict]) -> dict[str, dict]:
-    """The needs the customer voiced: need key -> label, the first quote with its time, how many replies mention it, and a strength 0 to 1."""
+    """Classify customer utterances into needs while retaining auditable evidence.
+
+    The learned detector handles wording variation. Negation stays deterministic:
+    a commercial action must never be inferred from "I am not leaving".
+    """
     found: dict[str, dict] = {}
     for i, t in enumerate(turns):
         if t["speaker"] != "customer":
             continue
         for sentence in SPLIT.split(t["text"]):
-            for key, need in NEEDS.items():
-                if need["rx"].search(sentence) and not (key in NEGATABLE and NEGATED.search(sentence)):
-                    n = found.setdefault(key, dict(label=need["label"], quote=sentence.strip(), turn=i, time=mmss(t["start"]) if t.get("start") is not None else None,
-                                                   turns=set(), source="conversation"))
-                    n["turns"].add(i)
+            for key, confidence in intent_model.predict(sentence).items():
+                if key in NEGATABLE and NEGATED.search(sentence):
+                    continue
+                need = NEEDS.get(key)
+                if not need:  # a deployment corpus can contain a retired label
+                    continue
+                n = found.setdefault(key, dict(label=need["label"], quote=sentence.strip(), turn=i, time=mmss(t["start"]) if t.get("start") is not None else None,
+                                               turns=set(), source="conversation", confidence=confidence))
+                n["turns"].add(i)
+                n["confidence"] = max(n["confidence"], confidence)
     for n in found.values():
         n["mentions"] = len(n.pop("turns"))
         n["strength"] = min(1.0, 0.7 + 0.15 * (n["mentions"] - 1))
@@ -128,7 +139,11 @@ def churn_risk(customer: dict | None, needs: dict, mood: int) -> dict:
     if tenure is not None:
         add("Years with us", -10 if tenure >= 5 else -5 if tenure >= 2 else 5 if tenure < 1 else 0, f"{tenure:g} years" if tenure >= 1 else "new, still deciding")
     score = max(0, min(100, sum(f["points"] for f in factors)))
-    return dict(score=score, level="High" if score >= 60 else "Medium" if score >= 30 else "Low", factors=factors)
+    from .public_models import ibm_churn_probability
+    probability = ibm_churn_probability(tenure, profile.get("monthlyTnd"))
+    return dict(score=score, level="High" if score >= 60 else "Medium" if score >= 30 else "Low", factors=factors,
+                model=None if probability is None else {"source": "IBM Telco Customer Churn", "probability": probability,
+                                                         "fields": ["tenure", "monthly charge"]})
 
 
 def acceptance(offer_id: str, relevance: int, cue: str, rates: dict | None, cells: dict | None) -> dict | None:

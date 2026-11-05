@@ -5,7 +5,7 @@ Leila Mansour, the sales manager, says *"The best upsell is the one that actuall
 
 | Ideation group | Decision | Built |
 |---|---|---|
-| Opportunity detection (from the conversation) | prototype | **yes** |
+| Opportunity detection (from the conversation) | local ML classifier | **yes** |
 | Offer recommendation (up-selling, customer-product match, relevance, personalised promotion) | prototype | **yes** (relevance score with its reasons, timing advice) |
 | Propensity scores (purchase, churn, offer acceptance) | perspective | **yes, as readable scores**: churn risk (a sum of named factors) and the chance of a yes for each offer (from the history of similar offers); the purchase propensity is that chance of a yes |
 | Commercial simulation (revenue per interaction, scenarios) | perspective | **yes, on the simulated history**: what a yes is worth, the expected value of each offer, and a replay of the history under a selling rule; no market or customer-growth model |
@@ -13,11 +13,13 @@ Leila Mansour, the sales manager, says *"The best upsell is the one that actuall
 Plus two things the persona asked for: the "which offers convert" loop (**built**, on a simulated history) and **offers during the live call** (**built**: the advisor console shows the offer to keep in mind after every customer message).
 
 ## Status
-**Real.** The needs are found by phrase patterns (no language model); **the offers, prices, plans and customers are invented; the history behind "which offers convert" is simulated.** Code: `services/agents/sales_agent/` (own README there).
+**Local ML, ready for real data.** The detector is a local TF-IDF word/character, one-vs-rest logistic-regression classifier. It has no cloud or LLM dependency and reads only customer turns. The checked-in corpus, offers, prices, plans and customers are demo data; set `SALES_TRAINING_DATA` to an approved labelled-conversation JSON export in a real deployment. The conversion history starts simulated. Code: `services/agents/sales_agent/` (own README there).
+
+**Public-data baselines.** The local, ignored `data/public/` folder can hold IBM Telco Customer Churn and KDD Cup 2009 / Orange. `py -m sales_agent.public_models` trains an IBM churn probability from the two profile fields Callverse actually receives (tenure and monthly charge), which is returned beside—not instead of—the readable churn score. It also trains a KDD upselling benchmark; because KDD's CRM fields are anonymised, that model is not used to score or explain a Callverse customer.
 
 ## How it works
-### 1. Finding needs (`engine.conversation_needs`, `file_needs`)
-Ten needs, each with a pattern list (in `knowledge/offers.json`):
+### 1. Finding needs (`engine.conversation_needs`, `intent_model.py`, `file_needs`)
+Ten needs are classified with a local multi-label model trained from `sales_agent/training_examples.json`, or from the approved JSON path in `SALES_TRAINING_DATA`:
 
 | Need | Reads as |
 |---|---|
@@ -33,7 +35,7 @@ Ten needs, each with a pattern list (in `knowledge/offers.json`):
 | Phone problem or upgrade | "new phone", battery, "screen is broken" |
 | Calls to people abroad | "calling my family abroad", international calls |
 
-* Only the **customer's** sentences are read, sentence by sentence. Each need keeps its **first quote and its time**; a need said in several replies is stronger: strength = 0.7, plus 0.15 per extra reply, at most 1.
+* Only the **customer's** sentences are read, sentence by sentence. The classifier uses TF-IDF word and character features with one-vs-rest logistic regression; a confidence threshold excludes weak labels. Each need keeps its **first quote and its time**; a need said in several replies is stronger: strength = 0.7, plus 0.15 per extra reply, at most 1.
 * **Denials do not count**: "I'm not leaving", "I don't want to cancel" are skipped for the needs that can be denied (leaving, travel, device, family, priority service).
 * **The customer's file** adds weaker needs: the reasons of past contacts (Plan change 0.5, Data usage 0.5, Roaming 0.6, Cancellation 0.8, Billing 0.3) and **usage down 30 % or more in two months** (reads as "thinking of leaving", at least 0.6). A need said aloud wins over the same need from the file.
 * The customer's **mood**: the mood given with her last reply, else guessed from her words (negative words 30, positive 65), else from the file (Calm 70, Curious 65, Impatient 45, Frustrated 30, Angry 20).
@@ -120,7 +122,7 @@ The whole score is a sum of named, signed, worded factors, so the screen answers
 Python (13): needs with quote and time, strength when said twice, denied needs, offers follow the need and respect the contract, relevance = sum of factors and the counterfactual really happens, the moment and the retention exception, the track record moves the ranking a little, the simulated history is created once and the analytics read it, the API validates its input; churn risk is a sum of factors and follows the customer, the chance of a yes is smoothed and comes from similar offers, what a yes is worth (a retention offer can lose money), the policy simulation trades volume for acceptance, the new figures travel through the API. Web (10): roles, demo mode refusals and guards, the page with the real agent's data, conversation cleaning and validation, outcome validation, the gateway's mapping of refusals, the new figures on the page, the simulation's validation, the live-call offers route (at most two offers, the mood kept only as a whole 0 to 100, roles), the advisor reporting an outcome. Browser (2): the whole flow against the real agent (cards, churn risk, chance of a yes, the conversation reader, the simulation), and the live-call panel with its outcome. Accessibility audit clean.
 
 ## Honest limits
-Patterns, not a language model: a paraphrase can be missed and a loose phrase over-read ("I need to call my wife" also reads as a family need). Invented offers, prices, bills and customers. The conversion history is simulated, and it was written so that acceptance rises with relevance and a good moment, so the **chance of a yes and the simulation reproduce that rule**: they show the loop works, not how real customers behave. The churn risk is a hand-weighted sum (no model learned from real departures). A retention offer's worth assumes a yes keeps the customer. The simulation does not price refusals. **Not built**: a learned purchase or churn model, a market or growth simulation, A/B comparison of offers, profit (only revenue) per offer.
+The detector is a local ML classifier, not a generative language model. Its quality depends on the approved labelled corpus supplied through `SALES_TRAINING_DATA`; the checked-in corpus is only a demo bootstrap. Invented offers, prices, bills and customers. The conversion history is simulated, and it was written so that acceptance rises with relevance and a good moment, so the **chance of a yes and the simulation reproduce that rule**: they show the loop works, not how real customers behave. The churn risk is a hand-weighted sum (no model learned from real departures). A retention offer's worth assumes a yes keeps the customer. The simulation does not price refusals. **Not built**: a learned purchase or churn model, a market or growth simulation, A/B comparison of offers, profit (only revenue) per offer.
 
 ## Files
-`services/agents/sales_agent/engine.py`, `store.py`, `tests/test_sales.py`, `README.md`; `services/agents/knowledge/offers.json` (offers, needs, values), `sales_profiles.json`; web: `app/src/pages/sales.controller.ts`, `live-call.controller.ts` (offers route), `app/views/sales.njk`, `advisor.njk` (offer panel), `app/client/app.ts` (reader, simulation, outcome buttons, live panel), `app/test/sales.spec.ts`.
+`services/agents/sales_agent/engine.py`, `intent_model.py`, `training_examples.json`, `store.py`, `tests/test_sales.py`, `README.md`; `services/agents/knowledge/offers.json` (offers, needs, values), `sales_profiles.json`; web: `app/src/pages/sales.controller.ts`, `live-call.controller.ts` (offers route), `app/views/sales.njk`, `advisor.njk` (offer panel), `app/client/app.ts` (reader, simulation, outcome buttons, live panel), `app/test/sales.spec.ts`.
