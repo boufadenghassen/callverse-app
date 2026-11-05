@@ -991,6 +991,16 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .emo-timeline { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .emo-timeline li { padding: .3rem .7rem; border-radius: 999px; background: var(--paper); font-size: .8125rem; text-transform: capitalize; }
 .emo-timeline li.bad { background: var(--danger-soft); color: var(--danger); }
+.emo-why { list-style: none; margin: 0 0 var(--s2); padding: 0; display: flex; gap: 2px; }
+.emo-why li { flex: 1; min-width: 0; }
+.emo-why .bar { display: block; height: 2.6rem; border-radius: 4px; background: var(--paper); }
+.emo-why .for .bar { background: var(--accent); }
+.emo-why .against .bar { background: repeating-linear-gradient(45deg, var(--muted) 0 3px, transparent 3px 6px); }
+.emo-why-axis { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: var(--s3); }
+.emo-why-legend { font-size: .8125rem; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.emo-why-legend .sw { display: inline-block; width: 1.4rem; height: .8rem; border-radius: 3px; }
+.emo-why-legend .sw.for { background: var(--accent); }
+.emo-why-legend .sw.against { background: repeating-linear-gradient(45deg, var(--muted) 0 3px, transparent 3px 6px); }
 
 /* Advisor live call */
 .live-setup { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: end; margin: var(--s4) 0; }
@@ -1004,7 +1014,7 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 .live-msg strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
 .live-say textarea { width: 100%; display: block; margin: var(--s2) 0 var(--s3); }
 .evidence { margin: var(--s3) 0; padding-left: var(--s4); font-size: .875rem; }
-#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden] { display: none; }
+#live-call[hidden], #live-suggest[hidden], #live-outcome[hidden], #lv-s-warn[hidden], #live-offer[hidden], #lv-o-top[hidden], #lv-o-none[hidden], #lv-o-risk[hidden] { display: none; }
 .live-check input[type=checkbox] { width: 1.1rem; height: 1.1rem; flex: none; }
 .listen { margin-left: var(--s2); font-size: .8125rem; }
 .listen.speaking { color: var(--accent-ink); font-weight: 700; }
@@ -1013,3 +1023,112 @@ html[data-theme="dark"] { --accent-soft: color-mix(in srgb, var(--accent) 22%, #
 #lv-rec.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
 #lv-rec[hidden] { display: none; }
 .how { margin-top: var(--s4); } .how summary { cursor: pointer; font-weight: 700; }
+.route-hour { margin: var(--s4) 0; } .route-hour h3 { margin: 0 0 var(--s2); }
+
+/* Quality analyst: analytics, review extras, transcript */
+.qa-stats { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s6); margin: var(--s3) 0 var(--s5); }
+.qa-stats p { margin: 0; display: flex; flex-direction: column; } .qa-stats strong { font-size: 2rem; line-height: 1.1; }
+.qa-stats span { color: var(--muted); font-size: .875rem; max-width: 16rem; }
+.qa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s5); margin-bottom: var(--s5); }
+.spark { display: block; max-width: 100%; } .spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.bars li { display: grid; grid-template-columns: minmax(8rem, 1fr) 6rem 2.6rem; gap: var(--s2); align-items: center; font-size: .875rem; } .bars meter { width: 100%; height: .6rem; }
+table.advisors td, table.advisors th { vertical-align: top; } .plan { margin: .4rem 0 0; padding-left: 1.1rem; max-width: 34rem; } .plan li { margin-bottom: .5rem; }
+.audio-form { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: end; margin: var(--s3) 0; } .audio-form > div { display: flex; flex-direction: column; gap: var(--s1); }
+.filters-form { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin: var(--s4) 0; }
+.review.focus { outline: 2px solid var(--accent); outline-offset: 4px; }
+.review-head .meta { margin: 0; } .badge { text-transform: none; letter-spacing: .02em; }
+.qmood { display: block; width: 100%; height: auto; } .qmood polyline { fill: none; stroke: var(--accent); stroke-width: 3; } .qmood .mid { stroke: var(--line-strong); stroke-dasharray: 4 4; }
+.lost, .transcript { margin-top: var(--s3); } .lost summary, .transcript summary { cursor: pointer; font-weight: 700; } .lost ul, .lost ol { margin: .5rem 0 0; padding-left: 1.1rem; }
+.strengths { margin-top: var(--s3); }
+.transcript ol { list-style: none; margin: .6rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.qturn { display: flex; flex-direction: column; gap: .15rem; padding: .5rem .8rem; border-radius: 10px; background: var(--paper); border-left: 4px solid transparent; }
+.qturn.advisor { background: var(--accent-soft); } .qturn.has-error { border-left-color: var(--danger); }
+.qturn .qwho { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.qflag { font-size: .8125rem; font-weight: 600; } .qflag.lost-flag { color: var(--danger); } .qflag.good-flag { color: var(--ok); }
+.empty-state { text-align: center; color: var(--muted); padding: var(--s6) var(--s4); }
+
+/* Quality: verdicts, accuracy, print */
+.agreement { margin: 0 0 var(--s4); }
+.fb-group { display: inline-flex; gap: .35rem; margin-left: .5rem; vertical-align: baseline; }
+.fb { font-size: .8125rem; padding: .15rem .6rem; }
+.fb[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
+.lost li.disputed { opacity: .65; } .lost li.disputed q { text-decoration: line-through; }
+.filters-form label { font-weight: 600; }
+@media print {
+  .audio-form, #audio-status, .filters-form, .fb-group, .listen, .btn-quiet { display: none !important; }
+  .review, .panel { break-inside: avoid; box-shadow: none; }
+  details.lost, details.transcript { break-inside: avoid; }
+}
+
+/* What moved this score: what the advisor said that lowered it, and what protected it */
+.drivers { margin-top: var(--s4); }
+.drivers summary { font-weight: 700; cursor: pointer; }
+.driver-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); margin: var(--s3) 0; }
+@media (max-width: 760px) { .driver-cols { grid-template-columns: 1fr; } }
+.driver-cols h3 { margin: 0 0 var(--s2); font-size: .9375rem; }
+.driver-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.driver-list li { display: grid; grid-template-columns: 3.2rem 1fr; gap: var(--s2); align-items: start; padding: var(--s2) var(--s3); border-radius: 12px; background: var(--paper); font-size: .875rem; }
+.driver-list q { display: block; color: var(--ink-2); }
+.eff { font: 750 1rem var(--sans); text-align: center; padding: .15rem 0; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.eff.neg { background: var(--danger-soft); color: var(--danger); }
+.eff.pos { background: var(--ok-soft); color: var(--ok); }
+
+/* Sales: why an offer, the moment to offer it, the conversation reader, what converts */
+.price { font: 600 .875rem var(--sans); color: var(--muted); letter-spacing: 0; }
+.timing { margin: var(--s2) 0; font-size: .875rem; }
+.timing.go strong { color: var(--ok); } .timing.wait strong { color: var(--danger); }
+.why { margin: var(--s3) 0; } .why summary { cursor: pointer; font-weight: 650; }
+.why .driver-list { margin-top: var(--s2); }
+.samples { display: flex; flex-wrap: wrap; gap: var(--s2); }
+#sales-form select, #sales-form textarea { width: 100%; max-width: 40rem; font: inherit; padding: .5rem .75rem; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; }
+.sales-offers { list-style: none; margin: 0 0 var(--s3); padding: 0; display: grid; gap: var(--s3); }
+.sales-offers > li { background: var(--paper); border-radius: 14px; padding: var(--s3) var(--s4); }
+.sales-offers h4 { margin: 0 0 var(--s1); font-size: 1rem; }
+.conv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: var(--s4); margin: var(--s3) 0; }
+.conv { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.conv caption { text-align: left; font-weight: 700; padding-bottom: var(--s1); }
+.conv th, .conv td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid var(--line); } .conv td { font-variant-numeric: tabular-nums; }
+.risk { display: inline-block; margin: var(--s1) 0 0; padding: .1rem .6rem; border-radius: 999px; font: 650 .8125rem var(--sans); }
+.risk.low { background: var(--ok-soft); color: var(--ok); } .risk.medium { background: var(--warn-soft); color: var(--warn); } .risk.high { background: var(--danger-soft); color: var(--danger); }
+.figures { margin: var(--s2) 0; font-size: .875rem; font-variant-numeric: tabular-nums; }
+.sim-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s3); margin: var(--s3) 0; }
+.sim-form input[type=number] { width: 9rem; max-width: 100%; }
+.sim-form .check { display: flex; align-items: center; min-height: 2.5rem; } .sim-form .check input { width: auto; margin-right: .4rem; }
+.sim .yours th, .sim .yours td { font-weight: 700; background: var(--accent-soft); }
+
+/* Complaints: the real agent (four lanes, the reasons, the follow-up, where complaints come from) */
+.lanes.real { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+.lane-low { --lane: #3d5a47; }
+.lane-low .ring .fg { stroke: #3d5a47; }
+html[data-theme="dark"] .lane-low { --lane: #9fd0b0; } html[data-theme="dark"] .lane-low .ring .fg { stroke: #9fd0b0; }
+.case .why { margin: var(--s2) 0; font-size: .875rem; } .case .why h4 { margin: var(--s2) 0 var(--s1); font-size: .8125rem; }
+.late { color: var(--danger); }
+.rising { color: var(--danger); font-weight: 650; }
+.candidates { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.candidates li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3); align-items: flex-start; background: var(--paper); border-radius: 14px; padding: var(--s3) var(--s4); }
+.move-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s3); margin: var(--s3) 0; }
+.move-form select, .move-form input:not([type=hidden]) { width: auto; min-width: 12rem; }
+.timeline-log { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.todo li { margin-bottom: var(--s2); }
+#tri-form select, #tri-form textarea { width: 100%; max-width: 40rem; font: inherit; padding: .5rem .75rem; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; }
+
+
+.history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.history-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.inline-form { display: inline; margin: 0; }
+
+
+/* Quality: the good is reported as clearly as the bad */
+.balance { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 var(--s3); }
+.chip.good-chip { background: var(--ok-soft); color: var(--ok); } .chip.bad-chip { background: var(--danger-soft); color: var(--danger); }
+.good-note { color: var(--ok); font-weight: 600; }
+.keep { margin: var(--s2) 0; } .keep-list { margin: 0 0 var(--s3); padding-left: 1.2rem; }
+.lost h4 { margin: var(--s3) 0 var(--s1); font-size: .9375rem; }
+
+/* The advisor console: a training scenario to practise, and what the agents did on an automatic call */
+.play-banner { background: var(--paper); border-radius: 14px; padding: var(--s3) var(--s4); margin: var(--s3) 0; }
+.play-banner h3 { margin: 0 0 var(--s1); }
+.play-banner ul { margin: var(--s1) 0 var(--s2); padding-left: 1.2rem; }
+.summary-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+#live-summary[hidden] { display: none; }

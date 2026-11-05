@@ -1,0 +1,175 @@
+{
+  "samples": 300,
+  "trainSamples": 240,
+  "testSamples": 60,
+  "classes": [
+    "BILLING",
+    "CONTRACT_PLAN",
+    "CUSTOMER_SERVICE",
+    "FIELD_SERVICE",
+    "FRAUD_PRIVACY_LEGAL",
+    "NETWORK_TECH",
+    "OTHER_UNCLEAR",
+    "POLICY_COMPETITION"
+  ],
+  "classCounts": {
+    "BILLING": 66,
+    "CONTRACT_PLAN": 50,
+    "CUSTOMER_SERVICE": 17,
+    "FIELD_SERVICE": 16,
+    "FRAUD_PRIVACY_LEGAL": 33,
+    "NETWORK_TECH": 64,
+    "OTHER_UNCLEAR": 32,
+    "POLICY_COMPETITION": 22
+  },
+  "accuracy": 0.6333,
+  "macroF1": 0.5757,
+  "report": {
+    "BILLING": {
+      "precision": 0.7058823529411765,
+      "recall": 0.9230769230769231,
+      "f1-score": 0.8,
+      "support": 13.0
+    },
+    "CONTRACT_PLAN": {
+      "precision": 0.6666666666666666,
+      "recall": 0.6,
+      "f1-score": 0.631578947368421,
+      "support": 10.0
+    },
+    "CUSTOMER_SERVICE": {
+      "precision": 0.4,
+      "recall": 0.5,
+      "f1-score": 0.4444444444444444,
+      "support": 4.0
+    },
+    "FIELD_SERVICE": {
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.5,
+      "support": 3.0
+    },
+    "FRAUD_PRIVACY_LEGAL": {
+      "precision": 0.6666666666666666,
+      "recall": 0.5714285714285714,
+      "f1-score": 0.6153846153846154,
+      "support": 7.0
+    },
+    "NETWORK_TECH": {
+      "precision": 0.6,
+      "recall": 0.6923076923076923,
+      "f1-score": 0.6428571428571429,
+      "support": 13.0
+    },
+    "OTHER_UNCLEAR": {
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.4,
+      "support": 6.0
+    },
+    "POLICY_COMPETITION": {
+      "precision": 0.6666666666666666,
+      "recall": 0.5,
+      "f1-score": 0.5714285714285714,
+      "support": 4.0
+    },
+    "accuracy": 0.6333333333333333,
+    "macro avg": {
+      "precision": 0.650735294117647,
+      "recall": 0.5566849816849816,
+      "f1-score": 0.5757117151853994,
+      "support": 60.0
+    },
+    "weighted avg": {
+      "precision": 0.6429411764705882,
+      "recall": 0.6333333333333333,
+      "f1-score": 0.622401945033524,
+      "support": 60.0
+    }
+  },
+  "confusionMatrix": [
+    [
+      12,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      1,
+      6,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      2,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      2,
+      1,
+      0,
+      0,
+      4,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      1,
+      0,
+      1,
+      9,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      1,
+      2,
+      2,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      2
+    ]
+  ],
+  "seed": 42,
+  "source": "complaints_agent\\data\\gold_final.csv",
+  "labelColumn": "label_final"
+}

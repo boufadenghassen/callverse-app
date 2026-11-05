@@ -87,7 +87,7 @@ export class DeckController {
 
   // ---- Yasmine: client simulator -------------------------------------------------------------
 
-  @Roles('CLIENT') @Get('client') @Render('client')
+  @Roles('CLIENT', 'TRAINER') @Get('client') @Render('client')
   client(@Query() q: Record<string, unknown>) {
     const call = parseCall(q);
     const s = replay(call.persona, call.mix, call.difficulty, call.intent, call.memory, call.moves, call.said);
@@ -108,7 +108,7 @@ export class DeckController {
       personas: Object.entries(PERSONAS).map(([key, v]) => ({ key, label: v.label })),
       difficulties: Object.entries(DIFFICULTIES).map(([key, v]) => ({ key, label: v.label })),
       intents: Object.entries(INTENTS).map(([key, v]) => ({ key, label: v.label })),
-      choices: (Object.keys(MOVES) as MoveKey[]).filter((k) => k !== 'OTHER').map((k) => ({ label: MOVES[k].label, href: next(k) })),
+      choices: (Object.keys(MOVES) as MoveKey[]).filter((k) => k !== 'OTHER' && k !== 'RUDE').map((k) => ({ label: MOVES[k].label, href: next(k) })),
       // the typed-reply form carries the whole call along as hidden fields
       state: {
         persona: call.persona, mix: call.mix ?? '', difficulty: call.difficulty, intent: call.intent, memory: String(call.memory),

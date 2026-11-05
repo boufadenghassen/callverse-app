@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from fastapi import FastAPI, HTTPException, Request
 
+import explain
 import finetune as ft
 
 WEIGHTS = Path(os.environ.get("EMOTION_WEIGHTS", ft.MODELS / "registry" / "emotion_wavlm_ft_full_aug2.pt"))
@@ -37,6 +38,12 @@ def health():
     return {"status": "UP", "model": WEIGHTS.name, "device": device.type}
 
 
+def score(waves):
+    """Calibrated probabilities, one row per wave: same as dividing the raw scores by the temperature before the softmax."""
+    p = ft.predict(model, waves, list(range(len(waves))), device) ** (1 / TEMPERATURE)
+    return p / p.sum(1, keepdims=True)
+
+
 @app.post("/emotion/analyze")
 async def analyze(req: Request):
     raw = await req.body()
@@ -53,12 +60,16 @@ async def analyze(req: Request):
     n = max(1, round(len(y) / WINDOW))
     bounds = np.linspace(0, len(y), n + 1).astype(int)
     waves = [y[a:b] for a, b in zip(bounds[:-1], bounds[1:])]
-    proba = ft.predict(model, waves, list(range(n)), device)       # (windows, 6)
-    proba = proba ** (1 / TEMPERATURE)             # same as dividing the raw scores by T before the softmax
-    proba /= proba.sum(1, keepdims=True)
+    proba = score(waves)                           # (windows, 6)
     whole = proba.mean(0)
 
     best = int(whole.argmax())
+    block = explain.block_seconds(len(y) / ft.SR)
+    try:                                           # the explanation is a bonus: if it fails the answer still goes out
+        why = {"method": "occlusion", "target": ft.NAMES[ft.EMOS[best]], "blockSec": block,
+               **explain.summarize(explain.occlusion(y, ft.SR, bounds, proba, best, score, block))}
+    except Exception:
+        why = None
     return {
         "emotion": ft.NAMES[ft.EMOS[best]],
         "confidence": round(float(whole[best]), 3),
@@ -67,5 +78,6 @@ async def analyze(req: Request):
         "probabilities": {ft.NAMES[e]: round(float(p), 3) for e, p in zip(ft.EMOS, whole)},
         "timeline": [{"startSec": round(a / ft.SR, 1), "emotion": ft.NAMES[ft.EMOS[int(p.argmax())]], "confidence": round(float(p.max()), 3)}
                      for a, p in zip(bounds[:-1], proba)],
+        "explanation": why,
         "model": WEIGHTS.name,
     }

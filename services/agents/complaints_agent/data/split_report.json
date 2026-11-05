@@ -1,0 +1,14 @@
+{
+  "raw_file": "Comcast.csv",
+  "raw_sha256": "ad7fecbf904ad54762ec6c4926bf0e32d56f37a4f736a21dd2af1b78d308608e",
+  "n_rows_raw": 2224,
+  "n_rows_clean": 2224,
+  "exact_duplicates": 500,
+  "sim_threshold": 0.85,
+  "n_groups": 1671,
+  "share_in_multi_groups": 0.3147482014388489,
+  "gold_n": 300,
+  "n_folds": 5,
+  "seed": 42,
+  "median_words": 4.0
+}

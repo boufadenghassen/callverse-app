@@ -1,0 +1,76 @@
+# 2. Customer advisor (Karim, the advisor)
+
+## Purpose and persona
+Karim Belhadj, the advisor, says *"I just need the right answer in one click, not five open tabs."* The agent reads what the customer says, finds the passage of the knowledge base that answers it, and suggests a sourced reply with the policy that applies. The ideation had four idea groups: understand the request, 360° customer view, knowledge and rules, guided actions.
+
+## Status
+**Real**, with these simplifications: the knowledge base is invented (12 passages), retrieval is TF-IDF (no language model), and "guided actions" is partial (a policy warning and an escalate button; no transfer recommender).
+
+## How it works
+### Retrieval of the answer (`suggest`)
+1. The knowledge base `knowledge/base.json` has 12 passages, each with a `source` (for example "Billing policy §4.2"), a `title`, the `text` it is matched on, a ready-made `reply` and an optional `policy` warning. The topics: duplicate charge, how a refund is approved, roaming bundle not working abroad, compensation for a failed roaming bundle, cancellation and early termination fee, changing the plan, data limit does not match the plan, disputing an invoice, transfers and callbacks, empathy and customer history, SIM card replacement, payment methods and late payment.
+2. The passages are turned into **TF-IDF vectors** (scikit-learn; one and two word sequences, sublinear term frequency, English stop words removed).
+3. The customer's sentence is vectorised the same way and compared with every passage by **cosine similarity**. The three best passages are kept.
+4. If the best score is under **0.08** the agent does not guess: it answers *"I could not find a reliable answer in the knowledge base for this. Please ask the customer to give more details, or escalate to a supervisor."* with no sources.
+5. Otherwise the suggested text is the best passage's `reply`. (A customer's first name can be put in front, "Hello Yasmine.", when the caller passes it; the HTTP endpoint does not yet.)
+6. `sources` lists the sources of every passage scoring at least 0.08; `evidence` lists them with their score and title.
+7. The score is returned as `confidence`. It is a cosine similarity, **not a probability**, and the web pages no longer display it.
+
+### Policy warning
+If the customer's sentence mentions an amount in TND, dinars or DT above **50**, the warning says *"Refunds above 50 TND need supervisor approval (120 dinars was mentioned)."* Otherwise the matching passage's own `policy` text is used (for example the refund passage).
+
+### Intent chips
+Six intents are detected with word patterns (several can match): Billing, Roaming, Cancellation, Plan change, Data usage, Complaint. They show as chips on the customer card and feed the quality analyst (the call's intent) and the sales agent.
+
+### Customer 360° (`knowledge/customers.json`)
+Five invented customers, each with `id`, `name`, `profile`, `intents`, `contract`, `openTickets`, `transfers`, `mood`:
+
+| Id | Name | Profile | Contract | Tickets | Mood |
+|---|---|---|---|---|---|
+| YT-1042 | Yasmine Toumi | Loyal customer, 6 years | Mobile Plus 40 GB | 1 | Impatient |
+| MS-0007 | Mounir Sassi | New customer, 2 weeks | Starter 10 GB | 0 | Curious |
+| IK-2210 | Ines Kacem | Premium customer, 3 years | Premium Unlimited | 0 | Calm |
+| WF-3391 | Walid Ferjani | Unsatisfied customer, repeated contact | Mobile Plus 40 GB | 2 | Frustrated |
+| SH-5520 | Salma Hammami | At-risk customer, usage dropping | Mobile Basic 20 GB | 1 | Angry |
+
+### The advisor agent talking by itself (`advisor_agent.py`)
+On an automatic call the agent reads the conversation, chooses what to do next, writes the reply, and has it checked before it is said. Only the middle part is a language model.
+
+* **Plan (rules, `plan`).** Four good-practice steps always happen in order: **acknowledge** (greet, apologise, verify the identity), **check the policy**, **give the solution**, **follow up in writing**. The customer simulator allows six replies, so two are spare. A spare reply goes to **calm the customer** when their mood fell by 8 or more, or is 30 or less, and to **answer the question** when they ask a real question after the solution. Each reply carries `why`, the reason for its step.
+* **Write (local model, `write`).** `local_llm.py` calls `qwen2.5:7b` through Ollama on this machine: no key, nothing leaves the computer. The prompt holds the goal of the step, what the customer just said, the last turns, the knowledge-base passage and, in a training scenario, the situation. The model chooses words, never facts or the process.
+* **Check (rules, `check`).** The quality analyst's own rules read the draft as if it had been said. It is refused for a promise before the policy check, a refund above the limit without approval, an action before the identity check, a cancellation without a retention offer, a fact the knowledge base contradicts, a guarantee, jargon, a transfer or asking the customer to repeat. It is also refused for a number that is not in the passage or the conversation, a placeholder, more than 300 characters, or if the customer simulator would hear it as something else than the step asks.
+* **Fallback.** A refused draft is written again once with the reasons, then replaced by the fixed wording of that step. Without the model, every step has fixed wording, so the call still follows the plan. `engine` says who wrote the reply and `checks` what happened; the console shows both under the reply.
+
+Measured on 2026-11-05 with the real model, on 30 calls (5 customers, 2 difficulties, 3 reasons): all 30 resolved, average 99.8 out of 100, lowest 99, slowest reply 2.2 s with the model already loaded; 102 of 120 replies were the model's, 18 fixed wording. The score is the project's own quality analyst reading a reply that its rules already checked, and the customer is rule-based, so this shows the agent follows the process, not that real customers would be satisfied. The knowledge base is small: for a problem it does not cover, the nearest passage can be off topic (slow home internet retrieves a roaming passage).
+
+The agent's calls are filed under "Advisor agent" with the source `automatic`, and they do not count in the quality analytics.
+
+A second style, **rushed**, exists for demonstrations only: it promises a refund at once, asks the customer to repeat, then passes the customer on. It makes the call end badly (the customer hangs up or the call is left open), which is what the quality analyst and the complaint agent are there for.
+
+## API (agents service)
+| Endpoint | Input | Answer |
+|---|---|---|
+| `POST /advisor/suggest` | `customer_id` (two capital letters, a dash, four digits), `query` (3 to 500 characters) | `{text, sources[], policyWarning, confidence, intents[], evidence[{source, score, excerpt}]}` |
+| `GET /advisor/customers/{id}` | id as above | the customer's record; unknown id: 404; badly formed id: 422 |
+
+`POST /advisor/auto` `{topic (3 to 300 characters), turn (0 to 10), style (careful or rushed), customer_id (optional)}` answers `{text (at most 300 characters), step, turn, last, sources, intents, policyWarning, style}`; a wrong value is 422, an unknown customer 404.
+
+## In the web app (`/advisor`, role `karim`; the trainer `rim` and the admin may use the console too)
+* **Customer 360° card**: name, profile, intent chips, contract, open tickets and transfers, mood. The customer is chosen with `?customer=ID` (default YT-1042) and the search with `?q=` (3 to 200 characters, control characters removed; default "double charge on monthly bill"); anything else is refused with a 400.
+* **Knowledge assistant**: a search box; the suggested answer with its **Sources**, the list of passages it comes from, and the policy warning (yellow). **Listen** reads the answer aloud ([07-voice.md](07-voice.md)). Buttons *Use answer*, *Edit*, *Escalate* show a confirmation (nothing is sent anywhere).
+* **Live call**: after every message of the simulated customer ([01-customer-simulator.md](01-customer-simulator.md)) the agent suggests the next answer from the call's topic (the customer's opening line) plus what she just said, so a short "okay" keeps the suggestion on topic; each suggestion comes with its sources and intents; the advisor can use it, type (1 to 300 characters), or record a voice note.
+* **Let the advisor agent talk / Show a rushed advisor**: starts a call with the chosen settings and plays it by itself, one reply about every second (no voice), until the call ends or after six replies. Then **What the agents did on this call** lists: the customer simulator's outcome, the steps the advisor agent took, the sales agent's offer and its timing, the quality analyst's score with what lowered it and what went well, and whether the complaint agent will list the call (the customer hung up, left upset or nothing was agreed).
+* **Practise a training scenario**: with `?scenario=ID` the console chooses the simulator's settings from a training scenario and shows how it was read ([06-training-and-complaints.md](06-training-and-complaints.md)).
+* Demo mode serves the same screens with fixed answers; the automatic call needs the real agents.
+
+## Explainability
+Nothing the agent says comes from nowhere: each answer is one passage's text, its source is shown and the other candidate passages are listed as evidence. The policy warning states the rule (and the amount that triggered it). The score of the match exists in the data but is not shown to users.
+
+## Tests
+`services/agents/tests/test_agents.py`: the right passage is chosen and cited; big refunds are flagged; "I don't know" when nothing matches; intents; the customer lookup (known, unknown 404, malformed 422). Web: advisor page, live-call routes and the browser tests.
+
+## Honest limits
+Twelve invented passages; TF-IDF cannot understand paraphrases ("I paid two times" works, "my money left twice" may not); only the best passage's reply is used, never a mix; no memory of the conversation beyond the last customer message; the knowledge base is where a vector search over the real FAQ (and later an LLM that must cite it) would go.
+
+## Files
+`services/agents/advisor.py`, `services/agents/knowledge/base.json`, `knowledge/customers.json`, `app/views/advisor.njk`, `app/src/pages/pages.controller.ts` (advisor route), `app/src/pages/live-call.controller.ts`.

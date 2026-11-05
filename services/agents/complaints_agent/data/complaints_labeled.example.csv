@@ -1,0 +1,11 @@
+text,label
+"I was charged twice for my monthly bill",billing_duplicate
+"The invoice contains a duplicate payment",billing_duplicate
+"My roaming bundle did not work abroad",roaming
+"I could not use my data while travelling abroad",roaming
+"The cancellation fee is wrong",contract_terms
+"I want to terminate my contract and dispute the penalty",contract_terms
+"My internet is slow and the signal keeps dropping",network
+"There is no service or coverage at home",network
+"Nobody called me back after my complaint",repeat_contact
+"I was transferred again and no one solved the issue",repeat_contact

@@ -1,0 +1,74 @@
+{% extends "app.njk" %}
+{% set title = "Scenario details" %}
+{% set active = "training" %}
+{% set bodyClass = "p-training" %}
+{% block content %}
+<header class="page-head">
+  <p class="eyebrow">Rim · Training agent</p>
+  <h1>{{ scenario.title }}</h1>
+  <p class="lede">Review the complete scenario before starting a Customer Simulator session or creating a what-if variant.</p>
+</header>
+
+<section class="panel">
+  <div class="scn-top"><span class="case-id">{{ scenario.id }}</span><span class="chip">{{ scenario.kind }}</span></div>
+  <p class="chips"><span class="chip">{{ scenario.spec.segment }}</span><span class="chip">Difficulty {{ scenario.spec.difficulty }}/5</span><span class="chip">{{ scenario.spec.language }}</span></p>
+  <h2>Customer situation</h2>
+  <p>{{ scenario.customer_card }}</p>
+  {% if scenario.opening_line %}<p class="muted">On the phone, the customer opens with: “{{ scenario.opening_line }}”</p>{% endif %}
+  <h2>Trainer brief</h2>
+  <p>{{ scenario.trainer_brief }}</p>
+  <h2>Complications</h2>
+  {% if scenario.complications %}<ul>{% for item in scenario.complications %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No complications.</p>{% endif %}
+  <h2>Success criteria</h2>
+  <ul>{% for item in scenario.success_criteria %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+
+<section class="panel">
+  <h2>Practise this scenario</h2>
+  <p class="muted">The customer simulator plays the scenario in the advisor console; the advisor agent can answer by itself, and the call is then scored by the quality analyst.</p>
+  <div class="actions">
+    <a class="btn" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;start=1#live">Play it in the console</a>
+    <a class="btn-line" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;auto=careful#live">Let the advisor agent play it</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>What-if variants</h2>
+  <p class="muted">Create a harder or easier version from this scenario.</p>
+  <div class="actions">
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/replay?advisor={{ advisor | urlencode }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn-line" type="submit">Replay scenario</button>
+    </form>
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="op" value="harder">
+      <button class="btn" type="submit">Make harder</button>
+    </form>
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="op" value="easier">
+      <button class="btn-line" type="submit">Make easier</button>
+    </form>
+    <a class="btn-line" href="/training?advisor={{ advisor | urlencode }}">Back to Coach plan</a>
+  </div>
+</section>
+
+{% if replayed %}<section class="panel" aria-live="polite"><p class="coach">Replay loaded successfully. The same scenario is ready for the next Customer Simulator session.</p></section>{% endif %}
+
+<section class="panel">
+  <h2>Delete scenario</h2>
+  <p class="muted">Deleting removes this scenario from the Scenario Gen store.</p>
+  <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/delete?advisor={{ advisor | urlencode }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn-line" type="submit">Delete scenario</button>
+  </form>
+</section>
+
+{% if lineage | length > 1 %}
+<section class="panel">
+  <h2>Scenario history</h2>
+  <ol>{% for item in lineage %}<li><a href="/training/scenarios/{{ item.id | urlencode }}?advisor={{ advisor | urlencode }}">{{ item.id }}</a> — {{ item.title }} ({{ item.kind }})</li>{% endfor %}</ol>
+</section>
+{% endif %}
+{% endblock %}

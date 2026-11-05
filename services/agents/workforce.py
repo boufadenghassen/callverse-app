@@ -28,6 +28,7 @@ QUEUES = {   # typical calls per hour at 9h..17h, and average handling time in s
     "D": dict(name="Technical", aht=420, shape=[14, 20, 26, 32, 36, 40, 34, 26, 20]),
     "E": dict(name="Sales", aht=200, shape=[8, 12, 16, 20, 22, 24, 20, 16, 12]),
 }
+TODAY = {"A": 1.15, "B": 1.08, "C": 0.85, "D": 0.90, "E": 0.80}   # how busy the demo day is compared with a typical one: billing busy, the rest quiet
 PLAN_ON = 0.85   # rosters are planned on 85 % of the typical demand, so a normal peak runs short: that is what the what-if is for
 
 
@@ -71,9 +72,9 @@ def load_history(queue: str) -> np.ndarray:
 
 @lru_cache(maxsize=None)
 def today_actuals(queue: str) -> list[int]:
-    """Calls that really came in so far today (synthetic: a slightly busier day than usual)."""
+    """Calls that really came in so far today (synthetic: the factor in TODAY says how busy each queue is compared with a typical day)."""
     rng = np.random.default_rng(sum(map(ord, queue)) * 104729)
-    return [int(x) for x in rng.poisson(np.array(QUEUES[queue]["shape"]) * 1.06)[: NOW_HOUR - HOURS[0] + 1]]
+    return [int(x) for x in rng.poisson(np.array(QUEUES[queue]["shape"]) * TODAY[queue])[: NOW_HOUR - HOURS[0] + 1]]
 
 
 def seasonal(queue: str) -> np.ndarray:

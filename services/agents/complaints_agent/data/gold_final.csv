@@ -1,0 +1,301 @@
+gold_id,text,recheck,label,secondary_label,confidence_1to3,notes,label_recheck,llm_label,llm_secondary,llm_confidence,human_reviewed,label_final,secondary_final,final_reason,changed_vs_prelabel
+G001,Service Quality,False,NETWORK_TECH,,1,"vague: qualité de service, probablement technique",,NETWORK_TECH,,1,True,NETWORK_TECH,,,False
+G002,Comcast will not let me discuss my bill or service with a representative,False,CUSTOMER_SERVICE,BILLING,2,,,CUSTOMER_SERVICE,BILLING,2,True,CUSTOMER_SERVICE,BILLING,,False
+G003,Nightly service interruption,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G004,Comcast overcharging,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G005,Routine Outages / Speeds never as promised,False,NETWORK_TECH,CONTRACT_PLAN,3,,,NETWORK_TECH,CONTRACT_PLAN,3,True,NETWORK_TECH,CONTRACT_PLAN,,False
+G006,Bad Practices,True,UNCLEAR,,2,aucun problème précis,UNCLEAR,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G007,Monopolistic Billing,False,POLICY_COMPETITION,BILLING,1,critique de l'industrie + facturation,,POLICY_COMPETITION,BILLING,1,True,POLICY_COMPETITION,BILLING,,False
+G008,internet not working,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G009,Over Charged for Service Never Received,False,BILLING,NETWORK_TECH,3,,,BILLING,NETWORK_TECH,3,True,BILLING,NETWORK_TECH,,False
+G010,Comcast Excessive Overages,True,BILLING,CONTRACT_PLAN,2,,CONTRACT_PLAN,BILLING,CONTRACT_PLAN,2,True,BILLING,CONTRACT_PLAN,,False
+G011,"No internet, no cable",False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G012,Comcast 300Gb Data Cap,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G013,Internet speed,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G014,Throttling bandwidth.,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G015,Comcast Refuse to Refund Rental Fee made in error,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G016,Deceptive sales practices,False,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,1,"""pratiques de vente trompeuses"" assimilé à publicité trompeuse",,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,1,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,,False
+G017,Comcast Disconnect,False,UNCLEAR,,1,ambigu: coupure ou résiliation,,UNCLEAR,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G018,Comcast & HBO GO on PS4,True,OTHER,,1,HBO GO/PS4 : problème précis hors catégories (PC si blocage),UNCLEAR,OTHER,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G019,failure to provide imstallation .... Rockville Maryland 20852,False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G020,Comcast overcharge,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G021,Hearsts Magazine contest scam,False,FRAUD_PRIVACY_LEGAL,OTHER,1,"arnaque d'un tiers, probablement hors périmètre",,FRAUD_PRIVACY_LEGAL,OTHER,1,True,FRAUD_PRIVACY_LEGAL,OTHER_UNCLEAR,,False
+G022,Internet Only,False,CONTRACT_PLAN,,1,probablement offre internet seul,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G023,unfair Internet prices,False,CONTRACT_PLAN,,1,niveau de prix,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G024,Comcast refuses to recognize our same sex marriage,False,OTHER,FRAUD_PRIVACY_LEGAL,1,"discrimination, aucune catégorie ne convient",,OTHER,FRAUD_PRIVACY_LEGAL,1,True,OTHER_UNCLEAR,FRAUD_PRIVACY_LEGAL,fusion OTHER+UNCLEAR (v1.2),True
+G025,"Prolonged internet outage, tardy response",True,NETWORK_TECH,CUSTOMER_SERVICE,3,,NETWORK_TECH,NETWORK_TECH,CUSTOMER_SERVICE,3,True,NETWORK_TECH,CUSTOMER_SERVICE,,False
+G026,Customer Service from Comcast,True,CUSTOMER_SERVICE,,2,sujet service client sans détail,UNCLEAR,CUSTOMER_SERVICE,,2,True,CUSTOMER_SERVICE,,,False
+G027,Comcast Blocking HBO Go from Playstation 3 and 4,False,POLICY_COMPETITION,,2,blocage de contenu,,POLICY_COMPETITION,,2,True,POLICY_COMPETITION,,,False
+G028,Comcast has not applied credit of close to $400,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G029,Comcast & Sony Playstation Devices,False,OTHER,,1,"appareil Sony, problème non précisé",,OTHER,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G030,Comcast extended outages,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G031,Cant cancel internet on Sundays?,False,CONTRACT_PLAN,CUSTOMER_SERVICE,2,,,CONTRACT_PLAN,CUSTOMER_SERVICE,2,True,CONTRACT_PLAN,CUSTOMER_SERVICE,,False
+G032,Unable to cancel poor internet service,False,CONTRACT_PLAN,NETWORK_TECH,2,,,CONTRACT_PLAN,NETWORK_TECH,2,True,CONTRACT_PLAN,NETWORK_TECH,,False
+G033,Comcast technical/customer service and billing problems,False,BILLING,NETWORK_TECH,1,"trois thèmes (technique, service client, facturation)",,BILLING,NETWORK_TECH,1,True,BILLING,NETWORK_TECH,,False
+G034,Comcast service agreement,True,CONTRACT_PLAN,,1,ambigu,CONTRACT_PLAN,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G035,"Constant non response, or passing to other operator. Supervisers inability to resolve of help. Numerous lies told.",False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G036,Comcast Predatory Pricing forcing purchase of cable.,False,CONTRACT_PLAN,POLICY_COMPETITION,2,,,CONTRACT_PLAN,POLICY_COMPETITION,2,True,CONTRACT_PLAN,POLICY_COMPETITION,,False
+G037,Comcast - new service (ridiculously inept + not close to the speed told) added and incorrect charges on the first bill - hoping I would not notice,False,BILLING,NETWORK_TECH,1,plusieurs problèmes,,BILLING,NETWORK_TECH,1,True,BILLING,NETWORK_TECH,,False
+G038,Unannouced service outage not caused by weather,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G039,Comcast Data Limit,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G040,needed tech suport,False,NETWORK_TECH,,2,demande d'assistance technique,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G041,Slowed Internet Speeds,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G042,Fraudulent Billing practices by Comcast,False,FRAUD_PRIVACY_LEGAL,BILLING,2,accusation de fraude,,FRAUD_PRIVACY_LEGAL,BILLING,2,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G043,Inconsistent and poor internet performance,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G044,Billed for internet service that was never installed,False,BILLING,FIELD_SERVICE,3,,,BILLING,FIELD_SERVICE,3,True,BILLING,FIELD_SERVICE,,False
+G045,Xfinity Cable & Internet repackage scam,False,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,2,,,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,2,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,,False
+G046,Comcast refused to install internet,True,FIELD_SERVICE,,3,,FIELD_SERVICE,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G047,Adding services Not Requested and Increasing fees without notification.,True,BILLING,CONTRACT_PLAN,2,,BILLING,BILLING,CONTRACT_PLAN,2,True,BILLING,CONTRACT_PLAN,,False
+G048,"Comcast theft, lying, horrible service and deception",False,UNCLEAR,,1,"accusations sans objet précis (vol, mensonge)",,UNCLEAR,,1,True,FRAUD_PRIVACY_LEGAL,,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G049,Poor service/paying for unusable services,False,NETWORK_TECH,BILLING,2,,,NETWORK_TECH,BILLING,2,True,NETWORK_TECH,BILLING,,False
+G050,Fraudulent charges by Comcast,False,FRAUD_PRIVACY_LEGAL,BILLING,2,accusation de fraude,,FRAUD_PRIVACY_LEGAL,BILLING,2,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G051,Cocmast billing issues,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G052,Billing overcharges,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G053,Internet Speed Cut in Half with no Notification,False,NETWORK_TECH,CONTRACT_PLAN,2,,,NETWORK_TECH,CONTRACT_PLAN,2,True,NETWORK_TECH,CONTRACT_PLAN,,False
+G054,Monopoly & Fraudulent Broadband Speedtest results,False,FRAUD_PRIVACY_LEGAL,POLICY_COMPETITION,1,fraude sur test de débit + monopole,,FRAUD_PRIVACY_LEGAL,POLICY_COMPETITION,1,True,FRAUD_PRIVACY_LEGAL,POLICY_COMPETITION,,False
+G055,keep getting charged for modem rental and I bought my own 7 months ago!,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G056,outrageous internet bill adjustments from Comcast,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G057,Slow comcast internet,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G058,Comcast Internet being slow,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G059,Comcast / Xfinity Billing Issue,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G060,Comcast will not allow me to cancel my internet service.,False,CONTRACT_PLAN,CUSTOMER_SERVICE,3,,,CONTRACT_PLAN,CUSTOMER_SERVICE,3,True,CONTRACT_PLAN,CUSTOMER_SERVICE,,False
+G061,Comcast is stealing from me,True,BILLING,,1,"accusation de vol, probablement facturation",FRAUD_PRIVACY_LEGAL,BILLING,,1,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G062,ISP Data Cap,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G063,Complaint regarding billing practices,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G064,Poor internet reception,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G065,Price Plans,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G066,Comcast Poor Customer Services and Commitment,False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G067,ComCast continues to bill me though I canceled months ago,False,BILLING,CONTRACT_PLAN,3,,,BILLING,CONTRACT_PLAN,3,True,BILLING,CONTRACT_PLAN,,False
+G068,Billed for service never received,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G069,Possible Internet Speed Throttling by my Comcast Internet Provider,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G070,Comcast Internet Bait and Switch,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G071,DSL,False,UNCLEAR,,2,produit seul,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G072,monopoly,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G073,cramming charges on my phone/internet bill,False,BILLING,FRAUD_PRIVACY_LEGAL,2,cramming,,BILLING,FRAUD_PRIVACY_LEGAL,2,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G074,no internet service for more than 20 days,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G075,Price fixing and monopolistic behaivor,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G076,Dishonest Billing Practices and Lying,True,BILLING,FRAUD_PRIVACY_LEGAL,2,,FRAUD_PRIVACY_LEGAL,BILLING,FRAUD_PRIVACY_LEGAL,2,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G077,Faulty Service and False Advertisement,True,FRAUD_PRIVACY_LEGAL,NETWORK_TECH,2,publicité mensongère explicite,FRAUD_PRIVACY_LEGAL,FRAUD_PRIVACY_LEGAL,NETWORK_TECH,2,True,FRAUD_PRIVACY_LEGAL,NETWORK_TECH,,False
+G078,unauthorized charges to my account by comcast,True,BILLING,FRAUD_PRIVACY_LEGAL,2,,FRAUD_PRIVACY_LEGAL,BILLING,FRAUD_PRIVACY_LEGAL,2,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G079,Comcast forces rep visit then goes back on their promise,True,FIELD_SERVICE,CUSTOMER_SERVICE,2,,CUSTOMER_SERVICE,FIELD_SERVICE,CUSTOMER_SERVICE,2,True,FIELD_SERVICE,CUSTOMER_SERVICE,,False
+G080,"Comcast - constantly low speeds, 'miscommunication' about billing errors. Not responding to complaints.",False,NETWORK_TECH,BILLING,2,,,NETWORK_TECH,BILLING,2,True,NETWORK_TECH,BILLING,,False
+G081,Comcast Overbilling,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G082,Comcast Data Caps for Home Internet Service,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G083,"Comcast sold me a ""package"" knowing it wouldn't work for me, and proceeded to charge me more and attempt to tack on fees for their mistake",False,CONTRACT_PLAN,BILLING,2,,,CONTRACT_PLAN,BILLING,2,True,CONTRACT_PLAN,BILLING,,False
+G084,Comcast's Monopolistic Practices and Data Capping,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G085,unauthorized comcast username setup,False,FRAUD_PRIVACY_LEGAL,,2,accès non autorisé au compte,,FRAUD_PRIVACY_LEGAL,,2,True,FRAUD_PRIVACY_LEGAL,,,False
+G086,Comcast ISP OIO Violation,False,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,2,,,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,2,True,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,,False
+G087,Cheating in Bundle Service Pricing,False,CONTRACT_PLAN,BILLING,1,ambigu,,CONTRACT_PLAN,BILLING,1,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G088,Installation,False,FIELD_SERVICE,,2,,,FIELD_SERVICE,,2,True,FIELD_SERVICE,,,False
+G089,Comcast-flat fee contract-misrepresentation,False,CONTRACT_PLAN,FRAUD_PRIVACY_LEGAL,2,,,CONTRACT_PLAN,FRAUD_PRIVACY_LEGAL,2,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G090,Denial of Refund for Overpayment,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G091,Unexplained Billing,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G092,Internet slow,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G093,Hidden Product Installation Fee,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G094,Misleading communication.,True,UNCLEAR,,1,ambigu,FRAUD_PRIVACY_LEGAL,UNCLEAR,,1,True,FRAUD_PRIVACY_LEGAL,,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G095,Loss of Electronics/Poor Customer Service/Faulty Grounding,False,FIELD_SERVICE,CUSTOMER_SERVICE,1,dommage lors d'une intervention,,FIELD_SERVICE,CUSTOMER_SERVICE,1,True,FIELD_SERVICE,CUSTOMER_SERVICE,,False
+G096,Comcast Business Internet -- Not Providing Service to New Location & Will Not Terminate Contract Despite Multiple Attempts,False,CONTRACT_PLAN,FIELD_SERVICE,1,résiliation + service non fourni,,CONTRACT_PLAN,FIELD_SERVICE,1,True,CONTRACT_PLAN,FIELD_SERVICE,,False
+G097,No Internet,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G098,"Comcast Internet, cable, and phone outtages",True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G099,Re: Unfair Billing Practices Complaints against Comcast,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G100,COMCAST MISSES 4 APPOINTMENTS,False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G101,Price of Internet service,False,CONTRACT_PLAN,,1,niveau de prix,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G102,Lied about $70 technician fee,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G103,Slow Internet/ Billing/ poor customer service of your complaints,False,NETWORK_TECH,BILLING,1,trois thèmes,,NETWORK_TECH,BILLING,1,True,NETWORK_TECH,BILLING,,False
+G104,Comcast Rrefund Owing to Us since 3/12/2015,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G105,Incorrect Disclosure,True,UNCLEAR,,1,ambigu,FRAUD_PRIVACY_LEGAL,UNCLEAR,,1,True,FRAUD_PRIVACY_LEGAL,,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G106,overcharged,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G107,Comcast Conplaints,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G108,Comcast forced me into a contract,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G109,Comcast Service Failure,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G110,Speed and Service,True,NETWORK_TECH,,2,,NETWORK_TECH,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G111,Tallahassee Comcast rates high without competition,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G112,Comcast refusal of service,True,OTHER,,1,refus de fournir le service,CUSTOMER_SERVICE,OTHER,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G113,Deceptive sales- change in billing amount etc.,False,FRAUD_PRIVACY_LEGAL,BILLING,1,vente trompeuse,,FRAUD_PRIVACY_LEGAL,BILLING,1,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G114,cable internet,True,UNCLEAR,,2,,NETWORK_TECH,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G115,Comcast of East Windsor NJ Complaint,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G116,"Comcast ""property access"" or ""right of entry""",False,OTHER,,1,accès à la propriété,,OTHER,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G117,Comcast Internet Service Provider,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G118,Poor Quality Service and Broken Promises,False,NETWORK_TECH,CONTRACT_PLAN,1,ambigu,,NETWORK_TECH,CONTRACT_PLAN,1,True,NETWORK_TECH,CONTRACT_PLAN,,False
+G119,comcast over charges,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G120,BAD SERVICE/ PLEASE HELP,True,UNCLEAR,,2,,CUSTOMER_SERVICE,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G121,Comcast data cap/meter,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G122,Comcast bill problems,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G123,Comcast Data Usage Limits,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G124,Comcast secretly raising my bill for services I never agreed to. Again.,False,BILLING,CONTRACT_PLAN,3,,,BILLING,CONTRACT_PLAN,3,True,BILLING,CONTRACT_PLAN,,False
+G125,Comcast Speed Issue after Evening,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G126,Billing practices,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G127,Comcast Internet - Horrible Customer Service,False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G128,Comcast violating Open Internet rules,False,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,2,,,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,2,True,POLICY_COMPETITION,FRAUD_PRIVACY_LEGAL,,False
+G129,"Internet help @ , South Lyon, MI 48178",False,UNCLEAR,,1,ambigu,,UNCLEAR,,1,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G130,(Comcast is not my complaint!) Cyber Tele-marketing is my complaint!,False,FRAUD_PRIVACY_LEGAL,,2,démarchage / vie privée,,FRAUD_PRIVACY_LEGAL,,2,True,FRAUD_PRIVACY_LEGAL,,,False
+G131,Billing issues with Comcast,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G132,Cable Splitter without Consent from customer( Comcast),False,FIELD_SERVICE,FRAUD_PRIVACY_LEGAL,1,action à domicile sans consentement,,FIELD_SERVICE,FRAUD_PRIVACY_LEGAL,1,True,FIELD_SERVICE,FRAUD_PRIVACY_LEGAL,,False
+G133,comcast fees and internet services,False,BILLING,NETWORK_TECH,1,ambigu,,BILLING,NETWORK_TECH,1,True,BILLING,NETWORK_TECH,,False
+G134,Complaint against Comcast for provisioning of Internet Service ar Residential Address,False,FIELD_SERVICE,NETWORK_TECH,1,ambigu,,FIELD_SERVICE,NETWORK_TECH,1,True,FIELD_SERVICE,NETWORK_TECH,,False
+G135,Comcast Atlanta Data Caps,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G136,False contract repersentation,False,CONTRACT_PLAN,FRAUD_PRIVACY_LEGAL,2,,,CONTRACT_PLAN,FRAUD_PRIVACY_LEGAL,2,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G137,Comcast home data usage cap,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G138,NO Comcast-- Uverse,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G139,COMCAST CUSTOMER CARE ( RACISM),False,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,2,discrimination alléguée,,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,2,True,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,,False
+G140,billing/service issues,False,BILLING,NETWORK_TECH,1,ambigu,,BILLING,NETWORK_TECH,1,True,BILLING,NETWORK_TECH,,False
+G141,Comcast Blocking UDP Port 443,False,NETWORK_TECH,POLICY_COMPETITION,1,"blocage de port, technique ou PC",,NETWORK_TECH,POLICY_COMPETITION,1,True,NETWORK_TECH,POLICY_COMPETITION,,False
+G142,Comcast Cable connection from street is underwater and structure is too high,False,FIELD_SERVICE,NETWORK_TECH,2,,,FIELD_SERVICE,NETWORK_TECH,2,True,FIELD_SERVICE,NETWORK_TECH,,False
+G143,internet/cable service,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G144,"Comcast Data Cap Limits, Lack of Competition, and Anti-Competition Business and Billing Practices",False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G145,Comcast throttling my high-speed internet,True,NETWORK_TECH,,2,,NETWORK_TECH,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G146,Double billing from Comcast,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G147,Predatory Monopolistic Pricing,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G148,10 Days No Service - 12 Appointments Comcast Hasn't Shown Up - Comcast Has Not Fixed Home Infinity X1 - In 10 Days- Cannot Make 911 Calls,False,NETWORK_TECH,FIELD_SERVICE,2,gravité élevée (appels 911) à traiter dans la priorité,,NETWORK_TECH,FIELD_SERVICE,2,True,NETWORK_TECH,FIELD_SERVICE,,False
+G149,Comcast Agreement,True,CONTRACT_PLAN,,1,ambigu,UNCLEAR,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G150,Comcast cable unauthorized charges,False,BILLING,,2,,,BILLING,,2,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G151,"Comcast speeds as low as 12 MB/s, paying for 105 MB/s and they wont figure it out.",False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G152,Comcast Terrible Experience with no resolution,False,CUSTOMER_SERVICE,,1,ambigu,,CUSTOMER_SERVICE,,1,True,CUSTOMER_SERVICE,,,False
+G153,Horrible Internet Speed not what I pay for,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G154,Lack of ISP choice,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G155,Removed discount after I complained about an unauthorized charge,False,BILLING,CONTRACT_PLAN,1,ambigu,,BILLING,CONTRACT_PLAN,1,True,BILLING,CONTRACT_PLAN,,False
+G156,Phone Internet Cable Alarm,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G157,Comcast data limits and overage charges,False,CONTRACT_PLAN,BILLING,1,ambigu,,CONTRACT_PLAN,BILLING,1,True,CONTRACT_PLAN,BILLING,,False
+G158,Being charged for a technician fee,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G159,Comcast Internet speeds,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G160,Comcast billing frauds,False,FRAUD_PRIVACY_LEGAL,BILLING,2,,,FRAUD_PRIVACY_LEGAL,BILLING,2,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G161,"Internet connectivity loss, over 1000ms latency, under 1Mbps speeds",False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G162,Inappropriate billing,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G163,Unfair Comcast Billing,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G164,Comcast's customer service is awful,False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G165,Internet Only Deal,True,CONTRACT_PLAN,,1,ambigu,CONTRACT_PLAN,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G166,Comcast Service Rep Missed appointment. I missed a very important family gathering because I was waiting on the worker to show.,True,FIELD_SERVICE,,3,,FIELD_SERVICE,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G167,LIED TO!!! Now I'm suffering?!?! And at a loss!!!,False,UNCLEAR,,2,,,UNCLEAR,,2,True,FRAUD_PRIVACY_LEGAL,,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G168,Comcast charging over $600 for data,False,BILLING,CONTRACT_PLAN,3,,,BILLING,CONTRACT_PLAN,3,True,BILLING,CONTRACT_PLAN,,False
+G169,email sdervice,False,OTHER,,2,service e-mail,,OTHER,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G170,Comcast Data Overage Charges,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G171,Speed for internet nowhere close to claims,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G172,access to service,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G173,Complaint regarding Comcast,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G174,Service out/no customer service provided,False,NETWORK_TECH,CUSTOMER_SERVICE,2,,,NETWORK_TECH,CUSTOMER_SERVICE,2,True,NETWORK_TECH,CUSTOMER_SERVICE,,False
+G175,fraudulent charges,False,FRAUD_PRIVACY_LEGAL,BILLING,2,,,FRAUD_PRIVACY_LEGAL,BILLING,2,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G176,Internet unreliable,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G177,Comcast No Show's,False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G178,Comcast changed my account plan after i said no about 2-3 times,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G179,Bait and Switch again,False,CONTRACT_PLAN,,1,ambigu,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G180,Intermittent poor service,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G181,Consistently Slow and Throttled Internet Speeds,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G182,Comcast charging ridiculous prices,False,CONTRACT_PLAN,,1,ambigu,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G183,Extremely unsatisfied Comcast customer,True,UNCLEAR,,3,,CUSTOMER_SERVICE,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G184,Xfinity Price and not 16Mbps when paying for 50Mbps,False,NETWORK_TECH,CONTRACT_PLAN,2,,,NETWORK_TECH,CONTRACT_PLAN,2,True,NETWORK_TECH,CONTRACT_PLAN,,False
+G185,Comcast Internet is unbelievably slow,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G186,Comcast Data Threshold,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G187,Raising my Rate,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G188,"expensive service, capped",False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G189,Issue with Internet speed,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G190,Comcast Service and customer service representative,False,CUSTOMER_SERVICE,,1,ambigu,,CUSTOMER_SERVICE,,1,True,CUSTOMER_SERVICE,,,False
+G191,Fees not disclosed before service was installed,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G192,2 months and Comcast has not fixed problem,False,CUSTOMER_SERVICE,,1,"problème non fixé, nature inconnue",,CUSTOMER_SERVICE,,1,True,CUSTOMER_SERVICE,,,False
+G193,"Overpriced, low quality service",True,CONTRACT_PLAN,NETWORK_TECH,1,ambigu,CONTRACT_PLAN,CONTRACT_PLAN,NETWORK_TECH,1,True,CONTRACT_PLAN,NETWORK_TECH,,False
+G194,Ridiculous Charges,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G195,"INTERNET , BILLING AND SERVIE ISSUES",False,BILLING,NETWORK_TECH,1,ambigu,,BILLING,NETWORK_TECH,1,True,BILLING,NETWORK_TECH,,False
+G196,Comcast's egregious billing techniques,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G197,Comcast Home Security System,True,OTHER,,2,système de sécurité,UNCLEAR,OTHER,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G198,Charging for service with out fixing the problem,False,NETWORK_TECH,BILLING,1,ambigu,,NETWORK_TECH,BILLING,1,True,NETWORK_TECH,BILLING,,False
+G199,Comcast Downgraded service with no notification,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G200,Comcast Selectively Enforcing Data Caps,False,CONTRACT_PLAN,POLICY_COMPETITION,2,,,CONTRACT_PLAN,POLICY_COMPETITION,2,True,CONTRACT_PLAN,POLICY_COMPETITION,,False
+G201,Monthly Charges Increased without any notice,False,BILLING,CONTRACT_PLAN,1,ambigu,,BILLING,CONTRACT_PLAN,1,True,BILLING,CONTRACT_PLAN,,False
+G202,Comcast monopoly bundling practices,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G203,"Comcast (no service, hung up on, 3 in person attempts by technician and all were no show with no call back)",False,FIELD_SERVICE,NETWORK_TECH,1,plusieurs thèmes,,FIELD_SERVICE,NETWORK_TECH,1,True,FIELD_SERVICE,NETWORK_TECH,,False
+G204,Comcast Cable & Internet,True,UNCLEAR,,3,,NETWORK_TECH,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G205,Comcast forcing me to pay same rate for lower speed,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G206,Comcast Refusing to Honor Internet Rate,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G207,Xfiniti account,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G208,misleading sales practice and advertising,False,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,2,,,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,2,True,FRAUD_PRIVACY_LEGAL,CONTRACT_PLAN,,False
+G209,Unnecessary charge by Comcast for technician visit,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G210,Paying for high speed internet with Comcast. Consistently getting slow service.,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G211,Apartment Management's Exclusivity Contract with Comcast,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G212,Comcast,True,UNCLEAR,,3,,UNCLEAR,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G213,recurring billing discrepancy regarding modem,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G214,Repeatedly have been promised installations without anyone arriving or notifying,False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G215,Xfinity Data Caps,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G216,Comcast repeatedly failing to install Internet service,True,FIELD_SERVICE,,3,,FIELD_SERVICE,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G217,Technical Support,False,NETWORK_TECH,CUSTOMER_SERVICE,1,ambigu,,NETWORK_TECH,CUSTOMER_SERVICE,1,True,NETWORK_TECH,CUSTOMER_SERVICE,,False
+G218,Comcast over billing,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G219,Comcast- Unfair Pricing Tactics,True,CONTRACT_PLAN,,1,ambigu,CONTRACT_PLAN,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G220,Horrible Comcast Customer Service,False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G221,Comcast Xfinity Monopoly Abuses,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G222,Comcast - Unfair billing policies,True,BILLING,,2,,BILLING,BILLING,,2,True,BILLING,,,False
+G223,Bank Fee Refund Reques,False,BILLING,,1,"frais bancaires, probablement hors périmètre",,BILLING,,1,True,BILLING,,,False
+G224,Comcast lies and deception,False,UNCLEAR,,2,,,UNCLEAR,,2,True,FRAUD_PRIVACY_LEGAL,,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G225,"Comcast is giving out wrong information, accusing people and increasing equipment prices, when contract says price will stay the same for 2 years",False,CONTRACT_PLAN,BILLING,2,,,CONTRACT_PLAN,BILLING,2,True,CONTRACT_PLAN,BILLING,,False
+G226,Comcast Internet and TV,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G227,Awful Service!,True,UNCLEAR,,2,,CUSTOMER_SERVICE,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G228,bills/identity,False,FRAUD_PRIVACY_LEGAL,BILLING,2,identité,,FRAUD_PRIVACY_LEGAL,BILLING,2,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G229,Comcast Mistreatment,False,CUSTOMER_SERVICE,,1,ambigu,,CUSTOMER_SERVICE,,1,True,CUSTOMER_SERVICE,,,False
+G230,over sold/ over billed for short term services,True,BILLING,CONTRACT_PLAN,2,,BILLING,BILLING,CONTRACT_PLAN,2,True,BILLING,CONTRACT_PLAN,,False
+G231,Terrible customer service from Comcast,False,CUSTOMER_SERVICE,,3,,,CUSTOMER_SERVICE,,3,True,CUSTOMER_SERVICE,,,False
+G232,Ridiculous and inconsistent billing,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G233,Internet connection not available,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G234,REPEATED Comcast billing issues,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G235,"Comcast ""Unlimited"" Internet Access recently limited to 300GB per month",True,CONTRACT_PLAN,,3,,CONTRACT_PLAN,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G236,bill payment,False,BILLING,,2,,,BILLING,,2,True,BILLING,,,False
+G237,"Comcast Xfinity Overage Charges, No Assistance",False,BILLING,CUSTOMER_SERVICE,3,,,BILLING,CUSTOMER_SERVICE,3,True,BILLING,CUSTOMER_SERVICE,,False
+G238,Comcast - I've been paying for unnecessary speeds when they knew and I did not,True,CONTRACT_PLAN,BILLING,1,ambigu,CONTRACT_PLAN,CONTRACT_PLAN,BILLING,1,True,CONTRACT_PLAN,BILLING,,False
+G239,Comcast Raising Prices and Not Being Available To Ask Why,True,CONTRACT_PLAN,CUSTOMER_SERVICE,2,,CUSTOMER_SERVICE,CONTRACT_PLAN,CUSTOMER_SERVICE,2,True,CONTRACT_PLAN,CUSTOMER_SERVICE,,False
+G240,HBO shouldn't have a load time,True,NETWORK_TECH,POLICY_COMPETITION,1,performance de streaming,NETWORK_TECH,NETWORK_TECH,POLICY_COMPETITION,1,True,NETWORK_TECH,POLICY_COMPETITION,,False
+G241,Ad in craigslist was a scam for selling product not owned,False,FRAUD_PRIVACY_LEGAL,OTHER,1,arnaque d'un tiers,,FRAUD_PRIVACY_LEGAL,OTHER,1,True,FRAUD_PRIVACY_LEGAL,OTHER_UNCLEAR,,False
+G242,Run around,False,CUSTOMER_SERVICE,,2,,,CUSTOMER_SERVICE,,2,True,CUSTOMER_SERVICE,,,False
+G243,Comcast Rates,False,CONTRACT_PLAN,,1,ambigu,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G244,Comcast Customer Service; Theft; Inconsistency,False,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,1,ambigu,,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,1,True,CUSTOMER_SERVICE,FRAUD_PRIVACY_LEGAL,,False
+G245,Nonsensical Raise in my Internet Bill,False,BILLING,CONTRACT_PLAN,1,ambigu,,BILLING,CONTRACT_PLAN,1,True,BILLING,CONTRACT_PLAN,,False
+G246,Comcast False Promises,False,CONTRACT_PLAN,,1,ambigu,,CONTRACT_PLAN,,1,True,CONTRACT_PLAN,,,False
+G247,Billing Dispute & Poor Customer Service,False,BILLING,CUSTOMER_SERVICE,3,,,BILLING,CUSTOMER_SERVICE,3,True,BILLING,CUSTOMER_SERVICE,,False
+G248,Comcast charging me monthly fees for equipment rental when I own the equipment,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G249,My Comcast Nightmare,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G250,Improper billing from Comcast,True,BILLING,,3,,BILLING,BILLING,,3,True,BILLING,,,False
+G251,Comcast Bandwidth Availability,True,NETWORK_TECH,,1,ambigu,NETWORK_TECH,NETWORK_TECH,,1,True,NETWORK_TECH,,,False
+G252,Data limit with Comcast,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G253,Monopolies mean high prices and mediocre service,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G254,Erroneous charges on Comcast bill,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G255,monopolistic billing practices,False,POLICY_COMPETITION,BILLING,1,ambigu,,POLICY_COMPETITION,BILLING,1,True,POLICY_COMPETITION,BILLING,,False
+G256,Lack of internet speed,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G257,Data usage limit,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G258,Comcast Fraud?,False,FRAUD_PRIVACY_LEGAL,,2,,,FRAUD_PRIVACY_LEGAL,,2,True,FRAUD_PRIVACY_LEGAL,,,False
+G259,charge for equipment from comcast i was not made aware when i ordered it,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G260,Comcast internet claiming 25 mbps internet but i get only 3 mbps and customer service representative hung up call repeateadly,False,NETWORK_TECH,CUSTOMER_SERVICE,2,,,NETWORK_TECH,CUSTOMER_SERVICE,2,True,NETWORK_TECH,CUSTOMER_SERVICE,,False
+G261,Internet Speed Drops & Signal on Borderline,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G262,Comcast data cap / interference with free market,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G263,Customer Service and Billing Complaint,False,CUSTOMER_SERVICE,BILLING,1,ambigu,,CUSTOMER_SERVICE,BILLING,1,True,CUSTOMER_SERVICE,BILLING,,False
+G264,Falsified unreturned equipment fees,False,BILLING,FRAUD_PRIVACY_LEGAL,2,,,BILLING,FRAUD_PRIVACY_LEGAL,2,True,BILLING,FRAUD_PRIVACY_LEGAL,,False
+G265,Complaint about Comcast's Hidden Fees and Unauthorized Charges,False,BILLING,,3,,,BILLING,,3,True,FRAUD_PRIVACY_LEGAL,BILLING,R6 accusation générale -> FRAUD_PRIVACY_LEGAL (v1.2),True
+G266,Xfinity promise to pay me $300 to join,False,CONTRACT_PLAN,BILLING,2,,,CONTRACT_PLAN,BILLING,2,True,CONTRACT_PLAN,BILLING,,False
+G267,Comcast High-Speed Internet Does Not Work,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G268,local monopoly,False,POLICY_COMPETITION,,3,,,POLICY_COMPETITION,,3,True,POLICY_COMPETITION,,,False
+G269,"Not receiving refund of service from Comcast, for over 90 days",False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G270,Business Class Service,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G271,Comcast data caps in currently uncompetitive Nashville market,False,POLICY_COMPETITION,CONTRACT_PLAN,2,,,POLICY_COMPETITION,CONTRACT_PLAN,2,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G272,Comcast Internet Data Cap Segregation,False,CONTRACT_PLAN,POLICY_COMPETITION,1,ambigu,,CONTRACT_PLAN,POLICY_COMPETITION,1,True,CONTRACT_PLAN,POLICY_COMPETITION,,False
+G273,Comcast sucks,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G274,Comcast terrible service #2,False,UNCLEAR,,2,,,UNCLEAR,,2,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G275,Unresolved Comcast fraudulent billing,False,FRAUD_PRIVACY_LEGAL,BILLING,1,ambigu,,FRAUD_PRIVACY_LEGAL,BILLING,1,True,FRAUD_PRIVACY_LEGAL,BILLING,,False
+G276,Overbilling,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G277,Complaint CR Comcast Problem - VOIP Phone not working for days,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G278,Data Usage Overage,False,BILLING,CONTRACT_PLAN,2,,,BILLING,CONTRACT_PLAN,2,True,BILLING,CONTRACT_PLAN,,False
+G279,"Comcast ""50 mb/s"" speed and throttling",True,NETWORK_TECH,,2,,NETWORK_TECH,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G280,Difficulty with internet speeds,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G281,Internet Issues With Comcast,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G282,Misleading information regarding contract leads to $200 unresolved early term fee,True,CONTRACT_PLAN,BILLING,2,,CONTRACT_PLAN,CONTRACT_PLAN,BILLING,2,True,CONTRACT_PLAN,BILLING,,False
+G283,Comcast Wifi Service,False,NETWORK_TECH,,2,,,NETWORK_TECH,,2,True,NETWORK_TECH,,,False
+G284,Unfair and Deceptive Trade Practices,False,FRAUD_PRIVACY_LEGAL,,2,,,FRAUD_PRIVACY_LEGAL,,2,True,FRAUD_PRIVACY_LEGAL,,,False
+G285,Unable to renew IP address,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G286,Reimbursement I've never recieved,False,BILLING,,3,,,BILLING,,3,True,BILLING,,,False
+G287,Service outages (Comcast),True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G288,Unfair and Monopolistic Billing Practices,False,POLICY_COMPETITION,BILLING,1,ambigu,,POLICY_COMPETITION,BILLING,1,True,POLICY_COMPETITION,BILLING,,False
+G289,"Installation Request - New Subdivision - Jesup, GA",False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G290,Xfinity unable to correct issue of losing connection,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G291,Comcast False Advertising,False,FRAUD_PRIVACY_LEGAL,,3,,,FRAUD_PRIVACY_LEGAL,,3,True,FRAUD_PRIVACY_LEGAL,,,False
+G292,Comcast/Xfinity,False,UNCLEAR,,3,,,UNCLEAR,,3,True,OTHER_UNCLEAR,,fusion OTHER+UNCLEAR (v1.2),True
+G293,Monopoly and Deceit: The 300GB Data Cap,False,POLICY_COMPETITION,CONTRACT_PLAN,1,ambigu,,POLICY_COMPETITION,CONTRACT_PLAN,1,True,POLICY_COMPETITION,CONTRACT_PLAN,,False
+G294,Comcast blocking HBO GO access on Playstation 4,False,POLICY_COMPETITION,,2,,,POLICY_COMPETITION,,2,True,POLICY_COMPETITION,,,False
+G295,Price increase while on a fixed price plan,False,CONTRACT_PLAN,,3,,,CONTRACT_PLAN,,3,True,CONTRACT_PLAN,,,False
+G296,horrible cable service and customer service,True,CUSTOMER_SERVICE,NETWORK_TECH,1,ambigu,CUSTOMER_SERVICE,CUSTOMER_SERVICE,NETWORK_TECH,1,True,CUSTOMER_SERVICE,NETWORK_TECH,,False
+G297,Repeated installation issue with Comcast Internet service,False,FIELD_SERVICE,,3,,,FIELD_SERVICE,,3,True,FIELD_SERVICE,,,False
+G298,Unreliable service for the past three years,True,NETWORK_TECH,,3,,NETWORK_TECH,NETWORK_TECH,,3,True,NETWORK_TECH,,,False
+G299,Internet service termination,False,CONTRACT_PLAN,,2,,,CONTRACT_PLAN,,2,True,CONTRACT_PLAN,,,False
+G300,Internet connection outage,False,NETWORK_TECH,,3,,,NETWORK_TECH,,3,True,NETWORK_TECH,,,False

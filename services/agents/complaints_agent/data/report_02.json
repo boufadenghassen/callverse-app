@@ -1,0 +1,21 @@
+{
+  "n_gold": 300,
+  "reviewed_share": 1.0,
+  "best_model": "TFIDF chars + LR",
+  "best_macro_f1_oof": 0.6624200283437406,
+  "ci95": [
+    0.5949523934936662,
+    0.7181599204490232
+  ],
+  "class_counts": {
+    "BILLING": 66,
+    "NETWORK_TECH": 64,
+    "CONTRACT_PLAN": 50,
+    "FRAUD_PRIVACY_LEGAL": 33,
+    "OTHER_UNCLEAR": 32,
+    "POLICY_COMPETITION": 22,
+    "CUSTOMER_SERVICE": 17,
+    "FIELD_SERVICE": 16
+  },
+  "seed": 42
+}

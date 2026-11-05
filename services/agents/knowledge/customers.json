@@ -1,0 +1,52 @@
+[
+  {
+    "id": "YT-1042",
+    "name": "Yasmine Toumi",
+    "profile": "Loyal customer, 6 years",
+    "intents": ["Billing", "Plan change"],
+    "contract": "Mobile Plus 40 GB",
+    "openTickets": 1,
+    "transfers": 1,
+    "mood": "Impatient"
+  },
+  {
+    "id": "MS-0007",
+    "name": "Mounir Sassi",
+    "profile": "New customer, 2 weeks",
+    "intents": ["Plan change", "Data usage"],
+    "contract": "Starter 10 GB",
+    "openTickets": 0,
+    "transfers": 0,
+    "mood": "Curious"
+  },
+  {
+    "id": "IK-2210",
+    "name": "Ines Kacem",
+    "profile": "Premium customer, 3 years",
+    "intents": ["Roaming", "Plan change"],
+    "contract": "Premium Unlimited",
+    "openTickets": 0,
+    "transfers": 0,
+    "mood": "Calm"
+  },
+  {
+    "id": "WF-3391",
+    "name": "Walid Ferjani",
+    "profile": "Unsatisfied customer, repeated contact",
+    "intents": ["Complaint", "Cancellation"],
+    "contract": "Mobile Plus 40 GB",
+    "openTickets": 2,
+    "transfers": 2,
+    "mood": "Frustrated"
+  },
+  {
+    "id": "SH-5520",
+    "name": "Salma Hammami",
+    "profile": "At-risk customer, usage dropping",
+    "intents": ["Billing", "Complaint"],
+    "contract": "Mobile Basic 20 GB",
+    "openTickets": 1,
+    "transfers": 3,
+    "mood": "Angry"
+  }
+]

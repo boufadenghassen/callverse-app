@@ -2,7 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, Server } from 'node:http';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AgentDownError, UnknownCallError } from '../src/agents/agent.gateway';
+import { AgentDownError, CustomerNotFoundError, UnknownCallError } from '../src/agents/agent.gateway';
 import { HttpAgentGateway } from '../src/agents/http.gateway';
 import { client, startApp } from './helpers';
 
@@ -61,6 +61,7 @@ test('the http gateway sends the real calls to the Python agents and maps their 
       seen.push(`${req.method} ${req.url} ${body}`);
       res.setHeader('Content-Type', 'application/json');
       if (req.url!.endsWith('/gone/say')) { res.statusCode = 404; return res.end('{}'); }
+      if (req.url === '/advisor/customers/ZZ-0000') { res.statusCode = 404; return res.end('{}'); }
       res.end(JSON.stringify({ id: 'x', persona: 'p', opening: 'o', mood: 1, patience: 2 }));
     });
   });
@@ -73,12 +74,29 @@ test('the http gateway sends the real calls to the Python agents and maps their 
     assert.match(seen[0], /POST \/customer\/sessions \{"persona":"IMPATIENT"/);
     assert.match(seen[1], /POST \/advisor\/suggest \{"customer_id":"YT-1042","query":"double charge"\}/);
     await assert.rejects(() => gw.say('gone', 'hi'), UnknownCallError);
-    await gw.customerContext('YT-1042'); // still demo data: no request goes out
-    assert.equal(seen.length, 3);
+    await gw.customerContext('YT-1042');
+    assert.equal(seen.length, 4);
+    assert.match(seen[3], /GET \/advisor\/customers\/YT-1042/);
+    await assert.rejects(() => gw.customerContext('ZZ-0000'), CustomerNotFoundError);
     process.env.CALLVERSE_AGENTS_URL = 'http://localhost:1';
     await assert.rejects(() => new HttpAgentGateway().startCall({ persona: 'IMPATIENT', mix: null, difficulty: 'EASY', intent: 'BILLING', memory: false }), AgentDownError);
   } finally {
     delete process.env.CALLVERSE_AGENTS_URL;
     fake.close();
+  }
+});
+
+test("a voice note's tone reaches the customer; a tone that is not valid is ignored", async () => {
+  const karim = await client(app, 'karim'), token = await tokenOf(karim);
+  const post = (path: string, body: object) => karim.post(path).set('X-CSRF-Token', token).send(body);
+  const call = async () => (await post('/advisor/live/start', start).expect(200)).body.id as string;
+  const words = 'I am sorry about that, I understand.';
+  const calm = (await post('/advisor/live/say', { id: await call(), text: words }).expect(200)).body;
+  const shouted = (await post('/advisor/live/say', { id: await call(), text: words, tone: { emotion: 'anger', mood: 12 } }).expect(200)).body;
+  assert.equal(calm.moveLabel, 'Acknowledge the frustration and use her history');
+  assert.equal(shouted.moveLabel, 'Raised your voice or was rude');
+  assert.ok(shouted.mood < calm.mood);
+  for (const tone of [{ emotion: 'furious', mood: 5 }, { emotion: 'anger', mood: 5.5 }, { emotion: 'anger', mood: 500 }, 'anger', []]) {
+    assert.equal((await post('/advisor/live/say', { id: await call(), text: words, tone }).expect(200)).body.moveLabel, calm.moveLabel);
   }
 });

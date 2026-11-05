@@ -57,3 +57,40 @@ def transcribe(wav: bytes) -> dict:
     with _lock:
         out = _pipeline()({"raw": y, "sampling_rate": SR}, chunk_length_s=30)
     return {"text": out["text"].strip(), "seconds": round(len(y) / SR, 1)}
+
+
+def speech_segments(x: np.ndarray, min_gap: float = 0.6, min_len: float = 0.4) -> list[tuple[float, float]]:
+    """Where somebody speaks in one channel: frames louder than a share of the channel's own loud level, joined across short pauses."""
+    hop = int(SR * 0.03)
+    rms = librosa.feature.rms(y=x, frame_length=hop * 2, hop_length=hop)[0]
+    if rms.size == 0 or rms.max() < 0.005:
+        return []
+    loud = rms > max(0.004, 0.12 * float(np.percentile(rms, 95)))
+    segs, start = [], None
+    for i, on in enumerate(loud):
+        if on and start is None:
+            start = i
+        if not on and start is not None:
+            segs.append([start * hop / SR, i * hop / SR])
+            start = None
+    if start is not None:
+        segs.append([start * hop / SR, len(loud) * hop / SR])
+    joined: list[list[float]] = []
+    for a, b in segs:
+        if joined and a - joined[-1][1] < min_gap:
+            joined[-1][1] = b
+        else:
+            joined.append([a, b])
+    return [(a, b) for a, b in joined if b - a >= min_len]
+
+
+def transcribe_segments(samples: np.ndarray) -> list[dict]:
+    """Speech to text with times for one channel of a call (16 kHz mono float samples): [{text, start, end}], one per stretch of speech."""
+    spans = speech_segments(samples)
+    if not spans:
+        return []
+    pad = int(0.15 * SR)
+    clips = [{"raw": samples[max(0, int(a * SR) - pad): int(b * SR) + pad].astype("float32"), "sampling_rate": SR} for a, b in spans]
+    with _lock:
+        out = _pipeline()(clips, batch_size=8, chunk_length_s=30)
+    return [dict(text=o["text"].strip(), start=a, end=b) for (a, b), o in zip(spans, out) if o["text"].strip()]

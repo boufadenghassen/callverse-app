@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { Roles } from '../auth/access.guard';
 
 /** Where the Python emotion service (models/src/serve.py) listens. */
-const EMOTION_URL = () => process.env.CALLVERSE_EMOTION_URL ?? 'http://localhost:8001';
+export const EMOTION_URL = () => process.env.CALLVERSE_EMOTION_URL ?? 'http://localhost:8001';
 
 /** Nour uploads a call recording; the real fine-tuned WavLM model scores the emotion. */
 @Controller()

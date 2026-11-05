@@ -12,6 +12,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 KB = json.loads((Path(__file__).parent / "knowledge" / "base.json").read_text(encoding="utf-8"))
+CUSTOMERS = json.loads((Path(__file__).parent / "knowledge" / "customers.json").read_text(encoding="utf-8"))
+_CUSTOMERS_BY_ID = {c["id"]: c for c in CUSTOMERS}
 _vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
 _matrix = _vec.fit_transform([f"{d['title']}. {d['text']}" for d in KB])
 
@@ -31,6 +33,11 @@ INTENT_WORDS = {
 
 def detect_intents(text: str) -> list[str]:
     return [name for name, rx in INTENT_WORDS.items() if re.search(rx, text, re.I)]
+
+
+def get_customer(customer_id: str) -> dict | None:
+    """Looks up a customer's 360-degree context by id (e.g. "YT-1042"). None if the id is unknown."""
+    return _CUSTOMERS_BY_ID.get(customer_id)
 
 
 def retrieve(query: str, k: int = 3) -> list[tuple[dict, float]]:
@@ -66,3 +73,44 @@ def suggest(query: str, customer_name: str | None = None) -> dict:
         intents=intents,
         evidence=[dict(source=d["source"], score=round(s, 2), excerpt=d["title"]) for d, s in hits if s >= MIN_SCORE],
     )
+
+
+def cosine(a: str, b: str) -> float:
+    """TF-IDF cosine similarity of two texts, in the knowledge base's own vocabulary."""
+    return float(cosine_similarity(_vec.transform([a]), _vec.transform([b]))[0][0])
+
+
+# ---- the advisor agent talking by itself (the automatic call)
+AUTO_STEPS = ("acknowledge", "check the policy", "give the solution", "follow up in writing")
+# a rushed advisor for demonstrations: promises at once, asks the customer to repeat, passes them on. It is what the quality analyst and the complaint agent are there for.
+RUSHED = (("promise too early", "I will refund you right away."), ("ask to repeat", "Could you explain the problem again from the start?"),
+          ("transfer", "Let me transfer you to the billing team."), ("transfer again", "Please hold while I transfer you to another colleague."))
+
+
+def _sentences(text: str) -> list[str]:
+    return [x.strip() for x in re.split(r"(?<=[.!?])\s+", text.strip()) if x.strip()]
+
+
+def auto_reply(topic: str, turn: int, customer_name: str | None = None, style: str = "careful") -> dict:
+    """The fixed routine, one step per turn: acknowledge the problem, check the policy, give the solution, confirm in writing. `turn` counts the advisor's replies so far.
+
+    It does not read the conversation. advisor_agent.py is the agent that does, and it comes back to the rushed script here for demonstrations.
+    """
+    if style == "rushed":
+        step, text = RUSHED[min(max(turn, 0), len(RUSHED) - 1)]
+        return dict(text=text, step=step, turn=turn, last=False, sources=[], intents=detect_intents(topic), policyWarning=None, style=style)
+    a = suggest(topic, customer_name)
+    step = AUTO_STEPS[min(max(turn, 0), len(AUTO_STEPS) - 1)]
+    facts = _sentences(a["text"])
+    source = a["sources"][0] if a["sources"] else "our procedure"
+    if step == "acknowledge":
+        text = "I'm sorry about this, I understand how frustrating it is. " + (facts[0] if facts else "I will look into it now.")
+    elif step == "check the policy":
+        text = f"Let me check the policy in {source} before I commit to anything."
+        if a.get("policyWarning"):
+            text += " " + a["policyWarning"]
+    elif step == "give the solution":
+        text = " ".join(facts[1:3]) if len(facts) > 1 else (facts[0] if facts else "I will take care of it myself.")
+    else:
+        text = "I will send you a confirmation by email with a reference number and call you back. Is there anything else I can help you with?"
+    return dict(text=text[:300], step=step, turn=turn, last=step == AUTO_STEPS[-1], sources=a["sources"], intents=a["intents"], policyWarning=a.get("policyWarning"), style="careful")

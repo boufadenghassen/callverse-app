@@ -1,0 +1,12 @@
+# Core deps to run `main.py` and the test suite (pytest -q).
+# Install: pip install -r requirements.txt
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+scikit-learn>=1.4
+numpy>=1.26
+librosa>=0.10
+soundfile>=0.12
+huggingface_hub>=0.23   # stt.available() checks the model cache even without transcribing
+pytest>=8.0
+httpx>=0.27

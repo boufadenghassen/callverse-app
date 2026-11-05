@@ -1,0 +1,14 @@
+# Optional deps for actually running the voice features (not needed to run the API or the tests;
+# huggingface_hub alone, in requirements.txt, is enough for the /health and availability checks).
+# Without these, /voice/speak and /voice/transcribe answer 503 and the web app falls back to the
+# browser's built-in speech. See README.md "Neural voice: one-time download".
+# Install only if you are working on voice.py or stt.py:
+#   pip install -r requirements-voice.txt
+
+# Neural voice (Kokoro, text to speech)
+kokoro-onnx
+onnxruntime
+
+# Speech to text (Whisper, via Hugging Face transformers)
+torch
+transformers

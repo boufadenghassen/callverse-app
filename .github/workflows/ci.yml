@@ -21,3 +21,18 @@ jobs:
       - run: npm ci
       - run: npm run build   # compiles the server and the browser script, so type errors fail the build
       - run: npm test        # unit and HTTP tests; the Playwright browser tests in e2e/ run on a developer machine
+
+  agents:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/agents
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: services/agents/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pytest -q   # voice.py/stt.py import fine without their optional heavy deps (kokoro-onnx, torch) — see requirements-voice.txt

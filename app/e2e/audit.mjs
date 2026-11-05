@@ -5,7 +5,7 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:8080', PASSWORD = process
 const core = 'C:/Program Files (x86)/Microsoft/EdgeCore';
 const v = readdirSync(core).sort().reverse().find((d) => existsSync(`${core}/${d}/msedge.exe`));
 const axe = readFileSync('node_modules/axe-core/axe.min.js', 'utf8');
-const pages = ['/', '/client', '/client?persona=ANGRY_PREMIUM&moves=EMPATHY,ASK_REPEAT', '/client?moves=EMPATHY,CHECK_POLICY,FOLLOW_UP', '/advisor', '/workforce', '/quality', '/complaints', '/training', '/sales', '/personas', '/ideas', '/insights', '/pipeline', '/present'];
+const pages = ['/', '/client', '/client?persona=ANGRY_PREMIUM&moves=EMPATHY,ASK_REPEAT', '/client?moves=EMPATHY,CHECK_POLICY,FOLLOW_UP', '/advisor', '/workforce', '/quality', '/complaints', '/complaints/CMP-221', '/training', '/sales', '/personas', '/ideas', '/insights', '/pipeline', '/present'];
 const b = await chromium.launch({ executablePath: `${core}/${v}/msedge.exe` });
 const found = new Map();
 for (const scheme of ['light', 'dark']) {

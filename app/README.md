@@ -49,21 +49,33 @@ Docker: `docker build -t callverse-nest .` then
 `HttpAgentGateway` (`AGENTS_MODE=http`) calls these. Responses are JSON with the camelCase field names of the
 interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alias_generator=to_camel`.
 
-| Method | Path | Returns |
-|---|---|---|
-> **Built in `services/agents`:** `/advisor/suggest`, `/customer/sessions` and `/customer/sessions/{id}/say` (marked ✔ below).
+> **Built in `services/agents` (marked ✔ below):** the advisor, the customer simulator, the workforce manager (forecast, simulation, routing, breaks), the voice and the quality analyst.
 > `HttpAgentGateway` keeps demo data for every other row until its Python agent exists.
 
-| GET | `/advisor/customers/{id}` | CustomerContext |
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/advisor/customers/{id}` ✔ | CustomerContext |
 | POST | `/advisor/suggest` `{customer_id, query}` ✔ | SuggestedAnswer (with optional `intents`, `evidence`) |
 | POST | `/customer/sessions` `{persona, mix, difficulty, intent, memory}` ✔ | CallStart |
 | POST | `/customer/sessions/{id}/say` `{text}` ✔ | CallReply |
-| GET | `/workforce/forecast?queue=B` | ForecastPoint[] |
-| POST | `/workforce/simulate` | SimulationResult |
-| GET | `/quality/reviews?limit=20` | QualityReview[] |
-| GET | `/complaints/open` | ComplaintCase[] |
-| GET | `/training/scenarios` | Scenario[] |
-| GET | `/sales/opportunities` | Opportunity[] |
+| GET | `/workforce/forecast?queue=B` ✔ | ForecastPoint[] |
+| POST | `/workforce/simulate` ✔ | SimulationResult |
+| GET | `/workforce/routing` ✔, `/workforce/schedule` ✔ | RoutingPlan, SchedulePlan |
+| GET | `/quality/reviews?limit=20` ✔ | QualityReview[] (filters: advisor, rule, below) |
+| GET | `/quality/reviews/{id}` ✔, `/quality/analytics` ✔, `/quality/evaluation` ✔ | QualityReview, QualityAnalytics, QualityEvaluation |
+| POST | `/quality/review` ✔, `/quality/review-call` ✔, `/quality/review-audio` ✔ | QualityReview (from a transcript, a live call, a two-channel recording) |
+| POST | `/quality/feedback` ✔ | reviewer verdict (agree / disagree / clear) on one finding |
+| GET | `/complaints/open` ✔ | ComplaintCase[] (real agent adds `severityFactors`, `riskFactors`, `deadline`, `warning`, `actions`...) |
+| GET | `/complaints/{id}` ✔, `/complaints/insights` ✔, `/complaints/follow-ups` ✔, `/complaints/from-calls` ✔ | a case in full; root causes and trends; resolved cases waiting for the follow-up; calls that may be complaints |
+| POST | `/complaints/triage` `{text, customer_id?}` ✔, `/complaints` ✔, `/complaints/from-call` ✔, `/complaints/{id}/{take,escalate,severity,alert,resolve,close,reopen}` ✔ | read a complaint without saving; open a case; every move on a case |
+| GET | `/training/scenarios?advisor_id=` ✔ | Scenario[], only that advisor's when given |
+| POST | `/training/practice` `{callId, scenario_id, advisor}` ✔ | QualityReview plus `practice`: the attempt, what moved against the advisor's usual level, the next step |
+| GET | `/training/practice?advisor=` ✔ | `{attempts, count, best, trend}` |
+| POST | `/advisor/auto` `{topic, turn, style, turns?, steps?, brief?}` ✔ | the advisor agent's reply, with `step`, `why`, `engine`, `checks` |
+| GET | `/sales/opportunities` ✔ | Opportunity[] (real agent adds `factors`, `timing`, `counterfactual`, `churn`, `acceptance`, `expected`...) |
+| POST | `/sales/detect` `{customer_id?, turns}` ✔, `/sales/outcome` ✔ | the needs found in a conversation and the ranked offers; what happened to an offer |
+| GET | `/sales/analytics` ✔ | which offers convert |
+| POST | `/sales/simulate` `{calls, share, min_relevance, good_moment_only}` ✔ | what a month of calls earns under a selling rule, replayed on the history |
 
 ## Voice
 
