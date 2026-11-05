@@ -37,9 +37,10 @@ def test_plan_targets_the_weakest_skills(service):
     assert "procedure_compliance" in skills
     assert "accuracy" not in skills  # 92% is above the threshold
     assert len(plan.scenarios) == 6
-    assert plan.coach_model == "RandomForestRegressor"
-    assert plan.coach_metrics["dataset"] == "synthetic_catalog_v1"
-    assert plan.coach_metrics["samples"] == 500
+    assert plan.coach_model.startswith(("LinearRegression", "RandomForestRegressor"))   # the better of the two candidates
+    assert plan.coach_metrics["r2"] == max(plan.coach_metrics["linear_r2"], plan.coach_metrics["forest_r2"])
+    assert plan.coach_metrics["dataset"] == "synthetic_catalog_v2"
+    assert plan.coach_metrics["samples"] == 2000
     assert 0 <= plan.coach_metrics["mae"] < 1
     assert 0 <= plan.coach_metrics["rmse"] < 1
     assert -1 <= plan.coach_metrics["r2"] <= 1

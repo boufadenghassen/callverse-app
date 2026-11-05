@@ -85,9 +85,35 @@ class _FallbackForest:
         return np.asarray([np.mean([walk(root, row) for root in self.roots], axis=0) for row in x])
 
 
-class CoachMLModel:
-    """Random Forest that predicts skill gaps from QA criterion scores."""
+class _LeastSquares:
+    """Multi-output linear regression (ridge, closed form, numpy only): one weight per QA criterion and skill.
 
+    The coach's target is a weighted sum of how far each criterion is from perfect, so a linear model has the right shape,
+    needs no extra package, and its weights can be read back (each one says how much a criterion's gap feeds a skill's gap)."""
+
+    def __init__(self, ridge: float = 1e-3):
+        self.ridge = ridge
+        self.weights: np.ndarray | None = None
+
+    @staticmethod
+    def _with_bias(x: np.ndarray) -> np.ndarray:
+        return np.hstack([x, np.ones((len(x), 1))])
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> None:
+        a = self._with_bias(x)
+        self.weights = np.linalg.solve(a.T @ a + self.ridge * np.eye(a.shape[1]), a.T @ y)
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        return self._with_bias(np.asarray(x, dtype=float)) @ self.weights
+
+
+class CoachMLModel:
+    """Predicts skill gaps (0 = fine, 1 = the whole skill is missing) from QA criterion scores.
+
+    Two candidates are trained and scored on the same held-out examples: a linear model and a random forest. The one with
+    the better R2 is kept (`name`), and both scores are reported (`linear_*`, `forest_*` in `metrics`)."""
+
+    SAMPLES = 2000
     name = "RandomForestRegressor"
     artifact_path = Path(__file__).resolve().parents[3] / "models" / "coach" / "coach_model.pkl"
     metrics_path = Path(__file__).resolve().parents[3] / "models" / "coach" / "coach_metrics.json"
@@ -99,6 +125,13 @@ class CoachMLModel:
         self._criterion_index = {name: index for index, name in enumerate(self.criteria)}
         self._skill_index = {name: index for index, name in enumerate(self.skills)}
         self.implementation = "scikit-learn" if self._sklearn_available() else "built-in fallback"
+        # a skill's gap is divided by the most its criteria can add up to, so every gap is on the same 0..1 scale as the prediction
+        self._max_gap = np.ones(len(self.skills))
+        for mappings in catalog.criteria.values():
+            for skill, weight in mappings:
+                self._max_gap[self._skill_index[skill]] += weight
+        self._max_gap -= 1
+        self._max_gap[self._max_gap <= 0] = 1.0
         self.model = self._new_model(seed)
         self.metrics = self._fit_and_evaluate(seed)
         self._save_artifacts(seed)
@@ -124,7 +157,7 @@ class CoachMLModel:
         rows: list[list[float]] = []
         targets: list[list[float]] = []
         # Augmentation makes the forest learn the mapping across the complete score range.
-        for _ in range(500):
+        for _ in range(self.SAMPLES):
             scores = {criterion: rng.random() for criterion in self.criteria}
             rows.append([scores[criterion] for criterion in self.criteria])
             target = [0.0] * len(self.skills)
@@ -133,33 +166,51 @@ class CoachMLModel:
                 for skill, weight in mappings:
                     target[self._skill_index[skill]] += severity * weight
             targets.append(target)
-        return np.asarray(rows), np.asarray(targets)
+        return np.asarray(rows), np.asarray(targets) / self._max_gap
+
+    @staticmethod
+    def _score(model, train_x, train_y, test_x, test_y) -> dict[str, float]:
+        model.fit(train_x, train_y)
+        predicted = np.clip(model.predict(test_x), 0.0, 1.0)
+        errors = predicted - test_y
+        variance = float(np.sum((test_y - np.mean(test_y, axis=0)) ** 2))
+        top3_true = np.argsort(test_y, axis=1)[:, ::-1][:, :3]
+        top3_pred = np.argsort(predicted, axis=1)[:, ::-1][:, :3]
+        overlap = np.mean([len(set(a) & set(b)) / 3 for a, b in zip(top3_true, top3_pred)])
+        return {
+            "mae": round(float(np.mean(np.abs(errors))), 4),
+            "rmse": round(float(np.sqrt(np.mean(errors ** 2))), 4),
+            "r2": round(1.0 - float(np.sum(errors ** 2)) / variance if variance else 0.0, 4),
+            "top_skill_accuracy": round(float(np.mean(np.argmax(predicted, axis=1) == np.argmax(test_y, axis=1))), 4),
+            "top3_overlap": round(float(overlap), 4),
+        }
 
     def _fit_and_evaluate(self, seed: int) -> dict[str, float | int | str]:
         features, targets = self._dataset(seed)
         split = int(len(features) * 0.8)
         train_x, test_x = features[:split], features[split:]
         train_y, test_y = targets[:split], targets[split:]
-        evaluator = self._new_model(seed + 1)
-        evaluator.fit(train_x, train_y)
-        predicted = np.clip(evaluator.predict(test_x), 0.0, 1.0)
-        errors = predicted - test_y
-        mae = float(np.mean(np.abs(errors)))
-        rmse = float(np.sqrt(np.mean(errors ** 2)))
-        variance = float(np.sum((test_y - np.mean(test_y, axis=0)) ** 2))
-        r2 = 1.0 - float(np.sum(errors ** 2)) / variance if variance else 0.0
-        ranking = float(np.mean(np.argmax(predicted, axis=1) == np.argmax(test_y, axis=1)))
+        forest_name = "RandomForestRegressor" + ("" if self.implementation == "scikit-learn" else " (built-in)")
+        candidates = {
+            "LinearRegression (least squares)": (_LeastSquares, self._score(_LeastSquares(), train_x, train_y, test_x, test_y)),
+            forest_name: (lambda: self._new_model(seed), self._score(self._new_model(seed + 1), train_x, train_y, test_x, test_y)),
+        }
+        best = max(candidates, key=lambda key: candidates[key][1]["r2"])
+        self.name = best
+        self.model = candidates[best][0]()
         self.model.fit(features, targets)
         return {
-            "dataset": "synthetic_catalog_v1",
+            "dataset": "synthetic_catalog_v2",
             "samples": len(features),
             "train_samples": len(train_x),
             "test_samples": len(test_x),
-            "mae": round(mae, 4),
-            "rmse": round(rmse, 4),
-            "r2": round(r2, 4),
-            "top_skill_accuracy": round(ranking, 4),
+            **candidates[best][1],
             "implementation": self.implementation,
+            **{f"{'linear' if key.startswith('Linear') else 'forest'}_{metric}": value[1][metric]
+               for key, value in candidates.items() for metric in ("r2", "mae", "top_skill_accuracy")},
+            "target_scale": "skill gap 0..1 (divided by the total weight of the criteria that feed the skill)",
+            "note": "Synthetic examples from the catalog's reviewed criterion-to-skill weights: the score says the model "
+                    "reproduces that mapping, not that it matches real coaching decisions (that needs plans labelled by supervisors).",
         }
 
     def _save_artifacts(self, seed: int) -> None:

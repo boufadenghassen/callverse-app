@@ -1,5 +1,5 @@
 {
-  "model": "RandomForestRegressor",
+  "model": "LinearRegression (least squares)",
   "features": [
     "accuracy",
     "communication",
@@ -19,14 +19,23 @@
     "resolution"
   ],
   "metrics": {
-    "dataset": "synthetic_catalog_v1",
-    "samples": 500,
-    "train_samples": 400,
-    "test_samples": 100,
-    "mae": 0.1379,
-    "rmse": 0.2102,
-    "r2": 0.4789,
-    "top_skill_accuracy": 0.59,
-    "implementation": "built-in fallback"
+    "dataset": "synthetic_catalog_v2",
+    "samples": 2000,
+    "train_samples": 1600,
+    "test_samples": 400,
+    "mae": 0.0,
+    "rmse": 0.0,
+    "r2": 1.0,
+    "top_skill_accuracy": 1.0,
+    "top3_overlap": 1.0,
+    "implementation": "scikit-learn",
+    "linear_r2": 1.0,
+    "linear_mae": 0.0,
+    "linear_top_skill_accuracy": 1.0,
+    "forest_r2": 0.8667,
+    "forest_mae": 0.0688,
+    "forest_top_skill_accuracy": 0.73,
+    "target_scale": "skill gap 0..1 (divided by the total weight of the criteria that feed the skill)",
+    "note": "Synthetic examples from the catalog's reviewed criterion-to-skill weights: the score says the model reproduces that mapping, not that it matches real coaching decisions (that needs plans labelled by supervisors)."
   }
 }
