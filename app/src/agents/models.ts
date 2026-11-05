@@ -79,4 +79,5 @@ export interface TrainingPlan {
   coach_summary?: string | null;
   coach_actions?: string[];
   coach_model?: string;
+  coach_metrics?: Record<string, string | number>;
 }

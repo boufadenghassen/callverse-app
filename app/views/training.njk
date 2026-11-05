@@ -36,6 +36,8 @@
         </article>
         <article class="scn">
           <h3>Automatic focus</h3>
+          {% if plan.coach_model %}<p class="muted small">Model: {{ plan.coach_model }}</p>{% endif %}
+          {% if plan.coach_metrics %}<p class="muted small">Evaluation · MAE {{ plan.coach_metrics.mae }} · RMSE {{ plan.coach_metrics.rmse }} · R² {{ plan.coach_metrics.r2 }}</p>{% endif %}
           {% if plan.focus %}<ul>{% for item in plan.focus %}<li>{{ item.skill }} · gap {{ item.gap }} · {{ item.criteria | join(', ') }}</li>{% endfor %}</ul>{% else %}<p class="muted">No weakness requires training right now.</p>{% endif %}
           {% for reason in plan.rationale %}<p class="muted small">{{ reason }}</p>{% endfor %}
         </article>

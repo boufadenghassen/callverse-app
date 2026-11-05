@@ -9,7 +9,10 @@ remain catalog/template data.
 from __future__ import annotations
 
 import random
+import json
+import pickle
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -85,6 +88,8 @@ class CoachMLModel:
     """Random Forest that predicts skill gaps from QA criterion scores."""
 
     name = "RandomForestRegressor"
+    artifact_path = Path(__file__).resolve().parents[3] / "models" / "coach" / "coach_model.pkl"
+    metrics_path = Path(__file__).resolve().parents[3] / "models" / "coach" / "coach_metrics.json"
 
     def __init__(self, catalog: Catalog, seed: int = 17):
         self.catalog = catalog
@@ -92,10 +97,17 @@ class CoachMLModel:
         self.skills = sorted(catalog.skills)
         self._criterion_index = {name: index for index, name in enumerate(self.criteria)}
         self._skill_index = {name: index for index, name in enumerate(self.skills)}
-        self.model = RandomForestRegressor(
-            n_estimators=120, max_depth=8, min_samples_leaf=2, random_state=seed, n_jobs=1
-        ) if self._sklearn_available() else _FallbackForest(seed)
-        self._fit(seed)
+        self.implementation = "scikit-learn" if self._sklearn_available() else "built-in fallback"
+        self.model = self._new_model(seed)
+        self.metrics = self._fit_and_evaluate(seed)
+        self._save_artifacts(seed)
+
+    def _new_model(self, seed: int):
+        if self.implementation == "scikit-learn":
+            return RandomForestRegressor(
+                n_estimators=120, max_depth=8, min_samples_leaf=2, random_state=seed, n_jobs=1
+            )
+        return _FallbackForest(seed)
 
     @staticmethod
     def _sklearn_available() -> bool:
@@ -106,7 +118,7 @@ class CoachMLModel:
         except (ImportError, ValueError):
             return False
 
-    def _fit(self, seed: int) -> None:
+    def _dataset(self, seed: int) -> tuple[np.ndarray, np.ndarray]:
         rng = random.Random(seed)
         rows: list[list[float]] = []
         targets: list[list[float]] = []
@@ -120,7 +132,62 @@ class CoachMLModel:
                 for skill, weight in mappings:
                     target[self._skill_index[skill]] += severity * weight
             targets.append(target)
-        self.model.fit(np.asarray(rows), np.asarray(targets))
+        return np.asarray(rows), np.asarray(targets)
+
+    def _fit_and_evaluate(self, seed: int) -> dict[str, float | int | str]:
+        features, targets = self._dataset(seed)
+        split = int(len(features) * 0.8)
+        train_x, test_x = features[:split], features[split:]
+        train_y, test_y = targets[:split], targets[split:]
+        evaluator = self._new_model(seed + 1)
+        evaluator.fit(train_x, train_y)
+        predicted = np.clip(evaluator.predict(test_x), 0.0, 1.0)
+        errors = predicted - test_y
+        mae = float(np.mean(np.abs(errors)))
+        rmse = float(np.sqrt(np.mean(errors ** 2)))
+        variance = float(np.sum((test_y - np.mean(test_y, axis=0)) ** 2))
+        r2 = 1.0 - float(np.sum(errors ** 2)) / variance if variance else 0.0
+        ranking = float(np.mean(np.argmax(predicted, axis=1) == np.argmax(test_y, axis=1)))
+        self.model.fit(features, targets)
+        return {
+            "dataset": "synthetic_catalog_v1",
+            "samples": len(features),
+            "train_samples": len(train_x),
+            "test_samples": len(test_x),
+            "mae": round(mae, 4),
+            "rmse": round(rmse, 4),
+            "r2": round(r2, 4),
+            "top_skill_accuracy": round(ranking, 4),
+            "implementation": self.implementation,
+        }
+
+    def _save_artifacts(self, seed: int) -> None:
+        self.artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        self.metrics_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.artifact_path.open("wb") as handle:
+            pickle.dump(
+                {
+                    "model": self.model,
+                    "criteria": self.criteria,
+                    "skills": self.skills,
+                    "seed": seed,
+                    "metrics": self.metrics,
+                },
+                handle,
+            )
+        self.metrics_path.write_text(
+            json.dumps(
+                {
+                    "model": self.name,
+                    "features": self.criteria,
+                    "targets": self.skills,
+                    "metrics": self.metrics,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
     @staticmethod
     def _unit_score(score: float) -> float:

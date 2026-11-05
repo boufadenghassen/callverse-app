@@ -97,6 +97,7 @@ def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator, coach_mod
         return TrainingPlan(
             advisor_id=req.advisor_id, needs_training=False, focus=[], scenarios=[scenario], rationale=rationale,
             coach_model=getattr(coach_model, "name", "rules"),
+            coach_metrics=getattr(coach_model, "metrics", {}),
         )
 
     counts = allocate(ranked, req.size)
@@ -129,6 +130,7 @@ def build_plan(req: TrainingPlanRequest, generator: ScenarioGenerator, coach_mod
     return TrainingPlan(
         advisor_id=req.advisor_id, needs_training=True, focus=ranked, scenarios=scenarios, rationale=rationale,
         coach_model=getattr(coach_model, "name", "rules"),
+        coach_metrics=getattr(coach_model, "metrics", {}),
     )
 
 

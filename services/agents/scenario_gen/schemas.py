@@ -185,6 +185,7 @@ class TrainingPlan(BaseModel):
     coach_summary: str | None = None
     coach_actions: list[str] = Field(default_factory=list)
     coach_model: str = "RandomForestRegressor"
+    coach_metrics: dict[str, float | int | str] = Field(default_factory=dict)
 
 
 class ProgressRequest(BaseModel):

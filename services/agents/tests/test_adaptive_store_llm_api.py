@@ -38,6 +38,12 @@ def test_plan_targets_the_weakest_skills(service):
     assert "accuracy" not in skills  # 92% is above the threshold
     assert len(plan.scenarios) == 6
     assert plan.coach_model == "RandomForestRegressor"
+    assert plan.coach_metrics["dataset"] == "synthetic_catalog_v1"
+    assert plan.coach_metrics["samples"] == 500
+    assert 0 <= plan.coach_metrics["mae"] < 1
+    assert 0 <= plan.coach_metrics["rmse"] < 1
+    assert -1 <= plan.coach_metrics["r2"] <= 1
+    assert 0 <= plan.coach_metrics["top_skill_accuracy"] <= 1
     for scenario in plan.scenarios:
         assert scenario.kind == "adaptive"
         assert any(s in skills for s in scenario.skills)
