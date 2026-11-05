@@ -1,7 +1,9 @@
 export interface CustomerContext { id: string; name: string; profile: string; intents: string[]; contract: string; openTickets: number; transfers: number; mood: string }
 export interface Evidence { source: string; score: number; excerpt: string }
 /** `intents` and `evidence` come from the real advisor agent; the demo data leaves them out. */
-export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
+/** What the advisor's trained intent model understood (services/agents/intent_model.py); null when the model is not installed. */
+export interface IntentReading { intent: string; label: string; confidence: number; sure: boolean }
+export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[]; intentModel?: IntentReading | null }
 export interface Transcript { text: string; seconds: number }
 /** What the advisor agent says by itself at one point of a call: one step of its routine (acknowledge, check the policy, give the solution, confirm in writing), or a rushed advisor for demonstrations. */
 /** What the advisor agent reads before it answers: the conversation, the steps it already took, and the training scenario when there is one. */

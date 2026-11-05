@@ -38,6 +38,7 @@
           {% for e in answer.evidence %}<li><span>{{ e.source }}</span> · {{ e.excerpt }}</li>{% endfor %}
         </ul>
         {% endif %}
+        {% if answer.intentModel and answer.intentModel.sure %}<p class="muted" data-intent-model>Understood as <strong>{{ answer.intentModel.label }}</strong> by the trained intent model</p>{% endif %}
         {% if answer.policyWarning %}<p class="warning" role="note">{{ answer.policyWarning }}</p>{% endif %}
         <div class="actions">
           <button type="button" class="btn" data-action="use">Use answer</button>
