@@ -2,3 +2,5 @@
 #   pip install -r requirements-models.txt
 onnxruntime>=1.17      # the advisor's intent model (ONNX int8)
 tokenizers>=0.15       # its tokenizer, without transformers or torch
+sherpa-onnx>=1.10,<2   # Piper voices (Sami's customer agent); 2.x changed the VITS front end
+faster-whisper>=1.0    # speech to text without PyTorch (Sami's customer agent)

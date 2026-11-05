@@ -56,7 +56,7 @@ def _warm_up():
     if voice.available():
         steps.append(lambda: voice.speak("Ready."))
     if stt.available():
-        steps.append(stt._pipeline)
+        steps.append(stt.warm)
     if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
         steps.append(lambda: (quality_semantic.scores("Ready."), quality_eval.report()))
     if intent_model.model_dir():   # the advisor's trained intent model (~2 s to load)
@@ -112,7 +112,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available(), "writer": local_llm.model() if local_llm.available() else None,
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "voiceEngine": voice.engine_name(), "listen": stt.available(), "writer": local_llm.model() if local_llm.available() else None,
             "trainedModels": {"advisorIntent": intent_model.info()}}
 
 

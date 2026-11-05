@@ -170,7 +170,8 @@ export class HttpAgentGateway extends MockAgentGateway {
     return (await res.json()) as T;
   }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
-  say(callId: string, text: string, tone?: m.Tone | null) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, tone ? { text, tone } : { text }); }
+  /** The customer's words may be written by the local language model (customer_llm.py), so this one waits up to 30 s. */
+  say(callId: string, text: string, tone?: m.Tone | null) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, tone ? { text, tone } : { text }, false, undefined, 30_000); }
   scenarios(advisorId?: string) {
     const query = advisorId ? `?advisor_id=${encodeURIComponent(advisorId)}` : '';
     return this.call<m.Scenario[]>(`/training/scenarios${query}`, undefined, !advisorId);

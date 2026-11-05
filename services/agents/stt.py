@@ -2,6 +2,10 @@
 
 The model comes from the normal Hugging Face cache (see services/agents/README.md). Without it /voice/transcribe answers 503.
 The web page sends a 16 kHz mono WAV (it converts the recording itself), so no ffmpeg is needed here.
+
+Second engine, from Sami's Customer Simulator Agent (branch customer_agent): faster-whisper (CTranslate2, int8 on the CPU, no PyTorch),
+used when transformers/torch or the cached model are missing. Its model (Systran/faster-whisper-base.en, ~150 MB) is downloaded into the
+Hugging Face cache the first time; package faster-whisper (requirements-models.txt).
 """
 import io
 import os
@@ -23,9 +27,59 @@ class BadAudio(ValueError):
     """The recording cannot be used: unreadable, silent or too short."""
 
 
-def available() -> bool:
+FAST_MODEL = os.environ.get("STT_FAST_MODEL", "base.en")
+_fast = None
+
+
+def transformers_available() -> bool:
     from huggingface_hub import try_to_load_from_cache
-    return isinstance(try_to_load_from_cache(MODEL_ID, "model.safetensors"), str)
+    if not isinstance(try_to_load_from_cache(MODEL_ID, "model.safetensors"), str):
+        return False
+    try:
+        import torch  # noqa: F401
+        import transformers  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def fast_available() -> bool:
+    if os.environ.get("STT_FAST", "1") == "0":
+        return False
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def available() -> bool:
+    return transformers_available() or fast_available()
+
+
+def _fast_model():
+    global _fast
+    if _fast is None:
+        from faster_whisper import WhisperModel
+        _fast = WhisperModel(FAST_MODEL, device="cpu", compute_type="int8")
+    return _fast
+
+
+def warm() -> None:
+    """Load (and the first time, download) the speech-to-text model at start-up."""
+    _pipeline() if transformers_available() else _fast_model()
+
+
+def _texts(clips: list[np.ndarray]) -> list[str]:
+    """Speech to text for a few clips of 16 kHz mono float samples, with whichever engine is installed."""
+    if transformers_available():
+        out = _pipeline()([{"raw": c, "sampling_rate": SR} for c in clips], batch_size=8, chunk_length_s=30)
+        return [o["text"].strip() for o in out]
+    texts = []
+    for c in clips:
+        segments, _ = _fast_model().transcribe(c.astype("float32"), language="en", beam_size=1, vad_filter=False)
+        texts.append(" ".join(seg.text.strip() for seg in segments).strip())
+    return texts
 
 
 def _pipeline():
@@ -55,8 +109,8 @@ def load_audio(wav: bytes) -> np.ndarray:
 def transcribe(wav: bytes) -> dict:
     y = load_audio(wav)
     with _lock:
-        out = _pipeline()({"raw": y, "sampling_rate": SR}, chunk_length_s=30)
-    return {"text": out["text"].strip(), "seconds": round(len(y) / SR, 1)}
+        text = _texts([y])[0]
+    return {"text": text, "seconds": round(len(y) / SR, 1)}
 
 
 def speech_segments(x: np.ndarray, min_gap: float = 0.6, min_len: float = 0.4) -> list[tuple[float, float]]:
@@ -90,7 +144,7 @@ def transcribe_segments(samples: np.ndarray) -> list[dict]:
     if not spans:
         return []
     pad = int(0.15 * SR)
-    clips = [{"raw": samples[max(0, int(a * SR) - pad): int(b * SR) + pad].astype("float32"), "sampling_rate": SR} for a, b in spans]
+    clips = [samples[max(0, int(a * SR) - pad): int(b * SR) + pad].astype("float32") for a, b in spans]
     with _lock:
-        out = _pipeline()(clips, batch_size=8, chunk_length_s=30)
-    return [dict(text=o["text"].strip(), start=a, end=b) for (a, b), o in zip(spans, out) if o["text"].strip()]
+        texts = _texts(clips)
+    return [dict(text=t, start=a, end=b) for (a, b), t in zip(spans, texts) if t]

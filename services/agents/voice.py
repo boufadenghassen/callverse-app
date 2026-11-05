@@ -3,6 +3,10 @@
 The model files live in models/voices/ (not in git, see services/agents/README.md). Without them the service still runs and
 /voice/speak answers 503, and the web app falls back to the browser's own voices.
 Kokoro does not act out emotions: the customer's mood changes the speaking speed only. Voices are fixed per persona.
+
+Second engine, from Sami's Customer Simulator Agent (branch customer_agent, localtts.py): Piper voices run by sherpa-onnx, fully offline,
+no PyTorch, ~63 MB a voice. Used when Kokoro's files are not there: the customer speaks with en_US-amy, the advisor with en_US-ryan,
+loudness evened out as in Sami's code. Files in services/agents/models/piper/<voice>/ (not in git), package sherpa-onnx (requirements-models.txt).
 """
 import io
 import os
@@ -28,8 +32,61 @@ _cache: "OrderedDict[tuple, bytes]" = OrderedDict()
 CACHE_SIZE = 64
 
 
-def available() -> bool:
+PIPER_DIR = Path(os.environ.get("PIPER_DIR", Path(__file__).resolve().parent / "models" / "piper"))
+PIPER_VOICES = {"customer": "vits-piper-en_US-amy-medium", "advisor": "vits-piper-en_US-ryan-medium"}
+TARGET_RMS = 0.08            # Sami's loudness target: two voices of very different levels sound alike
+_piper: dict = {}
+
+
+def kokoro_available() -> bool:
     return MODEL.exists() and VOICES.exists()
+
+
+def piper_available() -> bool:
+    if not all((PIPER_DIR / v / "tokens.txt").exists() for v in PIPER_VOICES.values()):
+        return False
+    try:
+        import sherpa_onnx  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def available() -> bool:
+    return kokoro_available() or piper_available()
+
+
+def engine_name() -> str | None:
+    return "kokoro" if kokoro_available() else "piper" if piper_available() else None
+
+
+def _piper_engine(role: str):
+    name = PIPER_VOICES["customer" if role == "customer" else "advisor"]
+    if name not in _piper:
+        import sherpa_onnx
+        d = PIPER_DIR / name
+        onnx = next(d.glob("*.onnx"))
+        cfg = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+            vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=str(onnx), tokens=str(d / "tokens.txt"), data_dir=str(d / "espeak-ng-data")),
+            num_threads=int(os.environ.get("VOICE_THREADS", 4)), provider="cpu"), max_num_sentences=1)
+        _piper[name] = sherpa_onnx.OfflineTts(cfg)
+    return _piper[name]
+
+
+def _even_out(samples) -> np.ndarray:
+    x = np.asarray(samples, dtype="float32")
+    rms = float(np.sqrt(np.mean(x * x))) if len(x) else 0.0
+    if rms > 1e-6:
+        x = x * (TARGET_RMS / rms)
+    peak = float(np.max(np.abs(x))) if len(x) else 0.0
+    return x * (0.95 / peak) if peak > 0.95 else x
+
+
+def _synthesize(text: str, role: str, voice: str, speed: float) -> tuple[np.ndarray, int]:
+    if kokoro_available():
+        return _engine().create(text, voice=voice, speed=speed, lang="en-us")
+    audio = _piper_engine(role).generate(text, sid=0, speed=speed)
+    return _even_out(audio.samples), audio.sample_rate
 
 
 def _engine():
@@ -56,12 +113,12 @@ def voice_for(role: str, persona: str | None) -> str:
 def speak(text: str, role: str = "advisor", persona: str | None = None, mood: int = 50) -> bytes:
     """The text as a 16-bit mono WAV."""
     voice, speed = voice_for(role, persona), speed_for(mood) if role == "customer" else 1.0
-    key = (text, voice, speed)
+    key = (text, voice if kokoro_available() else role, speed)
     with _lock:
         if key in _cache:
             _cache.move_to_end(key)
             return _cache[key]
-        samples, rate = _engine().create(text, voice=voice, speed=speed, lang="en-us")
+        samples, rate = _synthesize(text, role, voice, speed)
         buf = io.BytesIO()
         sf.write(buf, np.asarray(samples), rate, format="WAV", subtype="PCM_16")
         _cache[key] = buf.getvalue()

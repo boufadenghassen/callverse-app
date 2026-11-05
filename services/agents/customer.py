@@ -10,6 +10,8 @@ import re
 import secrets
 from dataclasses import dataclass, field
 
+import customer_llm
+
 MAX_MOVES = 6
 
 # traits are 0..1 sensitivities; mood and patience start at 0..100
@@ -289,6 +291,7 @@ class Session:
     said: list[str | None] = field(default_factory=list)
     opening: str | None = None      # a training scenario's own first words
     topic: str | None = None        # and how the customer names the problem
+    lines: list[str | None] = field(default_factory=list)   # what the language model made her say, turn by turn (None = the rules' line)
 
 
 SESSIONS: dict[str, Session] = {}
@@ -302,6 +305,12 @@ def _opening(s: Session, line: str) -> str:
 def _heard(s: Session, line: str | None) -> str | None:
     """The simulator's line, with the problem named as this scenario names it."""
     return line.replace(TOPIC[s.intent], s.topic) if line and s.topic else line
+
+
+def _line(s: Session, i: int, rules_line: str | None) -> str | None:
+    """What she said at turn i: the language model's words when it wrote them, else the rules' line."""
+    written = s.lines[i] if i < len(s.lines) else None
+    return written or _heard(s, rules_line)
 
 
 def start(persona: str, mix: str | None, difficulty: str, intent: str, memory: bool, opening: str | None = None, topic: str | None = None) -> dict:
@@ -323,7 +332,12 @@ def say(sid: str, text: str, tone: dict | None = None) -> dict:
     s.said.append(text)
     r = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
     t = r.turns[-1]
-    return dict(ended=r.outcome is not None, outcome=r.outcome, mood=t.mood, patience=t.patience, client=_heard(s, t.client), move=move, moveLabel=MOVES[move])
+    turns, _, _ = transcript(sid)
+    problem = _opening(s, before.opening) if s.opening else INTENTS[s.intent] + (" You have already called about it twice." if s.memory else "")
+    written = customer_llm.write(s.persona, PERSONAS[s.persona]["label"], problem, t.mood, t.patience, turns[:-1], MOVES[move], t.patience <= 0)
+    s.lines.append(written)
+    return dict(ended=r.outcome is not None, outcome=r.outcome, mood=t.mood, patience=t.patience, client=_line(s, len(r.turns) - 1, t.client), move=move, moveLabel=MOVES[move],
+                writer="language model" if written else "rules")
 
 
 def transcript(sid: str) -> tuple[list[dict], dict | None, str]:
@@ -333,5 +347,5 @@ def transcript(sid: str) -> tuple[list[dict], dict | None, str]:
     run = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
     turns = [dict(speaker="customer", text=_opening(s, start.opening), mood=start.mood)]
     for i, t in enumerate(run.turns):
-        turns += [dict(speaker="advisor", text=s.said[i]), dict(speaker="customer", text=_heard(s, t.client), mood=t.mood)]
+        turns += [dict(speaker="advisor", text=s.said[i]), dict(speaker="customer", text=_line(s, i, t.client), mood=t.mood)]
     return turns, run.outcome, s.persona
