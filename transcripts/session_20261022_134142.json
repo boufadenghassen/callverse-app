@@ -1,0 +1,114 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Karim Jlassi",
+    "age": 50,
+    "gender": "M",
+    "language": "fr",
+    "segment": "standard",
+    "seniority_years": 6,
+    "history": [
+      "Client fidèle, aucun incident récent"
+    ],
+    "intents": [
+      "internet_outage",
+      "billing_issue"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "96 749 674",
+      "référence de facture": "F156766",
+      "montant facturé": "133 DT",
+      "montant habituel": "106 DT",
+      "adresse": "Sfax"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? C'est Karim Jlassi de Sfax. Ma connexion internet a planté depuis hier et ça m'embête vraiment.",
+      "emotion": {
+        "patience": 0.2771000692454053,
+        "frustration": 0.4106556621978723,
+        "trust": 0.4062664217472166,
+        "urgency": 0.7399072791104659
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669237.0750618
+    },
+    {
+      "role": "advisor",
+      "text": "Bonsoir Karim, envoyez-moi notre numéro de ligne.",
+      "wait_s": 18.5,
+      "ts": 1792669260.5049584
+    },
+    {
+      "role": "client",
+      "text": "96 749 674. Si vous ne réparez pas ça rapidement, je passe chez Orange.",
+      "emotion": {
+        "patience": 0.1751984879580213,
+        "frustration": 0.5318556621978724,
+        "trust": 0.36126642174721657,
+        "urgency": 0.7399072791104659
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669271.4810967
+    },
+    {
+      "role": "advisor",
+      "text": "Ok, je suis en train de voir actuellement le problème sur votre ligne, je vois bien qu'il y a un petit problème et je vais le régler tout de suite.",
+      "wait_s": 1.7,
+      "ts": 1792669281.0652723
+    },
+    {
+      "role": "client",
+      "text": "Attendez-moi là. Si ce n'est pas réglé dans 30 minutes, bye-bye pour moi.",
+      "emotion": {
+        "patience": 0.1751984879580213,
+        "frustration": 0.5903556621978724,
+        "trust": 0.32126642174721654,
+        "urgency": 0.7399072791104659
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669287.6487417
+    },
+    {
+      "role": "advisor",
+      "text": "Non, ne vous inquiétez pas, monsieur, dans 30 minutes ça va régler.",
+      "wait_s": 1.6,
+      "ts": 1792669293.909479
+    },
+    {
+      "role": "client",
+      "text": "J'ai besoin que quelqu'un de supèrveille ici. Pas satisfait, changez-moi immédiatement.",
+      "emotion": {
+        "patience": 0.12019848795802128,
+        "frustration": 0.6257556621978724,
+        "trust": 0.2962664217472165,
+        "urgency": 0.7399072791104659
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792669302.572613
+    }
+  ],
+  "outcome": "escalate"
+}

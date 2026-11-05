@@ -1,0 +1,287 @@
+{
+  "profile": {
+    "persona_id": "en_f",
+    "name": "Laura Mitchell",
+    "age": 31,
+    "gender": "F",
+    "language": "en",
+    "segment": "premium",
+    "seniority_years": 12,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci",
+      "A changé de forfait il y a 8 mois",
+      "Réclamation sur une facture il y a 3 mois (résolue)"
+    ],
+    "intents": [
+      "offer_question",
+      "roaming_question"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Clear, polite, concise English. Asks precise questions, wants exact prices and conditions, mildly impatient with vague answers.",
+    "examples": [
+      "Hi, I'm new in Tunisia and I'd like to understand which mobile plan would suit me best.",
+      "Sorry, could you give me the exact monthly price, including all fees?",
+      "That's helpful, thanks. What happens if I want to cancel after three months?"
+    ],
+    "details": {
+      "numéro de ligne": "59 277 817",
+      "référence de facture": "F867540",
+      "montant facturé": "184 DT",
+      "montant habituel": "157 DT",
+      "adresse": "Tunis centre"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hello, this is Laura Mitchell from Tunisia. I'm looking to understand more about the plans you offer here and maybe switch to a new one. Could you tell me what options are available for someone in my situation?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.02482753163633511,
+        "trust": 0.4865302483492687,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670000.4941804
+    },
+    {
+      "role": "advisor",
+      "text": "Hello Miss Laura, what is your situation exactly? And what is your plan actually?",
+      "wait_s": 1.3,
+      "ts": 1792670008.526827
+    },
+    {
+      "role": "client",
+      "text": "My current number is 59 277 817. I changed plans about 8 months ago but it seems there might be better options now. Can you give me an overview of the available plans and their prices please?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.0,
+        "trust": 0.5265302483492688,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670027.0732052
+    },
+    {
+      "role": "advisor",
+      "text": "Okay, so what do you need exactly like a cheaper price or more internet speed?",
+      "wait_s": 1.5,
+      "ts": 1792670036.2015808
+    },
+    {
+      "role": "client",
+      "text": "I'm actually looking for a plan that offers good value for money with decent speeds. Could you provide some details on your premium plans and any promotions currently available?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.05849999999999999,
+        "trust": 0.4865302483492687,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670051.2326865
+    },
+    {
+      "role": "advisor",
+      "text": "So actually we have a promotion going for the fiber optic cable. It's about $50 for month.",
+      "wait_s": 0.6,
+      "ts": 1792670061.5997617
+    },
+    {
+      "role": "client",
+      "text": "That sounds interesting. How does this compare to what I'm currently paying? And is there any additional cost if I want to add mobile data to it?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.12469999999999998,
+        "trust": 0.4415302483492687,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670073.7764606
+    },
+    {
+      "role": "advisor",
+      "text": "So the plan you're actually going through is $60 for a month and with our promotion, it's free data also",
+      "wait_s": 0.8,
+      "ts": 1792670086.0064726
+    },
+    {
+      "role": "client",
+      "text": "Could you clarify the exact monthly price then? The one I'm currently paying is 157 DT. And how does the roaming work in Europe? What are the charges like there?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.19089999999999996,
+        "trust": 0.39653024834926864,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670100.9487085
+    },
+    {
+      "role": "advisor",
+      "text": "So with the promotion, it's 50 dollars per month and the roaming is free in Europe.",
+      "wait_s": 0.9,
+      "ts": 1792670109.9843168
+    },
+    {
+      "role": "client",
+      "text": "That's helpful. Could you confirm if that $50 includes all taxes and fees? And what about internet speed—does it vary by plan?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.22629999999999995,
+        "trust": 0.3715302483492686,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670122.1245697
+    },
+    {
+      "role": "advisor",
+      "text": "Yes, $50 TTC and the internet speeds, it's the maxed out one, it's like 50 jigabets per second.",
+      "wait_s": 1.5,
+      "ts": 1792670134.4905515
+    },
+    {
+      "role": "client",
+      "text": "That seems quite fast! Can you tell me if there are any hidden fees or limitations I should be aware of with this plan? Also, what about international calls within Europe—do they come at an extra cost?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.2925,
+        "trust": 0.3265302483492686,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670150.2084346
+    },
+    {
+      "role": "advisor",
+      "text": "So there are no hidden fees. You are only paying $50 per month and you can call international and Europe for free.",
+      "wait_s": 1.7,
+      "ts": 1792670163.7555003
+    },
+    {
+      "role": "client",
+      "text": "Great to know! Can I sign up for this plan now or do I need to wait until the end of the month? And is there a contract period involved?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.2355,
+        "trust": 0.36153024834926856,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670175.6477878
+    },
+    {
+      "role": "advisor",
+      "text": "There are no contract period involved, you can resign whenever you want and you can sign up today and right now if you want.",
+      "wait_s": 1.3,
+      "ts": 1792670187.1859174
+    },
+    {
+      "role": "client",
+      "text": "Perfect! Can we set this up for my current line number 59 277 817 please? And when will the changes take effect?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.1785,
+        "trust": 0.39653024834926853,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670201.2350874
+    },
+    {
+      "role": "advisor",
+      "text": "I will do this right now on your line and the effects will be",
+      "wait_s": 1.3,
+      "ts": 1792670208.7733932
+    },
+    {
+      "role": "client",
+      "text": "Can you confirm when these changes will start applying to my current plan? Also, is there anything else I need to know before we proceed?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.14459999999999998,
+        "trust": 0.41653024834926855,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670220.6342645
+    },
+    {
+      "role": "advisor",
+      "text": "So the change will be applying in the next 30 minutes and",
+      "wait_s": 1.2,
+      "ts": 1792670228.163274
+    },
+    {
+      "role": "client",
+      "text": "Great, thanks for that. Just confirming, the changes will apply within the next hour, correct?\n\nAnd can you send me a confirmation email with all the details once it's set up?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.17999999999999997,
+        "trust": 0.39153024834926853,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670242.9401157
+    },
+    {
+      "role": "advisor",
+      "text": "Yes, ma'am, the email that we will send is about the the fracture and all the details of the line.",
+      "wait_s": 1.8,
+      "ts": 1792670255.6172643
+    },
+    {
+      "role": "client",
+      "text": "Could you spell out \"fracture\" for me please? I believe you meant \"facture.\" And while you're at it, could you confirm if there will be any additional charges or promotions available with this plan?\n\nAlso, can we proceed to set up the changes now?",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.12299999999999997,
+        "trust": 0.4265302483492685,
+        "urgency": 0.34488397344652316
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670273.5547812
+    },
+    {
+      "role": "advisor",
+      "text": "Yes, as I said, the change will be applied right now and you will have the email of confirmation right now also",
+      "wait_s": 0.7,
+      "ts": 1792670283.958469
+    },
+    {
+      "role": "client",
+      "text": "Very well, I appreciate your assistance.\n\nGoodbye.",
+      "emotion": {
+        "patience": 0.779535909718697,
+        "frustration": 0.15839999999999996,
+        "trust": 0.4015302483492685,
+        "urgency": 0.34488397344652316
+      },
+      "action": "hangup",
+      "interrupted": false,
+      "ts": 1792670291.2708998
+    }
+  ],
+  "outcome": "hangup"
+}

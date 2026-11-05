@@ -1,0 +1,9 @@
+{
+  "billing_issue": "Montant inattendu ou erroné sur la dernière facture.",
+  "internet_outage": "Connexion internet coupée ou instable depuis plusieurs jours.",
+  "slow_connection": "Débit très inférieur à celui de l'abonnement.",
+  "offer_question": "Souhaite comprendre ou souscrire une offre / un forfait.",
+  "roaming_question": "Questions sur l'itinérance et les tarifs à l'étranger.",
+  "cancel_contract": "Veut résilier son contrat ou menace de le faire.",
+  "service_complaint": "Mécontent de la qualité de service ou d'un précédent contact."
+}

@@ -1,0 +1,6 @@
+{
+  "fr_f": {"model": "vits-piper-fr_FR-siwis-medium", "sid": 0, "speed": 1.0},
+  "fr_m": {"model": "vits-piper-fr_FR-tom-medium",   "sid": 0, "speed": 1.0},
+  "en_f": {"model": "vits-piper-en_US-amy-medium",   "sid": 0, "speed": 1.0},
+  "en_m": {"model": "vits-piper-en_US-ryan-medium",  "sid": 0, "speed": 1.0}
+}

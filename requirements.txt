@@ -1,0 +1,7 @@
+pydantic>=2.5
+requests>=2.31
+python-dotenv>=1.0
+anthropic>=0.40      # optionnel : seulement si tu utilises le backend cloud
+fastapi>=0.110       # optionnel : pour exposer l'agent en API
+uvicorn>=0.29
+pytest>=8.0

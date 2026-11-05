@@ -1,0 +1,135 @@
+{
+  "profile": {
+    "persona_id": "en_f",
+    "name": "Hannah Brooks",
+    "age": 39,
+    "gender": "F",
+    "language": "en",
+    "segment": "premium",
+    "seniority_years": 2,
+    "history": [
+      "Coupure de service de 2 jours l'an dernier",
+      "Client fidèle, aucun incident récent",
+      "A déjà appelé 2 fois pour le même problème ce mois-ci"
+    ],
+    "intents": [
+      "billing_issue",
+      "roaming_question"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Clear, polite, concise English. Asks precise questions, wants exact prices and conditions, mildly impatient with vague answers.",
+    "examples": [
+      "Hi, I'm new in Tunisia and I'd like to understand which mobile plan would suit me best.",
+      "Sorry, could you give me the exact monthly price, including all fees?",
+      "That's helpful, thanks. What happens if I want to cancel after three months?"
+    ],
+    "details": {
+      "numéro de ligne": "58 101 606",
+      "référence de facture": "F117714",
+      "montant facturé": "56 DT",
+      "montant habituel": "22 DT",
+      "adresse": "Sousse"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hello, I need to discuss a billing issue with my latest bill and also have some questions about roaming rates in Tunisia. Can you help me with that?",
+      "emotion": {
+        "patience": 0.6355123966495544,
+        "frustration": 0.17528563635867972,
+        "trust": 0.4351822436338075,
+        "urgency": 0.32679130332129597
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672850.108848
+    },
+    {
+      "role": "advisor",
+      "text": "Hello Hannah, nice to meet you. So I will help you today. What's your billing issue?",
+      "wait_s": 0.9,
+      "ts": 1792672858.4324014
+    },
+    {
+      "role": "client",
+      "text": "Hi there, it’s more like a concern than an issue. My latest bill from last month shows a charge of 56 DT for my regular plan, which is double what I usually pay. Can you explain why this happened and how to fix it?",
+      "emotion": {
+        "patience": 0.6355123966495544,
+        "frustration": 0.07208563635867973,
+        "trust": 0.5001822436338075,
+        "urgency": 0.32679130332129597
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672875.395936
+    },
+    {
+      "role": "advisor",
+      "text": "So as I can see on the system you have been charged twice and I will send a rumbusment letter",
+      "wait_s": 0.9,
+      "ts": 1792672886.04837
+    },
+    {
+      "role": "client",
+      "text": "That sounds like a mistake then. Could you please confirm if there was any additional service or plan change that might explain this charge, and how soon the correction will be applied?",
+      "emotion": {
+        "patience": 0.6355123966495544,
+        "frustration": 0.13058563635867973,
+        "trust": 0.46018224363380744,
+        "urgency": 0.32679130332129597
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672900.167485
+    },
+    {
+      "role": "advisor",
+      "text": "like a double charge on your plan and it's actually our fault and I will resolve this problem by refonging your missing dollars.",
+      "wait_s": 2.0,
+      "ts": 1792672913.2557862
+    },
+    {
+      "role": "client",
+      "text": "Great to hear you're resolving it. Can you please provide an estimated time when my bill should reflect the correct amount? Also, do I need to take any actions from my side or just wait for the update?",
+      "emotion": {
+        "patience": 0.6355123966495544,
+        "frustration": 0.03508563635867971,
+        "trust": 0.5201822436338074,
+        "urgency": 0.32679130332129597
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672928.4809778
+    },
+    {
+      "role": "advisor",
+      "text": "So I will just send you a refund letter today and it will be Refunded in your back account today also",
+      "wait_s": 0.6,
+      "ts": 1792672938.9201977
+    },
+    {
+      "role": "client",
+      "text": "Thank you for resolving this quickly. I appreciate your help.",
+      "emotion": {
+        "patience": 0.6355123966495544,
+        "frustration": 0.0,
+        "trust": 0.7801822436338075,
+        "urgency": 0.12679130332129596
+      },
+      "action": "resolved",
+      "interrupted": false,
+      "ts": 1792672946.4126303
+    }
+  ],
+  "outcome": "resolved"
+}

@@ -1,0 +1,267 @@
+{
+  "profile": {
+    "persona_id": "fr_f",
+    "name": "Ines Trabelsi",
+    "age": 36,
+    "gender": "F",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 11,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci",
+      "Coupure de service de 2 jours l'an dernier"
+    ],
+    "intents": [
+      "service_complaint",
+      "billing_issue"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français soutenu, phrases complètes, politesse formelle. Devient sèche et ironique quand elle est mécontente, ne hausse jamais la voix.",
+    "examples": [
+      "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "Je comprends, mais c'est la deuxième fois que je dois expliquer la situation. J'attends une vraie solution.",
+      "Je vous remercie, c'est plus clair. Pouvez-vous me confirmer cela par écrit ?"
+    ],
+    "details": {
+      "numéro de ligne": "50 717 686",
+      "référence de facture": "F288869",
+      "montant facturé": "65 DT",
+      "montant habituel": "42 DT",
+      "adresse": "Bizerte"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Bonjour, je vous contacte concernant ma facture du mois dernier. Il y a un montant que je ne comprends pas et j'aimerais une clarification.",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.2289083950939677,
+        "trust": 0.587861178693834,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672094.3318605
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour madame trabe le cyclé, montez un exègue de votre facture.",
+      "wait_s": 9.9,
+      "ts": 1792672108.7141573
+    },
+    {
+      "role": "client",
+      "text": "Je suis désolée, mais il semble qu'il y ait eu une petite erreur dans votre nom. Je m'appelle Ines Trabelsi et je souhaite discuter de la dernière facture qui m'a été envoyée. Pouvez-vous me fournir un extrait de ma facture s'il vous plaît ?",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.2643083950939677,
+        "trust": 0.562861178693834,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672123.3898897
+    },
+    {
+      "role": "advisor",
+      "text": "je vois votre facture et de 157 d'inar S bon.",
+      "wait_s": 1.5,
+      "ts": 1792672129.3746526
+    },
+    {
+      "role": "client",
+      "text": "Je comprends, mais le montant que je constate est de 65 DT. Mon montant habituel ne devrait pas excéder les 42 DT. Pourriez-vous m'éclairer sur cette différence ?",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.2997083950939677,
+        "trust": 0.537861178693834,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672141.8484902
+    },
+    {
+      "role": "advisor",
+      "text": "C'est différent, explique à cause des données cellulaires à l'étranger que vous avez utilisés madame.",
+      "wait_s": 1.1,
+      "ts": 1792672150.5438364
+    },
+    {
+      "role": "client",
+      "text": "Je n'ai pas utilisé de données cellulaires à l'étranger ces derniers jours. Pouvez-vous vérifier s'il y a eu une erreur dans la facturation ? Je ne comprends vraiment pas cette augmentation soudaine.",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.3659083950939677,
+        "trust": 0.49286117869383395,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672163.3876526
+    },
+    {
+      "role": "advisor",
+      "text": "Dans ce cas-là, et je crois qu'il y a un problème avec notre système, nous allons vous renvoyer une facture avec le montant exact et nous allons vous renbourser la différence que nous avons prélevée.",
+      "wait_s": 1.3,
+      "ts": 1792672177.3653913
+    },
+    {
+      "role": "client",
+      "text": "C'est bien noté, mais j'attends une confirmation écrite de cette remboursement. Je ne veux pas subir ce genre d'erreur à nouveau. Pouvez-vous me donner un numéro de suivi pour suivre le statut de ma demande ?",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.36280839509396773,
+        "trust": 0.49286117869383395,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672191.748705
+    },
+    {
+      "role": "advisor",
+      "text": "Ok quelle est votre adresse email comme ça je vous envoie un mail avec votre nouvelle facture et le remboursement ?",
+      "wait_s": 1.2,
+      "ts": 1792672199.5776622
+    },
+    {
+      "role": "client",
+      "text": "Bien sûr, voici mon courrier électronique : ines.trabelsi@exemple.com. Attendez-moi une réponse confirmant cette procédure de remboursement. Merci pour votre aide.",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.35970839509396774,
+        "trust": 0.49286117869383395,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672213.024188
+    },
+    {
+      "role": "advisor",
+      "text": "je vous en prie madame normalement, vous avez reçu votre email",
+      "wait_s": 1.3,
+      "ts": 1792672219.4204323
+    },
+    {
+      "role": "client",
+      "text": "J'attends toujours un e-mail de confirmation avec ma nouvelle facture et le remboursement. Pourriez-vous vérifier s'il y a eu une erreur dans l'envoi ? Je suis déçue que cela prenne autant de temps.",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.4259083950939678,
+        "trust": 0.4478611786938339,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672233.714655
+    },
+    {
+      "role": "advisor",
+      "text": "Non, on est vous inquiétez pas, Madame, ça va être expliqué sous peu.",
+      "wait_s": 0.8,
+      "ts": 1792672239.5685577
+    },
+    {
+      "role": "client",
+      "text": "Je ne peux pas m'inquiéter tant qu'un e-mail n'a pas été reçu et que ma facture corrigée n'est pas confirmée. Pouvez-vous me donner un délai pour cette procédure ? Sinon, je vais devoir contacter le service client à nouveau.",
+      "emotion": {
+        "patience": 0.7288734441537106,
+        "frustration": 0.4921083950939678,
+        "trust": 0.40286117869383387,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672254.2131548
+    },
+    {
+      "role": "advisor",
+      "text": "Vous pouvez vérifier votre bot mail, madame nous devons envoyer actuellement.",
+      "wait_s": 11.4,
+      "ts": 1792672270.0243006
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie, mais jusqu'à présent, aucun e-mail n'est arrivé. Pourriez-vous me donner un numéro de suivi ou une confirmation écrite pour que je puisse suivre l'avancement de ma demande ? Sinon, je vais être obligée d'envisager des mesures plus radicales.",
+      "emotion": {
+        "patience": 0.6660147629517758,
+        "frustration": 0.5517083950939679,
+        "trust": 0.39786117869383386,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672286.1621814
+    },
+    {
+      "role": "advisor",
+      "text": "Ok, vu et noté le numéro de suivi.",
+      "wait_s": 0.8,
+      "ts": 1792672290.6822941
+    },
+    {
+      "role": "client",
+      "text": "Pouvez-vous me donner ce numéro de suivi s'il vous plaît? Je veux m'assurer que ma demande est bien suivie. Merci pour votre aide.",
+      "emotion": {
+        "patience": 0.6660147629517758,
+        "frustration": 0.5871083950939678,
+        "trust": 0.37286117869383384,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672300.5193622
+    },
+    {
+      "role": "advisor",
+      "text": "A-S-T-I-C-R-U-U-S-T-I-G.",
+      "wait_s": 1.7,
+      "ts": 1792672306.7674818
+    },
+    {
+      "role": "client",
+      "text": "ASTICRUSTIUS. Pouvez-vous me confirmer ce numéro de suivi, s'il vous plaît ? Sinon, je serai forcée d'engager des démarches supplémentaires. Merci.",
+      "emotion": {
+        "patience": 0.6110147629517757,
+        "frustration": 0.7033583950939679,
+        "trust": 0.2953611786938338,
+        "urgency": 0.36600917671823946
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672318.1996903
+    },
+    {
+      "role": "advisor",
+      "text": "Oui c'est exactement le numéro de...",
+      "wait_s": 0.3,
+      "ts": 1792672322.32903
+    },
+    {
+      "role": "client",
+      "text": "Parlez-moi d'un responsable maintenant. Je ne veux pas attendre davantage.",
+      "emotion": {
+        "patience": 0.5560147629517757,
+        "frustration": 0.769558395093968,
+        "trust": 0.2503611786938338,
+        "urgency": 0.36600917671823946
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792672329.8229733
+    }
+  ],
+  "outcome": "escalate"
+}

@@ -1,0 +1,57 @@
+{
+  "profile": {
+    "persona_id": "en_f",
+    "name": "Sophie Laurent",
+    "age": 31,
+    "gender": "F",
+    "language": "en",
+    "segment": "standard",
+    "seniority_years": 5,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci"
+    ],
+    "intents": [
+      "roaming_question",
+      "billing_issue"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Clear, polite, concise English. Asks precise questions, wants exact prices and conditions, mildly impatient with vague answers.",
+    "examples": [
+      "Hi, I'm new in Tunisia and I'd like to understand which mobile plan would suit me best.",
+      "Sorry, could you give me the exact monthly price, including all fees?",
+      "That's helpful, thanks. What happens if I want to cancel after three months?"
+    ],
+    "details": {
+      "numéro de ligne": "22 407 962",
+      "référence de facture": "F207783",
+      "montant facturé": "185 DT",
+      "montant habituel": "166 DT",
+      "adresse": "Nabeul"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hello, I need some information about roaming charges and pricing when traveling abroad. Can you help me with that?",
+      "emotion": {
+        "patience": 0.6608736075380194,
+        "frustration": 0.083607668060137,
+        "trust": 0.43948822303021545,
+        "urgency": 0.23071148176519235
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673083.2775404
+    }
+  ],
+  "outcome": "quit"
+}

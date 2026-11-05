@@ -1,0 +1,287 @@
+{
+  "profile": {
+    "persona_id": "fr_f",
+    "name": "Hela Cherif",
+    "age": 39,
+    "gender": "F",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 4,
+    "history": [
+      "Retard de paiement ponctuel",
+      "A changé de forfait il y a 8 mois",
+      "A déjà appelé 2 fois pour le même problème ce mois-ci"
+    ],
+    "intents": [
+      "offer_question",
+      "service_complaint"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français soutenu, phrases complètes, politesse formelle. Devient sèche et ironique quand elle est mécontente, ne hausse jamais la voix.",
+    "examples": [
+      "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "Je comprends, mais c'est la deuxième fois que je dois expliquer la situation. J'attends une vraie solution.",
+      "Je vous remercie, c'est plus clair. Pouvez-vous me confirmer cela par écrit ?"
+    ],
+    "details": {
+      "numéro de ligne": "21 706 526",
+      "référence de facture": "F773128",
+      "montant facturé": "110 DT",
+      "montant habituel": "71 DT",
+      "adresse": "Ariana"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Bonjour, je vous contacte concernant ma facture du mois dernier.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.07994793201755798,
+        "trust": 0.6278501644901189,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672345.357068
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour, m'a d'amener la quelle est le problème exactement ?",
+      "wait_s": 2.2,
+      "ts": 1792672351.0125527
+    },
+    {
+      "role": "client",
+      "text": "Il y a un montant de 39 DT qui me semble incorrect et que je ne comprends pas. Pouvez-vous vérifier s'il vous plaît?",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.10764793201755798,
+        "trust": 0.6078501644901189,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672360.0133834
+    },
+    {
+      "role": "advisor",
+      "text": "à votre facture du mois dernier.",
+      "wait_s": 5.1,
+      "ts": 1792672368.0361273
+    },
+    {
+      "role": "client",
+      "text": "Bien sûr, c'est bien la facture d'octobre que je soulève. Le montant total de 149 DT contient un ajout inexpliqué de 39 DT par rapport au montant habituel qui est de 71 DT. Pouvez-vous m'éclairer sur cela ?",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.20464793201755796,
+        "trust": 0.5428501644901188,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672383.786697
+    },
+    {
+      "role": "advisor",
+      "text": "qui doit y avoir une erreur avec les systèmes et je compte vous donner une confirmation tout de suite pour le rendre pour ça.",
+      "wait_s": 1.9,
+      "ts": 1792672393.7661345
+    },
+    {
+      "role": "client",
+      "text": "Je comprends, mais c'est la deuxième fois que j'attends une explication claire. J'espère vraiment qu'une vérification urgente sera effectuée cette fois-ci.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.27084793201755797,
+        "trust": 0.49785016449011876,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672405.7088022
+    },
+    {
+      "role": "advisor",
+      "text": "Oui, je viens de voir avec mon responsable et nous allons effectuer un remboursement sur votre compte bancaire.",
+      "wait_s": 0.8,
+      "ts": 1792672413.5747092
+    },
+    {
+      "role": "client",
+      "text": "C'est bien noté. Pouvez-vous me confirmer que ce remboursement sera effectué dans les plus brefs délais ? Merci pour votre aide.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.32934793201755796,
+        "trust": 0.4578501644901187,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672423.464103
+    },
+    {
+      "role": "advisor",
+      "text": "tu es à l'instant.",
+      "wait_s": 2.8,
+      "ts": 1792672428.377515
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie de votre promptitude, mais j'attends une confirmation écrite pour garantir le bon déroulement du remboursement. Pouvez-vous me fournir un numéro de suivi ou toute information utile ?",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.445597932017558,
+        "trust": 0.3803501644901187,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672442.979904
+    },
+    {
+      "role": "advisor",
+      "text": "Ok, le numéro de suivi pour votre remboursement était 8587.",
+      "wait_s": 0.7,
+      "ts": 1792672449.3880787
+    },
+    {
+      "role": "client",
+      "text": "Merci pour l'information. Pourriez-vous m'envoyer ce numéro par email également? Je tiens à être certain que tout sera effectué correctement.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.388597932017558,
+        "trust": 0.4153501644901187,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672460.1411204
+    },
+    {
+      "role": "advisor",
+      "text": "remboursement.",
+      "wait_s": 4.9,
+      "ts": 1792672467.5598767
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie de votre aide mais je préférerais une confirmation écrite pour ma tranquillité d'esprit. Pouvez-vous m'envoyer ce numéro par email également ?",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.504847932017558,
+        "trust": 0.3378501644901187,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672478.8651557
+    },
+    {
+      "role": "advisor",
+      "text": "Oui bonjour madame, nous allons vous envoyer ce numéro par mail avec votre emborcement, ne vous inquiétez pas.",
+      "wait_s": 0.8,
+      "ts": 1792672486.2419944
+    },
+    {
+      "role": "client",
+      "text": "Très bien, je comptais sur vous pour assurer ma satisfaction. J'attends donc cet email pour valider la situation. Merci de votre collaboration.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.440147932017558,
+        "trust": 0.37785016449011866,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672497.7562675
+    },
+    {
+      "role": "advisor",
+      "text": "Je vous en prie madame, normalement le mail a été envoyé à l'instant ainsi que le remboursement par Quart de Bancaire.",
+      "wait_s": 1.3,
+      "ts": 1792672506.439752
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie, mais j'aurais besoin d'une confirmation écrite pour être certaine du bon déroulement de la procédure. Pouvez-vous m'envoyer les détails par email s'il vous plaît ? Je tiens à ce que tout soit effectué correctement.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.506347932017558,
+        "trust": 0.3328501644901186,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672521.6419475
+    },
+    {
+      "role": "advisor",
+      "text": "Bien sûr Madame, je vous ai envoyé les détails par email et vous avez ainsi votre amboursement par sur le site.",
+      "wait_s": 0.8,
+      "ts": 1792672530.7188134
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie mais j'attends une confirmation écrite pour être réellement rassurée. Pouvez-vous m'envoyer ces informations par email ? Je tiens à ce que tout soit parfaitement organisé. Merci de votre aide.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.510947932017558,
+        "trust": 0.3278501644901186,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672545.1145923
+    },
+    {
+      "role": "advisor",
+      "text": "Bien sûr Madame, nous sommes en train de rédiger le mail pour votre emboursement et vous avez envoyé après cet appel.",
+      "wait_s": 0.6,
+      "ts": 1792672553.971191
+    },
+    {
+      "role": "client",
+      "text": "Je vous remercie mais j'attends toujours cette confirmation écrite. Pouvez-vous m'envoyer les détails par email immédiatement ? Je tiens à ce que tout soit parfaitement organisé. Merci de votre aide.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.5155479320175579,
+        "trust": 0.3228501644901186,
+        "urgency": 0.37795028381150514
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672567.7345147
+    },
+    {
+      "role": "advisor",
+      "text": "ont pris madame le mail a été envoyé actuellement vous pouvez vous le",
+      "wait_s": 1.2,
+      "ts": 1792672584.8238602
+    },
+    {
+      "role": "client",
+      "text": "Très bien, je comptais sur vous pour assurer ma satisfaction. Je vous attends pour l'email. À bientôt, j'espère.",
+      "emotion": {
+        "patience": 0.588818162975141,
+        "frustration": 0.5509479320175579,
+        "trust": 0.2978501644901186,
+        "urgency": 0.37795028381150514
+      },
+      "action": "hangup",
+      "interrupted": false,
+      "ts": 1792672595.931961
+    }
+  ],
+  "outcome": "hangup"
+}

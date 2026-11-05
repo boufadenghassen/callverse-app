@@ -1,0 +1,172 @@
+{
+  "profile": {
+    "persona_id": "en_f",
+    "name": "Laura Mitchell",
+    "age": 34,
+    "gender": "F",
+    "language": "en",
+    "segment": "premium",
+    "seniority_years": 9,
+    "history": [
+      "A changé de forfait il y a 8 mois",
+      "Réclamation sur une facture il y a 3 mois (résolue)"
+    ],
+    "intents": [
+      "offer_question",
+      "roaming_question"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Clear, polite, concise English. Asks precise questions, wants exact prices and conditions, mildly impatient with vague answers.",
+    "examples": [
+      "Hi, I'm new in Tunisia and I'd like to understand which mobile plan would suit me best.",
+      "Sorry, could you give me the exact monthly price, including all fees?",
+      "That's helpful, thanks. What happens if I want to cancel after three months?"
+    ],
+    "details": {
+      "numéro de ligne": "99 967 925",
+      "référence de facture": "F659116",
+      "montant facturé": "168 DT",
+      "montant habituel": "128 DT",
+      "adresse": "La Marsa"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hi there, I'm Laura Mitchell from La Marsa and I'd like to understand more about the mobile plans available here. Could you tell me which one would be best for my needs?",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.1143125330100914,
+        "trust": 0.44888454164693337,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673106.1206467
+    },
+    {
+      "role": "advisor",
+      "text": "Hello Laura, it's Sami speaking. We can help you with the plane of 50 DNRs per year for 50 gigabytes per second.",
+      "wait_s": 1.2,
+      "ts": 1792673117.312322
+    },
+    {
+      "role": "client",
+      "text": "That sounds interesting. Can you give me the exact monthly price and any additional fees included in that plan?",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.18051253301009137,
+        "trust": 0.4038845416469333,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673127.5732617
+    },
+    {
+      "role": "advisor",
+      "text": "It's only $15 per year, it's not a monthly plan.",
+      "wait_s": 2.8,
+      "ts": 1792673135.7163577
+    },
+    {
+      "role": "client",
+      "text": "Got it. What about roaming tariffs to Europe? How much does it cost for data usage there?",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.21591253301009136,
+        "trust": 0.3788845416469333,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673145.0389428
+    },
+    {
+      "role": "advisor",
+      "text": "because it's a very expensive modem.",
+      "wait_s": 2.4,
+      "ts": 1792673150.2310188
+    },
+    {
+      "role": "client",
+      "text": "Could you clarify the exact cost for data roaming in Europe then? I need this info to decide on my plan.",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.31291253301009136,
+        "trust": 0.3138845416469333,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673160.7804863
+    },
+    {
+      "role": "advisor",
+      "text": "$50 billion for roaming.",
+      "wait_s": 1.2,
+      "ts": 1792673165.874208
+    },
+    {
+      "role": "client",
+      "text": "That seems quite high. Can we negotiate or find a better rate for roaming within Europe?",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.4291625330100914,
+        "trust": 0.23638454164693332,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673174.7981026
+    },
+    {
+      "role": "advisor",
+      "text": "No, it's the only price.",
+      "wait_s": 0.4,
+      "ts": 1792673178.3825698
+    },
+    {
+      "role": "client",
+      "text": "Alright, can you at least tell me if there are any promotions currently available that could lower the cost of my plan or roaming fees?",
+      "emotion": {
+        "patience": 0.6819412232836357,
+        "frustration": 0.5261625330100914,
+        "trust": 0.1713845416469333,
+        "urgency": 0.3656022513725464
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792673189.7931583
+    },
+    {
+      "role": "advisor",
+      "text": "No, we can't do nothing for it. It's $50 billion.",
+      "wait_s": 0.8,
+      "ts": 1792673196.630568
+    },
+    {
+      "role": "client",
+      "text": "Can I speak to a manager please? This is getting frustrating.",
+      "emotion": {
+        "patience": 0.6269412232836357,
+        "frustration": 0.6231625330100914,
+        "trust": 0.10638454164693331,
+        "urgency": 0.3656022513725464
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792673203.9971087
+    }
+  ],
+  "outcome": "escalate"
+}

@@ -1,0 +1,152 @@
+{
+  "profile": {
+    "persona_id": "en_m",
+    "name": "Omar Haddad",
+    "age": 30,
+    "gender": "M",
+    "language": "en",
+    "segment": "standard",
+    "seniority_years": 12,
+    "history": [
+      "Client fidèle, aucun incident récent"
+    ],
+    "intents": [
+      "service_complaint",
+      "slow_connection"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Casual but technical English. Mentions router lights, ping, speed tests. Gets sarcastic when asked to 'restart the box' for the third time.",
+    "examples": [
+      "My internet has been dropping every few minutes since yesterday. Router shows a red LOS light.",
+      "I've already rebooted it twice and run a speed test. Can we skip the basics?",
+      "Okay, so is it a line fault or not? I need a clear answer and an ETA."
+    ],
+    "details": {
+      "numéro de ligne": "25 625 489",
+      "référence de facture": "F876758",
+      "montant facturé": "137 DT",
+      "montant habituel": "116 DT",
+      "adresse": "Sfax"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hello, this is Omar Haddad from Sfax. I'm calling about a complaint regarding the quality of service and slow internet connection I've been experiencing.",
+      "emotion": {
+        "patience": 0.521320050043825,
+        "frustration": 0.2851237804622765,
+        "trust": 0.3570656879016073,
+        "urgency": 0.5397966654755731
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670501.548335
+    },
+    {
+      "role": "advisor",
+      "text": "Okay, first of all, on my calm down, we will fix your slow internet problem.",
+      "wait_s": 1.0,
+      "ts": 1792670509.3570812
+    },
+    {
+      "role": "client",
+      "text": "I don't have time for this. My router's ping is through the roof and it’s dropping every few minutes. Can you at least send someone out to check the line?",
+      "emotion": {
+        "patience": 0.521320050043825,
+        "frustration": 0.3205237804622765,
+        "trust": 0.3320656879016073,
+        "urgency": 0.5397966654755731
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670518.999566
+    },
+    {
+      "role": "advisor",
+      "text": "Okay, I told you to calm down, lower your voice or I will beat your ass right now.",
+      "wait_s": 1.0,
+      "ts": 1792670526.0202186
+    },
+    {
+      "role": "client",
+      "text": "Look, I’m trying but this frustration is real. My internet has been dropping like a stone since yesterday and my router lights are blinking red. Can we please get someone out here pronto?",
+      "emotion": {
+        "patience": 0.521320050043825,
+        "frustration": 0.37902378046227647,
+        "trust": 0.29206568790160725,
+        "urgency": 0.5397966654755731
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670537.750655
+    },
+    {
+      "role": "advisor",
+      "text": "Don't you hear? I told you I will beat your ass right now you fucking faggot",
+      "wait_s": 0.9,
+      "ts": 1792670544.2033412
+    },
+    {
+      "role": "client",
+      "text": "Screw this, I'm hanging up and demanding to speak with a manager. This is ridiculous.",
+      "emotion": {
+        "patience": 0.521320050043825,
+        "frustration": 0.3990237804622765,
+        "trust": 0.27706568790160724,
+        "urgency": 0.5397966654755731
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670551.761456
+    },
+    {
+      "role": "advisor",
+      "text": "need you right now you're paying if you're getting fucked in your",
+      "wait_s": 5.2,
+      "ts": 1792670561.006696
+    },
+    {
+      "role": "client",
+      "text": "I’m done here. Call me back when you can actually help instead of just talking. Goodbye.",
+      "emotion": {
+        "patience": 0.521320050043825,
+        "frustration": 0.4960237804622765,
+        "trust": 0.21206568790160726,
+        "urgency": 0.5397966654755731
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792670568.2094603
+    },
+    {
+      "role": "advisor",
+      "text": "and see",
+      "wait_s": 4.7,
+      "ts": 1792670575.0585973
+    },
+    {
+      "role": "client",
+      "text": "I demand to speak with a supervisor now or I'm terminating this call and finding another provider.",
+      "emotion": {
+        "patience": 0.466320050043825,
+        "frustration": 0.6122737804622765,
+        "trust": 0.13456568790160728,
+        "urgency": 0.5397966654755731
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792670583.4949622
+    }
+  ],
+  "outcome": "escalate"
+}

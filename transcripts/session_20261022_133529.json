@@ -1,0 +1,76 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Walid Hammami",
+    "age": 50,
+    "gender": "M",
+    "language": "fr",
+    "segment": "standard",
+    "seniority_years": 11,
+    "history": [
+      "Réclamation sur une facture il y a 3 mois (résolue)"
+    ],
+    "intents": [
+      "cancel_contract",
+      "billing_issue"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "20 215 500",
+      "référence de facture": "F686769",
+      "montant facturé": "130 DT",
+      "montant habituel": "97 DT",
+      "adresse": "Nabeul"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": null,
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? C'est Walid Hammami de Nabeul. J'ai un gros problème avec ma facture et je suis sur la ligne depuis trois jours déjà. Je veux une réponse maintenant ou j'encherche ailleurs.",
+      "emotion": {
+        "patience": 0.3466975145551786,
+        "frustration": 0.38203465949311266,
+        "trust": 0.38840135073845045,
+        "urgency": 0.6478977592368164
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792668859.797995
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour, Oalide, quel est le problème exactement sur votre face ?",
+      "wait_s": 1.9,
+      "ts": 1792668865.318966
+    },
+    {
+      "role": "client",
+      "text": "Le montant de ma dernière facture est de 130 DT alors que d'habitude c'est 97 DT. C'est un trop-perçu clairement visible. Je veux ce qu'il faut faire rapidement.",
+      "emotion": {
+        "patience": 0.3466975145551786,
+        "frustration": 0.40973465949311266,
+        "trust": 0.36840135073845043,
+        "urgency": 0.6478977592368164
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792668879.199095
+    }
+  ],
+  "outcome": "quit"
+}

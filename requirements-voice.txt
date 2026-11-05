@@ -1,0 +1,7 @@
+# Mode vocal 100 % local : pip install -r requirements-voice.txt
+faster-whisper>=1.0    # transcription de ta voix (local)
+sherpa-onnx>=1.10      # voix du client (modèles Piper, local, sans PyTorch)
+sounddevice>=0.4       # micro + haut-parleurs
+soundfile>=0.12
+numpy>=1.26
+# edge-tts>=6.1        # optionnel : voix en ligne (--tts edge), hors 100 % local

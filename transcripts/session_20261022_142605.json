@@ -1,0 +1,135 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Walid Hammami",
+    "age": 54,
+    "gender": "M",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 3,
+    "history": [
+      "A souscrit une option TV l'année dernière",
+      "Retard de paiement ponctuel",
+      "Réclamation sur une facture il y a 3 mois (résolue)"
+    ],
+    "intents": [
+      "cancel_contract",
+      "internet_outage"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "95 265 468",
+      "référence de facture": "F253671",
+      "montant facturé": "143 DT",
+      "montant habituel": "124 DT",
+      "adresse": "Sousse"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? C'est Walid Hammami de Sousse. J'ai des problèmes internet depuis trois jours et je vais résilier si ce n'est pas réglé rapidement.",
+      "emotion": {
+        "patience": 0.37024678792316057,
+        "frustration": 0.4284842688987433,
+        "trust": 0.31615417409982555,
+        "urgency": 0.7406920995786638
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792671854.1261816
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour, allez-y, c'est le problème actuellement que vous rencontrez.",
+      "wait_s": 32.1,
+      "ts": 1792671890.2540457
+    },
+    {
+      "role": "client",
+      "text": "Ma ligne internet est coupée depuis trois jours. Vous ne faites rien pour résoudre ça. Je veux une réponse maintenant ou je quitte chez-vous.",
+      "emotion": {
+        "patience": 0.19395833553630448,
+        "frustration": 0.5804842688987434,
+        "trust": 0.25115417409982554,
+        "urgency": 0.7406920995786638
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792671900.7312047
+    },
+    {
+      "role": "advisor",
+      "text": "Non, il n'y a pas besoin de quitter, monsieur à mami. Je vais régler le problème actuellement et on va envoyer des techniciens chez vous pour régler le problème.",
+      "wait_s": 0.9,
+      "ts": 1792671910.4298866
+    },
+    {
+      "role": "client",
+      "text": "Trop tard, ils auraient dû venir hier déjà. Chez la concurrence, ça serait réglé depuis trois jours. Vous faites tout pour que je parte, hein ?",
+      "emotion": {
+        "patience": 0.19395833553630448,
+        "frustration": 0.5465842688987435,
+        "trust": 0.27115417409982556,
+        "urgency": 0.7406920995786638
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792671921.3634038
+    },
+    {
+      "role": "advisor",
+      "text": "Monsieur, nous allons envoyer un techniciens aujourd'hui si vous êtes disponible. On peut faire ça.",
+      "wait_s": 1.1,
+      "ts": 1792671928.1849303
+    },
+    {
+      "role": "client",
+      "text": "Pas question de me faire attendre encore plus. Envoyez le technicien dès maintenant ou j'envisage sérieusement la résiliation.",
+      "emotion": {
+        "patience": 0.19395833553630448,
+        "frustration": 0.5742842688987435,
+        "trust": 0.25115417409982554,
+        "urgency": 0.7406920995786638
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792671937.6841316
+    },
+    {
+      "role": "advisor",
+      "text": "C'est ce que vous êtes disponible pour qu'on en vend un technicien aujourd'hui, monsieur.",
+      "wait_s": 16.7,
+      "ts": 1792671959.0331967
+    },
+    {
+      "role": "client",
+      "text": "Très bien, rendez-moi service aujourd'hui sinon je résilie.",
+      "emotion": {
+        "patience": 0.04692014898616409,
+        "frustration": 0.6954842688987436,
+        "trust": 0.20615417409982556,
+        "urgency": 0.7406920995786638
+      },
+      "action": "hangup",
+      "interrupted": false,
+      "ts": 1792671965.729076
+    }
+  ],
+  "outcome": "hangup"
+}

@@ -1,0 +1,229 @@
+{
+  "profile": {
+    "persona_id": "en_m",
+    "name": "Alex Moreau",
+    "age": 29,
+    "gender": "M",
+    "language": "en",
+    "segment": "standard",
+    "seniority_years": 6,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci",
+      "A souscrit une option TV l'année dernière"
+    ],
+    "intents": [
+      "internet_outage",
+      "slow_connection"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Casual but technical English. Mentions router lights, ping, speed tests. Gets sarcastic when asked to 'restart the box' for the third time.",
+    "examples": [
+      "My internet has been dropping every few minutes since yesterday. Router shows a red LOS light.",
+      "I've already rebooted it twice and run a speed test. Can we skip the basics?",
+      "Okay, so is it a line fault or not? I need a clear answer and an ETA."
+    ],
+    "details": {
+      "numéro de ligne": "56 468 649",
+      "référence de facture": "F562694",
+      "montant facturé": "145 DT",
+      "montant habituel": "125 DT",
+      "adresse": "Tunis centre"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "en_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Hello, this is Alex Moreau from Tunis centre. I'm experiencing internet issues again and my connection feels super slow today. Can we fix it quickly please?",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.23346075968554786,
+        "trust": 0.42350207534292666,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669837.6864872
+    },
+    {
+      "role": "advisor",
+      "text": "Hello Alex, we will send someone to fix your internet connection.",
+      "wait_s": 1.4,
+      "ts": 1792669844.870736
+    },
+    {
+      "role": "client",
+      "text": "Great, when can they be here? This has been going on for days already. And don't tell me to restart anything else; I've done that twice this week.",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.20726075968554786,
+        "trust": 0.4385020753429266,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669854.235083
+    },
+    {
+      "role": "advisor",
+      "text": "Okay, when are you free this week?",
+      "wait_s": 0.9,
+      "ts": 1792669859.0973454
+    },
+    {
+      "role": "client",
+      "text": "I need it fixed today or tomorrow at the latest. Can we get an exact time slot?",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.17336075968554784,
+        "trust": 0.45850207534292664,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669866.402357
+    },
+    {
+      "role": "advisor",
+      "text": "send someone today at 5pm is it okay for you?",
+      "wait_s": 1.8,
+      "ts": 1792669873.0079255
+    },
+    {
+      "role": "client",
+      "text": "5 PM today should work. But make sure they bring a router, mine seems fried again.",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.20106075968554785,
+        "trust": 0.4385020753429266,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669880.1893718
+    },
+    {
+      "role": "advisor",
+      "text": "Okay, I will do this.",
+      "wait_s": 1.5,
+      "ts": 1792669884.7678926
+    },
+    {
+      "role": "client",
+      "text": "Good. And can you also check why the speed is so slow? It's way below what I'm supposed to get.",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.25956075968554787,
+        "trust": 0.3985020753429266,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669892.3066168
+    },
+    {
+      "role": "advisor",
+      "text": "The technician will see this at the spot.",
+      "wait_s": 1.1,
+      "ts": 1792669899.0081184
+    },
+    {
+      "role": "client",
+      "text": "Fine. How long does it usually take for a fix like this?",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.3565607596855479,
+        "trust": 0.3335020753429266,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669905.2138257
+    },
+    {
+      "role": "advisor",
+      "text": "like i said he will come today at 5 pm and he will check everything and fix everything",
+      "wait_s": 1.2,
+      "ts": 1792669913.7896721
+    },
+    {
+      "role": "client",
+      "text": "Great, but can we get an estimated time of arrival or something? This is driving me crazy.",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.42276075968554794,
+        "trust": 0.2885020753429266,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669921.7881832
+    },
+    {
+      "role": "advisor",
+      "text": "come at 5pm and it will be like 30 minute work maybe.",
+      "wait_s": 2.5,
+      "ts": 1792669930.4038856
+    },
+    {
+      "role": "client",
+      "text": "Thirty minutes? It's been days already and I'm still without internet. Thirty minutes isn't going to cut it this time.",
+      "emotion": {
+        "patience": 0.4511395089762961,
+        "frustration": 0.5197607596855479,
+        "trust": 0.22350207534292663,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669938.807985
+    },
+    {
+      "role": "advisor",
+      "text": "The technician is coming at 5pm and is working on it.",
+      "wait_s": 2.8,
+      "ts": 1792669947.0009117
+    },
+    {
+      "role": "client",
+      "text": "I see you're sending a tech, but my frustration levels are maxed out here. Can we get an update in the next hour or something? This has been going on for days!",
+      "emotion": {
+        "patience": 0.39613950897629613,
+        "frustration": 0.6167607596855479,
+        "trust": 0.15850207534292662,
+        "urgency": 0.5712382399825972
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669957.472471
+    },
+    {
+      "role": "advisor",
+      "text": "Yeah sure Alex we will do the maximum to help you out here",
+      "wait_s": 3.1,
+      "ts": 1792669965.8296306
+    },
+    {
+      "role": "client",
+      "text": "Fine. I want to speak to a manager now. This is unacceptable.",
+      "emotion": {
+        "patience": 0.34113950897629614,
+        "frustration": 0.6829607596855479,
+        "trust": 0.11350207534292663,
+        "urgency": 0.5712382399825972
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792669972.4638329
+    }
+  ],
+  "outcome": "escalate"
+}

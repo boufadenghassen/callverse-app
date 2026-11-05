@@ -1,0 +1,86 @@
+[
+  {
+    "id": "fr_f", "language": "fr", "gender": "F",
+    "label": "Cliente francophone, cadre, polie mais exigeante",
+    "names": ["Salma Ben Youssef", "Ines Trabelsi", "Rania Mejri", "Hela Cherif"],
+    "age_range": [35, 48], "segments": ["premium", "standard"],
+    "speaking_style": "Français soutenu, phrases complètes, politesse formelle. Devient sèche et ironique quand elle est mécontente, ne hausse jamais la voix.",
+    "base_emotion": {"patience": 0.65, "frustration": 0.15, "trust": 0.55, "urgency": 0.4},
+    "typical_intents": ["billing_issue", "service_complaint", "offer_question"],
+    "examples": [
+      "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "Je comprends, mais c'est la deuxième fois que je dois expliquer la situation. J'attends une vraie solution.",
+      "Je vous remercie, c'est plus clair. Pouvez-vous me confirmer cela par écrit ?"
+    ]
+  },
+  {
+    "id": "fr_m", "language": "fr", "gender": "M",
+    "label": "Client francophone, impatient, menace de résilier",
+    "names": ["Mohamed Gharbi", "Karim Jlassi", "Walid Hammami", "Nabil Sassi"],
+    "age_range": [48, 65], "segments": ["standard", "premium"],
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "base_emotion": {"patience": 0.35, "frustration": 0.4, "trust": 0.35, "urgency": 0.7},
+    "typical_intents": ["cancel_contract", "internet_outage", "billing_issue"],
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ]
+  },
+  {
+    "id": "en_f", "language": "en", "gender": "F",
+    "label": "Expatriate woman, clear and direct, asks about an offer",
+    "names": ["Emily Carter", "Sophie Laurent", "Hannah Brooks", "Laura Mitchell"],
+    "age_range": [28, 40], "segments": ["standard", "premium"],
+    "speaking_style": "Clear, polite, concise English. Asks precise questions, wants exact prices and conditions, mildly impatient with vague answers.",
+    "base_emotion": {"patience": 0.7, "frustration": 0.1, "trust": 0.5, "urgency": 0.3},
+    "typical_intents": ["offer_question", "billing_issue", "roaming_question"],
+    "examples": [
+      "Hi, I'm new in Tunisia and I'd like to understand which mobile plan would suit me best.",
+      "Sorry, could you give me the exact monthly price, including all fees?",
+      "That's helpful, thanks. What happens if I want to cancel after three months?"
+    ]
+  },
+  {
+    "id": "en_m", "language": "en", "gender": "M",
+    "label": "Tech-savvy young man, internet outage",
+    "names": ["Daniel Reed", "Alex Moreau", "Ryan Cole", "Omar Haddad"],
+    "age_range": [24, 33], "segments": ["standard"],
+    "speaking_style": "Casual but technical English. Mentions router lights, ping, speed tests. Gets sarcastic when asked to 'restart the box' for the third time.",
+    "base_emotion": {"patience": 0.5, "frustration": 0.25, "trust": 0.4, "urgency": 0.6},
+    "typical_intents": ["internet_outage", "slow_connection", "service_complaint"],
+    "examples": [
+      "My internet has been dropping every few minutes since yesterday. Router shows a red LOS light.",
+      "I've already rebooted it twice and run a speed test. Can we skip the basics?",
+      "Okay, so is it a line fault or not? I need a clear answer and an ETA."
+    ]
+  },
+  {
+    "id": "derja_f", "language": "derja", "gender": "F",
+    "label": "Cliente derja, parle vite, répète beaucoup, réclamation",
+    "names": ["Fatma Bouzid", "Mabrouka Ayari", "Samia Dridi", "Najet Khlifi"],
+    "age_range": [40, 58], "segments": ["standard"],
+    "speaking_style": "Derja tunisienne en arabizi (alphabet latin avec chiffres : 3, 7, 9, 5). Parle vite et avec émotion, reformule son problème avec ses propres mots quand elle se sent ignorée (jamais mot pour mot), invoque Dieu et la famille. Peu de mots français.",
+    "base_emotion": {"patience": 0.45, "frustration": 0.35, "trust": 0.4, "urgency": 0.6},
+    "typical_intents": ["billing_issue", "service_complaint", "internet_outage"],
+    "examples": [
+      "Aslema, 3andi mochkla fil facture mte3i, jetni ghalta el chhar hedha.",
+      "Behi ama ncheckelek 3al flous, barcha marra kolt nafs el 7keya, chnowa el 7al?",
+      "Yaatik essaha, ama nheb nfhem 3lech el flous zeda, mouch normal."
+    ]
+  },
+  {
+    "id": "derja_m", "language": "derja", "gender": "M",
+    "label": "Client derja avec code-switching derja/français",
+    "names": ["Aymen Mansouri", "Slim Ouertani", "Hatem Bouaziz", "Yassine Zouari"],
+    "age_range": [28, 42], "segments": ["standard", "premium"],
+    "speaking_style": "Derja en arabizi mélangée à des mots et phrases français (code-switching naturel : 'c'est pas normal', 'problème', 'connexion'). Ton décontracté, devient sarcastique si agacé.",
+    "base_emotion": {"patience": 0.5, "frustration": 0.2, "trust": 0.45, "urgency": 0.5},
+    "typical_intents": ["internet_outage", "offer_question", "cancel_contract"],
+    "examples": [
+      "Bonjour, 3andi problème fel connexion, el internet 9a3ed yo9ta3 kol 5 minutes, c'est pas normal.",
+      "Déjà 3ma7t redémarrage barcha marrat, ma tbaddel chay. Chnowa na3mel ?",
+      "Si ma tet7allch lyouma, nbaddel opérateur, parole."
+    ]
+  }
+]

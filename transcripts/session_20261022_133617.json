@@ -1,0 +1,57 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Nabil Sassi",
+    "age": 49,
+    "gender": "M",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 8,
+    "history": [
+      "Client fidèle, aucun incident récent"
+    ],
+    "intents": [
+      "billing_issue",
+      "cancel_contract"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "99 929 200",
+      "référence de facture": "F142274",
+      "montant facturé": "145 DT",
+      "montant habituel": "121 DT",
+      "adresse": "Ariana"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? C'est Nabil Sassi de Ariana. J'ai un problème avec ma facture.",
+      "emotion": {
+        "patience": 0.274227401958872,
+        "frustration": 0.43579344227564776,
+        "trust": 0.38238361181086483,
+        "urgency": 0.6270036277597931
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792668951.9224136
+    }
+  ],
+  "outcome": "quit"
+}

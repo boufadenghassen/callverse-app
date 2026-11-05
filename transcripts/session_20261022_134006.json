@@ -1,0 +1,78 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Walid Hammami",
+    "age": 59,
+    "gender": "M",
+    "language": "fr",
+    "segment": "standard",
+    "seniority_years": 10,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci",
+      "A changé de forfait il y a 8 mois",
+      "A souscrit une option TV l'année dernière"
+    ],
+    "intents": [
+      "billing_issue",
+      "cancel_contract"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "50 217 791",
+      "référence de facture": "F720876",
+      "montant facturé": "91 DT",
+      "montant habituel": "68 DT",
+      "adresse": "Nabeul"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? Je veux parler au service billing s'il vous plaît.",
+      "emotion": {
+        "patience": 0.41455753228956405,
+        "frustration": 0.47732133783282543,
+        "trust": 0.3651284397055934,
+        "urgency": 0.7161280228596462
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669150.422407
+    },
+    {
+      "role": "advisor",
+      "text": "Allo",
+      "wait_s": 19.3,
+      "ts": 1792669171.6707065
+    },
+    {
+      "role": "client",
+      "text": "C'est Walid Hammami, ligne 50 217 791. J'ai un montant facturé qui ne correspond pas et je suis très mécontent.",
+      "emotion": {
+        "patience": 0.2534900986939067,
+        "frustration": 0.6485713378328255,
+        "trust": 0.2876284397055934,
+        "urgency": 0.7161280228596462
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669183.3076727
+    }
+  ],
+  "outcome": "quit"
+}

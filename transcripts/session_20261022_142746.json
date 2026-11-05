@@ -1,0 +1,152 @@
+{
+  "profile": {
+    "persona_id": "fr_m",
+    "name": "Karim Jlassi",
+    "age": 57,
+    "gender": "M",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 3,
+    "history": [
+      "A changé de forfait il y a 8 mois"
+    ],
+    "intents": [
+      "internet_outage",
+      "billing_issue"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français direct, phrases courtes, ton sec. Interrompt, coupe court aux explications, évoque la résiliation et la concurrence.",
+    "examples": [
+      "Allô ? Ça fait trois jours que ma ligne ne marche pas. Je veux une réponse maintenant.",
+      "Je n'ai pas besoin de tout ce discours. Vous réglez le problème ou je résilie.",
+      "Chez la concurrence on ne me traiterait pas comme ça."
+    ],
+    "details": {
+      "numéro de ligne": "50 366 807",
+      "référence de facture": "F343514",
+      "montant facturé": "173 DT",
+      "montant habituel": "150 DT",
+      "adresse": "Tunis centre"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_m",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Allô ? C'est Karim Jlassi de la Tunis centre. Ma connexion internet est instable depuis trois jours et je ne veux pas attendre plus longtemps pour une solution.",
+      "emotion": {
+        "patience": 0.3689941380024503,
+        "frustration": 0.36490970151030505,
+        "trust": 0.3742188965809855,
+        "urgency": 0.6743526604188049
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792671987.7956598
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour, monsieur Carim, je vois actuellement que vous avez un problème de connexion instable, nous pouvons régler ce problème aujourd'hui si nous envoyons un technicien chez vous aujourd'hui.",
+      "wait_s": 1.9,
+      "ts": 1792671999.3073647
+    },
+    {
+      "role": "client",
+      "text": "Je ne veux pas attendre plus longtemps. Réglez ça maintenant ou j'envisage de résilier ma ligne.",
+      "emotion": {
+        "patience": 0.3689941380024503,
+        "frustration": 0.40030970151030504,
+        "trust": 0.3492188965809855,
+        "urgency": 0.6743526604188049
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672007.5349114
+    },
+    {
+      "role": "advisor",
+      "text": "Oui, monsieur, aujourd'hui ça va être régler.",
+      "wait_s": 0.5,
+      "ts": 1792672011.702249
+    },
+    {
+      "role": "client",
+      "text": "Faites-le immédiatement sinon je préfère me tourner vers la concurrence.",
+      "emotion": {
+        "patience": 0.3689941380024503,
+        "frustration": 0.49730970151030507,
+        "trust": 0.2842188965809855,
+        "urgency": 0.6743526604188049
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672019.0614572
+    },
+    {
+      "role": "advisor",
+      "text": "Oui, monsieur aujourd'hui, ça va être réglé et il ne vous aurait plus de problème.",
+      "wait_s": 0.4,
+      "ts": 1792672024.4377978
+    },
+    {
+      "role": "client",
+      "text": "Et ma facture ? Il y a un montant inattendu qui ressemble à une erreur.",
+      "emotion": {
+        "patience": 0.3689941380024503,
+        "frustration": 0.594309701510305,
+        "trust": 0.2192188965809855,
+        "urgency": 0.6743526604188049
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672031.4576838
+    },
+    {
+      "role": "advisor",
+      "text": "Quel est le problème exactement ?",
+      "wait_s": 1.3,
+      "ts": 1792672035.5913181
+    },
+    {
+      "role": "client",
+      "text": "Le montant sur la dernière facture est de 173 DT alors que c'est impossible, mon forfait ne dépasse jamais les 150 DT habituellement.",
+      "emotion": {
+        "patience": 0.3139941380024503,
+        "frustration": 0.652809701510305,
+        "trust": 0.17921889658098553,
+        "urgency": 0.6743526604188049
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672047.820142
+    },
+    {
+      "role": "advisor",
+      "text": "Il doit y avoir sûrement un problème avec le service de facturation. Nous allons envoyer un bon récupération pour les...",
+      "wait_s": 1.2,
+      "ts": 1792672057.7668765
+    },
+    {
+      "role": "client",
+      "text": "Je ne veux pas attendre non plus. Parlez-moi d'un responsable maintenant ou je raccroche.",
+      "emotion": {
+        "patience": 0.2589941380024503,
+        "frustration": 0.711309701510305,
+        "trust": 0.13921889658098555,
+        "urgency": 0.6743526604188049
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792672066.1858573
+    }
+  ],
+  "outcome": "escalate"
+}

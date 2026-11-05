@@ -1,0 +1,230 @@
+{
+  "profile": {
+    "persona_id": "fr_f",
+    "name": "Salma Ben Youssef",
+    "age": 41,
+    "gender": "F",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 11,
+    "history": [
+      "A déjà appelé 2 fois pour le même problème ce mois-ci",
+      "A changé de forfait il y a 8 mois",
+      "Client fidèle, aucun incident récent"
+    ],
+    "intents": [
+      "billing_issue",
+      "service_complaint"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français soutenu, phrases complètes, politesse formelle. Devient sèche et ironique quand elle est mécontente, ne hausse jamais la voix.",
+    "examples": [
+      "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "Je comprends, mais c'est la deuxième fois que je dois expliquer la situation. J'attends une vraie solution.",
+      "Je vous remercie, c'est plus clair. Pouvez-vous me confirmer cela par écrit ?"
+    ],
+    "details": {
+      "numéro de ligne": "92 291 575",
+      "référence de facture": "F128330",
+      "montant facturé": "134 DT",
+      "montant habituel": "98 DT",
+      "adresse": "Ariana"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.08609579786434515,
+        "trust": 0.5240205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669328.1529431
+    },
+    {
+      "role": "advisor",
+      "text": "Bonjour Madame Salma combien il m'entend de votre facture si vous voulez",
+      "wait_s": 1.2,
+      "ts": 1792669334.3650925
+    },
+    {
+      "role": "client",
+      "text": "Il s'agit du montant de 134 DT sur la facture F128330. Mon montant habituel est de 98 DT, donc ce surplus m'inquiète.",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.09069579786434515,
+        "trust": 0.5190205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669345.759396
+    },
+    {
+      "role": "advisor",
+      "text": "de ce que je vois sur le système vous avez fait un dépassement sur les données mobiles à l'étranger",
+      "wait_s": 2.5,
+      "ts": 1792669355.66939
+    },
+    {
+      "role": "client",
+      "text": "Je n'ai pas voyagé récemment et cela ne correspond pas à ma routine de usage. Pouvez-vous vérifier s'il y a une erreur ?",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.18769579786434512,
+        "trust": 0.4540205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669365.612575
+    },
+    {
+      "role": "advisor",
+      "text": "Laissez-moi vous envoyer par mail votre numéro de facture et votre contrefacture.",
+      "wait_s": 2.2,
+      "ts": 1792669373.7745218
+    },
+    {
+      "role": "client",
+      "text": "D'accord, attendez un instant que je confirme mon adresse e-mail pour la procéder.",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.25389579786434513,
+        "trust": 0.4090205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669381.8201923
+    },
+    {
+      "role": "advisor",
+      "text": "Vous avez reçu un mail par mail normalement.",
+      "wait_s": 2.3,
+      "ts": 1792669389.0527604
+    },
+    {
+      "role": "client",
+      "text": "Je n'ai pas reçu de mail.",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.32009579786434517,
+        "trust": 0.3640205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": true,
+      "ts": 1792669393.4953952
+    },
+    {
+      "role": "advisor",
+      "text": "Normalement, vous avez réussi à maîle actuellement.",
+      "wait_s": 4.0,
+      "ts": 1792669402.7839437
+    },
+    {
+      "role": "client",
+      "text": "Je suis désolée mais je n'ai toujours pas reçu ce mail. Pouvez-vous le réexpédier s'il vous plaît ?",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.4670957978643452,
+        "trust": 0.29902057081479777,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669410.9280171
+    },
+    {
+      "role": "advisor",
+      "text": "Oui je vous l'envoie tout de suite et normalement c'est bon.",
+      "wait_s": 1.0,
+      "ts": 1792669417.2973201
+    },
+    {
+      "role": "client",
+      "text": "D'accord, je vais patienter. Si cela ne fonctionne pas, j'aurai besoin d'une confirmation par téléphone ou un autre moyen fiable. Merci.",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.5332957978643452,
+        "trust": 0.2540205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669428.42827
+    },
+    {
+      "role": "advisor",
+      "text": "Madame ne vous inquiétez pas, toutes les prises en charge et nous allons régler votre problème.",
+      "wait_s": 0.4,
+      "ts": 1792669436.3080664
+    },
+    {
+      "role": "client",
+      "text": "Je suis toujours sceptique. Vous avez déjà promis une solution il y a deux fois ce mois-ci sans résultats. Pouvez-vous m'assurer que cela sera différent cette fois ?",
+      "emotion": {
+        "patience": 0.6793912265991786,
+        "frustration": 0.5917957978643452,
+        "trust": 0.2140205708147978,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669448.0516667
+    },
+    {
+      "role": "advisor",
+      "text": "Oui je vous le fermer ma dame ça va être régulé dans les plus courtes et les",
+      "wait_s": 0.6,
+      "ts": 1792669453.4041138
+    },
+    {
+      "role": "client",
+      "text": "Attendez, attendez. Dans \"les plus courtes\" comme on dit ici... Cela fait deux semaines déjà que je gribouille des promesses sur la paperasse. Donnez-moi une date précise où ce sera réglé ou j'en rediscutte avec votre supérieur.",
+      "emotion": {
+        "patience": 0.6243912265991786,
+        "frustration": 0.6579957978643453,
+        "trust": 0.16902057081479782,
+        "urgency": 0.3341100893337628
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792669467.5777855
+    },
+    {
+      "role": "advisor",
+      "text": "Madame, demain vous allez recevoir votre reçu et vous allez recevoir la différence manquée.",
+      "wait_s": 1.1,
+      "ts": 1792669476.5320697
+    },
+    {
+      "role": "client",
+      "text": "Je ne veux pas attendre jusqu'à demain. Je demande immédiatement à parler au responsable.",
+      "emotion": {
+        "patience": 0.5693912265991785,
+        "frustration": 0.7241957978643453,
+        "trust": 0.12402057081479782,
+        "urgency": 0.3341100893337628
+      },
+      "action": "escalate",
+      "interrupted": false,
+      "ts": 1792669485.0495348
+    }
+  ],
+  "outcome": "escalate"
+}

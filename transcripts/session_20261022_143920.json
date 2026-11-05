@@ -1,0 +1,57 @@
+{
+  "profile": {
+    "persona_id": "fr_f",
+    "name": "Ines Trabelsi",
+    "age": 46,
+    "gender": "F",
+    "language": "fr",
+    "segment": "premium",
+    "seniority_years": 6,
+    "history": [
+      "Coupure de service de 2 jours l'an dernier"
+    ],
+    "intents": [
+      "service_complaint",
+      "offer_question"
+    ],
+    "hidden_intent": null,
+    "speaking_style": "Français soutenu, phrases complètes, politesse formelle. Devient sèche et ironique quand elle est mécontente, ne hausse jamais la voix.",
+    "examples": [
+      "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "Je comprends, mais c'est la deuxième fois que je dois expliquer la situation. J'attends une vraie solution.",
+      "Je vous remercie, c'est plus clair. Pouvez-vous me confirmer cela par écrit ?"
+    ],
+    "details": {
+      "numéro de ligne": "94 226 411",
+      "référence de facture": "F502422",
+      "montant facturé": "115 DT",
+      "montant habituel": "98 DT",
+      "adresse": "Bizerte"
+    }
+  },
+  "scenario": {
+    "problem_type": null,
+    "difficulty": 3,
+    "persona_id": "fr_f",
+    "language": null,
+    "gender": null,
+    "max_turns": 12,
+    "seed": null
+  },
+  "turns": [
+    {
+      "role": "client",
+      "text": "Bonjour, je vous contacte au sujet de ma dernière facture, il y a un montant que je ne m'explique pas.",
+      "emotion": {
+        "patience": 0.6063772525760044,
+        "frustration": 0.11312717173975251,
+        "trust": 0.5999730649741095,
+        "urgency": 0.37919842724796604
+      },
+      "action": "continue",
+      "interrupted": false,
+      "ts": 1792672727.3024938
+    }
+  ],
+  "outcome": "quit"
+}
