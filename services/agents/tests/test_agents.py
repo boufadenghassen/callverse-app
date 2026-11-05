@@ -258,3 +258,100 @@ def test_the_schedule_endpoint():
     body = r.json()
     assert {"baselineSla", "plannedSla", "queues", "overtime", "overtimeHours", "method"} <= set(body)
     assert len(body["queues"]) == 5 and all("_lunch" not in q for q in body["queues"])
+
+
+def test_she_hears_a_raised_voice_rude_words_and_shouting():
+    angry, calm = {"emotion": "anger", "mood": 14}, {"emotion": "happy", "mood": 85}
+    assert customer.read_advisor("I am sorry about that.", angry) == "RUDE"        # polite words, angry voice
+    assert customer.read_advisor("I am sorry about that.", calm) == "EMPATHY"
+    assert customer.read_advisor("I am sorry about that.", {"emotion": "anger", "mood": 60}) == "EMPATHY"   # a weak reading is not enough
+    assert customer.read_advisor("I am sorry about that.", {"emotion": "sad", "mood": 5}) == "EMPATHY"      # only anger or disgust counts
+    assert customer.read_advisor("Don't be stupid.") == "RUDE" and customer.read_advisor("shut up and listen") == "RUDE"
+    assert customer.read_advisor("I WANT MY MONEY BACK NOW") == "RUDE" and customer.read_advisor("What are you doing!!!") == "RUDE"
+    assert customer.read_advisor("Please send the SMS and USB details.") == "OTHER"                       # acronyms are not shouting
+
+
+def test_a_raised_voice_costs_patience_ends_the_call_badly_and_is_noted():
+    kw = dict(persona="IMPATIENT", mix=None, difficulty="MEDIUM", intent="BILLING", memory=False)
+    calm = customer.replay(**kw, moves=["EMPATHY"], said=["I am sorry."])
+    rude = customer.replay(**kw, moves=["RUDE"], said=["I am sorry."])
+    assert rude.mood < calm.mood - 15 and rude.patience < calm.patience - 15
+    done = customer.replay(**kw, moves=["RUDE", "EMPATHY", "CHECK_POLICY", "FOLLOW_UP"], said=[None] * 4)
+    assert done.outcome and done.outcome["expectationMet"] is False and any("Conduct" in n for n in done.outcome["notes"])
+    assert customer.replay(**kw, moves=["RUDE", "RUDE", "RUDE"], said=[None] * 3).outcome["verdict"] == "The client hung up."
+
+
+def test_she_answers_what_was_actually_said_when_it_matches_no_move():
+    def line(said, mood=50):
+        return customer.customer_line("NEW_SUBSCRIBER", "BILLING", "OTHER", mood, False, False, 0, said)
+    assert "$2,000" in line("Why did you put $2,000?") and "45 TND" in line("Is this about 45 TND?")
+    assert "my bill" in line("Hello, how are you today?") and "my bill" in line("Can you give me your name?")
+    assert "my bill" not in line("The weather is nice today.") and "my bill" not in line(None)
+    assert line("Why did you put $2,000?") == line("Why did you put $2,000?")                                        # same words, same answer
+    assert line("Why did you put $2,000?", 10) != line("Why did you put $2,000?", 90)                                # and her mood shapes it
+
+
+def test_the_tone_of_a_voice_note_reaches_her_over_http():
+    kw = {"persona": "IMPATIENT", "difficulty": "MEDIUM", "intent": "BILLING"}
+
+    def say(sid, body):
+        return client.post(f"/customer/sessions/{sid}/say", json=body).json()
+
+    a, b = client.post("/customer/sessions", json=kw).json(), client.post("/customer/sessions", json=kw).json()
+    calm = say(a["id"], {"text": "I am sorry about that."})
+    shouted = say(b["id"], {"text": "I am sorry about that.", "tone": {"emotion": "anger", "mood": 12}})
+    assert calm["move"] == "EMPATHY" and shouted["move"] == "RUDE" and shouted["moveLabel"] == "Raised your voice or was rude"
+    assert shouted["mood"] < calm["mood"] and shouted["client"] != calm["client"]
+    for bad in ({"emotion": "furious", "mood": 10}, {"emotion": "anger", "mood": 101}, {"emotion": "anger"}):
+        assert client.post(f"/customer/sessions/{a['id']}/say", json={"text": "hi", "tone": bad}).status_code == 422
+
+
+def _auto_call(persona, difficulty, intent, style="careful"):
+    """The advisor agent talks to the customer simulator by itself until the call ends."""
+    s = customer.start(persona, None, difficulty, intent, False)
+    moves, turn = [], 0
+    while True:
+        r = advisor.auto_reply(s["opening"], turn, None, style)
+        assert 0 < len(r["text"]) <= 300 and r["step"]
+        reply = customer.say(s["id"], r["text"])
+        moves.append(reply["move"])
+        turn += 1
+        if reply["ended"] or turn > 6:
+            return moves, reply["outcome"]
+
+
+def test_the_advisor_agent_talking_by_itself_follows_the_good_practices_and_resolves_every_call():
+    for persona in customer.PERSONAS:
+        for difficulty in ("MEDIUM", "HARD"):
+            for intent in customer.INTENTS:
+                moves, outcome = _auto_call(persona, difficulty, intent)
+                assert moves[0] == "EMPATHY" and moves[1] == "CHECK_POLICY" and moves[-1] == "FOLLOW_UP", (persona, difficulty, intent, moves)
+                assert outcome["verdict"].startswith("Resolved") and outcome["expectationMet"] and not outcome["notes"], (persona, difficulty, intent, outcome)
+    first = advisor.auto_reply("I was charged twice on my September bill.", 0)
+    assert first["step"] == "acknowledge" and "sorry" in first["text"] and first["sources"] and not first["last"]
+    assert advisor.auto_reply("I was charged twice on my September bill.", 3)["last"] and advisor.auto_reply("I was charged twice on my September bill.", 9)["last"]
+    check = advisor.auto_reply("I was charged twice for 120 dinars on my bill.", 1)
+    assert "Let me check the policy in" in check["text"] and "commit to anything" in check["text"]
+
+
+def test_a_rushed_advisor_promises_too_early_and_the_call_ends_badly():
+    verdicts = set()
+    for persona in customer.PERSONAS:
+        moves, outcome = _auto_call(persona, "MEDIUM", "BILLING", "rushed")
+        assert moves[0] == "PROMISE" and "ASK_REPEAT" in moves and "TRANSFER" in moves
+        verdicts.add(outcome["verdict"])
+        assert not outcome["verdict"].startswith("Resolved") and any("Compliance risk" in n for n in outcome["notes"])
+    assert verdicts <= {"The client hung up.", "Call left open."}
+
+
+def test_the_auto_endpoint_answers_validates_and_never_reads_a_missing_customer():
+    ok = client.post("/advisor/auto", json={"topic": "I was charged twice on my September bill.", "turn": 1}).json()
+    assert ok["step"] == "check the policy" and ok["style"] == "careful"
+    rushed = client.post("/advisor/auto", json={"topic": "I was charged twice", "turn": 0, "style": "rushed"}).json()
+    assert rushed["step"] == "promise too early" and rushed["sources"] == []
+    assert client.post("/advisor/auto", json={"topic": "hi", "turn": 0}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "turn": 11}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "style": "angry"}).status_code == 422
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "customer_id": "ZZ-0000"}).status_code == 404
+    assert client.post("/advisor/auto", json={"topic": "I was charged twice", "customer_id": "bad"}).status_code == 422
+

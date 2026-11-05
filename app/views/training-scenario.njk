@@ -14,12 +14,22 @@
   <p class="chips"><span class="chip">{{ scenario.spec.segment }}</span><span class="chip">Difficulty {{ scenario.spec.difficulty }}/5</span><span class="chip">{{ scenario.spec.language }}</span></p>
   <h2>Customer situation</h2>
   <p>{{ scenario.customer_card }}</p>
+  {% if scenario.opening_line %}<p class="muted">On the phone, the customer opens with: “{{ scenario.opening_line }}”</p>{% endif %}
   <h2>Trainer brief</h2>
   <p>{{ scenario.trainer_brief }}</p>
   <h2>Complications</h2>
   {% if scenario.complications %}<ul>{% for item in scenario.complications %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No complications.</p>{% endif %}
   <h2>Success criteria</h2>
   <ul>{% for item in scenario.success_criteria %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+
+<section class="panel">
+  <h2>Practise this scenario</h2>
+  <p class="muted">The customer simulator plays the scenario in the advisor console; the advisor agent can answer by itself, and the call is then scored by the quality analyst.</p>
+  <div class="actions">
+    <a class="btn" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;start=1#live">Play it in the console</a>
+    <a class="btn-line" href="/advisor?scenario={{ scenario.id | urlencode }}&amp;auto=careful#live">Let the advisor agent play it</a>
+  </div>
 </section>
 
 <section class="panel">
@@ -30,12 +40,12 @@
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       <button class="btn-line" type="submit">Replay scenario</button>
     </form>
-    <form method="post" action="/training/scenarios/{{ scenario.id }}/mutate">
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       <input type="hidden" name="op" value="harder">
       <button class="btn" type="submit">Make harder</button>
     </form>
-    <form method="post" action="/training/scenarios/{{ scenario.id }}/mutate">
+    <form method="post" action="/training/scenarios/{{ scenario.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       <input type="hidden" name="op" value="easier">
       <button class="btn-line" type="submit">Make easier</button>

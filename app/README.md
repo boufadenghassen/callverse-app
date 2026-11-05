@@ -65,9 +65,17 @@ interfaces in `src/agents/models.ts`. In FastAPI, use Pydantic models with `alia
 | GET | `/quality/reviews/{id}` ✔, `/quality/analytics` ✔, `/quality/evaluation` ✔ | QualityReview, QualityAnalytics, QualityEvaluation |
 | POST | `/quality/review` ✔, `/quality/review-call` ✔, `/quality/review-audio` ✔ | QualityReview (from a transcript, a live call, a two-channel recording) |
 | POST | `/quality/feedback` ✔ | reviewer verdict (agree / disagree / clear) on one finding |
-| GET | `/complaints/open` | ComplaintCase[] |
-| GET | `/training/scenarios` | Scenario[] |
-| GET | `/sales/opportunities` | Opportunity[] |
+| GET | `/complaints/open` ✔ | ComplaintCase[] (real agent adds `severityFactors`, `riskFactors`, `deadline`, `warning`, `actions`...) |
+| GET | `/complaints/{id}` ✔, `/complaints/insights` ✔, `/complaints/follow-ups` ✔, `/complaints/from-calls` ✔ | a case in full; root causes and trends; resolved cases waiting for the follow-up; calls that may be complaints |
+| POST | `/complaints/triage` `{text, customer_id?}` ✔, `/complaints` ✔, `/complaints/from-call` ✔, `/complaints/{id}/{take,escalate,severity,alert,resolve,close,reopen}` ✔ | read a complaint without saving; open a case; every move on a case |
+| GET | `/training/scenarios?advisor_id=` ✔ | Scenario[], only that advisor's when given |
+| POST | `/training/practice` `{callId, scenario_id, advisor}` ✔ | QualityReview plus `practice`: the attempt, what moved against the advisor's usual level, the next step |
+| GET | `/training/practice?advisor=` ✔ | `{attempts, count, best, trend}` |
+| POST | `/advisor/auto` `{topic, turn, style, turns?, steps?, brief?}` ✔ | the advisor agent's reply, with `step`, `why`, `engine`, `checks` |
+| GET | `/sales/opportunities` ✔ | Opportunity[] (real agent adds `factors`, `timing`, `counterfactual`, `churn`, `acceptance`, `expected`...) |
+| POST | `/sales/detect` `{customer_id?, turns}` ✔, `/sales/outcome` ✔ | the needs found in a conversation and the ranked offers; what happened to an offer |
+| GET | `/sales/analytics` ✔ | which offers convert |
+| POST | `/sales/simulate` `{calls, share, min_relevance, good_moment_only}` ✔ | what a month of calls earns under a selling rule, replayed on the history |
 
 ## Voice
 

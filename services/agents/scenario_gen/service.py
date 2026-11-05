@@ -206,7 +206,7 @@ class ScenarioService:
         if enrich:
             if self.llm is None or not self.llm.available:
                 scenario = scenario.model_copy(
-                    update={"notes": scenario.notes + ["LLM enrichment skipped: no OPENROUTER_API_KEY, templates used."]}
+                    update={"notes": scenario.notes + ["LLM enrichment skipped: no OPENROUTER_API_KEY and the local model is switched off, templates used."]}
                 )
             else:
                 enriched = self.llm.enrich(scenario)

@@ -1,7 +1,10 @@
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
+
+os.environ["LOCAL_LLM"] = "0"       # the tests never depend on a model running on this machine; the ones about it put a fake in its place
 
 from scenario_gen.catalog import Catalog
 from scenario_gen.generator import ScenarioGenerator

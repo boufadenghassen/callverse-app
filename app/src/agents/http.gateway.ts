@@ -13,7 +13,7 @@ export class HttpAgentGateway extends MockAgentGateway {
   private readonly base = process.env.CALLVERSE_AGENTS_URL ?? 'http://localhost:8000';
   private readonly cache = new Map<string, { at: number; value: unknown }>();
 
-  private async call<T>(path: string, body?: unknown, cacheable = false, method?: 'GET' | 'POST' | 'DELETE'): Promise<T> {
+  private async call<T>(path: string, body?: unknown, cacheable = false, method?: 'GET' | 'POST' | 'DELETE', timeoutMs = 5000): Promise<T> {
     const hit = this.cache.get(path);
     if (cacheable && hit && Date.now() - hit.at < 30_000) return hit.value as T;
     let res: Response;
@@ -22,7 +22,7 @@ export class HttpAgentGateway extends MockAgentGateway {
         method: method ?? (body === undefined ? 'GET' : 'POST'),
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
       throw new AgentDownError(String(e));
@@ -38,6 +38,8 @@ export class HttpAgentGateway extends MockAgentGateway {
 
   /** Real Python agents: the advisor, the customer simulator, the workforce manager, the voice. */
   customerContext(customerId: string) { return this.call<m.CustomerContext>(`/advisor/customers/${encodeURIComponent(customerId)}`, undefined, true); }
+  /** The local model may need two tries, so this one waits longer than the others. */
+  autoReply(topic: string, turn: number, style: 'careful' | 'rushed', context?: m.AutoContext) { return this.call<m.AutoReply>('/advisor/auto', { topic, turn, style, ...context }, false, undefined, 50_000); }
   suggestAnswer(customerId: string, query: string) { return this.call<m.SuggestedAnswer>('/advisor/suggest', { customer_id: customerId, query }); }
   async speak(r: m.SpeakRequest): Promise<Buffer> {
     let res: Response;
@@ -80,11 +82,17 @@ export class HttpAgentGateway extends MockAgentGateway {
     try { return await this.call<m.QualityReview>(`/quality/reviews/${encodeURIComponent(callId)}`); } catch (e) { if (e instanceof AgentDownError && /answered 404/.test(e.message)) return null; throw e; }
   }
   qualityAnalytics() { return this.call<m.QualityAnalytics>('/quality/analytics'); }
-  async reviewCall(callId: string, advisor: string) {
-    const res = await this.raw('/quality/review-call', { callId, advisor });
+  async reviewCall(callId: string, advisor: string, source: 'live call' | 'automatic' = 'live call') {
+    const res = await this.raw('/quality/review-call', { callId, advisor, source });
     if (res.status === 404) throw new UnknownCallError(callId);
     return this.review(res);
   }
+  async practiceCall(callId: string, scenarioId: string, advisor: string) {
+    const res = await this.raw('/training/practice', { callId, scenario_id: scenarioId, advisor });
+    if (res.status === 404) return this.reviewCall(callId, advisor);   // the scenario was deleted during the call: it is still a call to review
+    return this.review(res) as Promise<m.QualityReview & { practice?: m.PracticeAttempt }>;
+  }
+  practice(advisor: string) { return this.call<m.PracticeHistory>(`/training/practice?advisor=${encodeURIComponent(advisor)}`); }
   async reviewAudio(audio: Buffer, advisor: string) {
     const res = await this.raw(`/quality/review-audio?advisor=${encodeURIComponent(advisor)}`, audio);
     if (res.status === 503) throw new VoiceUnavailableError('the speech-to-text model is not installed');
@@ -121,18 +129,55 @@ export class HttpAgentGateway extends MockAgentGateway {
   routing() { return this.call<m.RoutingPlan>('/workforce/routing', undefined, true); }
   forecast(queue: string) { return this.call<m.ForecastPoint[]>(`/workforce/forecast?queue=${encodeURIComponent(queue)}`, undefined, true); }
   simulate(r: m.SimulationRequest) { return this.call<m.SimulationResult>('/workforce/simulate', r); }
+  opportunities() { return this.call<m.Opportunity[]>('/sales/opportunities'); }
+  salesAnalytics() { return this.call<m.SalesAnalytics>('/sales/analytics'); }
+  async salesDetect(customerId: string | null, turns: m.SalesTurn[]) {
+    const res = await this.raw('/sales/detect', { customer_id: customerId, turns });
+    if (res.status === 404 || res.status === 422) throw new RejectedError('The conversation or the customer is not valid.');
+    if (!res.ok) throw new AgentDownError(`sales detect answered ${res.status}`);
+    return (await res.json()) as m.SalesDetection;
+  }
+  async salesSimulate(r: m.SalesSimulationRequest) {
+    const res = await this.raw('/sales/simulate', { calls: r.calls, share: r.share, min_relevance: r.minRelevance, good_moment_only: r.goodMomentOnly });
+    if (res.status === 422) throw new RejectedError('These values are not valid.');
+    if (!res.ok) throw new AgentDownError(`sales simulate answered ${res.status}`);
+    return (await res.json()) as m.SalesSimulation;
+  }
+  async salesOutcome(o: m.SalesOutcome) {
+    const res = await this.raw('/sales/outcome', { customer_id: o.customerId, offer_id: o.offerId, outcome: o.outcome, relevance: o.relevance, cue: o.cue, need: o.need });
+    if (res.status === 404 || res.status === 422) throw new RejectedError('This offer or customer is not valid.');
+    if (!res.ok) throw new AgentDownError(`sales outcome answered ${res.status}`);
+  }
+  openComplaints() { return this.call<m.ComplaintCase[]>('/complaints/open'); }
+  complaintInsights() { return this.call<m.ComplaintInsights>('/complaints/insights'); }
+  complaintFollowUps() { return this.call<m.ComplaintFollowUp[]>('/complaints/follow-ups'); }
+  complaintCandidates() { return this.call<m.ComplaintCandidate[]>('/complaints/from-calls'); }
+  complaint(id: string) { return this.complaintCall<m.ComplaintDetail>(`/complaints/${encodeURIComponent(id)}`); }
+  complaintTriage(text: string, customerId: string | null) { return this.complaintCall<m.ComplaintCase>('/complaints/triage', { text, customer_id: customerId }); }
+  complaintCreate(text: string, customerId: string | null, channel: string) { return this.complaintCall<m.ComplaintDetail>('/complaints', { text, customer_id: customerId, channel }); }
+  complaintFromCall(callId: string) { return this.complaintCall<m.ComplaintDetail>('/complaints/from-call', { call_id: callId }); }
+  complaintAct(id: string, a: m.ComplaintAct) {
+    return this.complaintCall<m.ComplaintDetail>(`/complaints/${encodeURIComponent(id)}/${a.action}`, { by: a.by, note: a.note ?? '', resolution: a.resolution ?? null, level: a.level ?? null, trusted: a.trusted ?? null });
+  }
+  /** A complaint request whose refusal (no such case, a wrong move, not enough words) carries a message the page can show. */
+  private async complaintCall<T>(path: string, body?: unknown): Promise<T> {
+    const res = await this.raw(path, body);
+    if ([404, 409, 422].includes(res.status)) {
+      const detail = ((await res.json().catch(() => ({}))) as { detail?: string | unknown[] }).detail;
+      throw new RejectedError(typeof detail === 'string' ? detail : 'This could not be done.');
+    }
+    if (!res.ok) throw new AgentDownError(`${path} answered ${res.status}`);
+    return (await res.json()) as T;
+  }
   startCall(c: m.CallConfig) { return this.call<m.CallStart>('/customer/sessions', c); }
-  say(callId: string, text: string) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, { text }); }
+  say(callId: string, text: string, tone?: m.Tone | null) { return this.call<m.CallReply>(`/customer/sessions/${encodeURIComponent(callId)}/say`, tone ? { text, tone } : { text }); }
   scenarios(advisorId?: string) {
     const query = advisorId ? `?advisor_id=${encodeURIComponent(advisorId)}` : '';
     return this.call<m.Scenario[]>(`/training/scenarios${query}`, undefined, !advisorId);
   }
-  generateScenario(advisorId: string, difficulty?: string) {
-    const level = difficulty === 'Easy' ? 2 : difficulty === 'Hard' ? 4 : 3;
-    return this.call<m.ScenarioDetail>('/scenario-gen/scenarios/generate', {
-      difficulty: level,
-      advisor_id: advisorId,
-    });
+  generateScenario(difficulty: number | null, advisorId?: string) {
+    // English: the customer simulator speaks only English. `enrich`: the local model rewrites the texts when it can, hence the longer wait.
+    return this.call<m.ScenarioDetail>('/scenario-gen/scenarios/generate', { language: 'en', enrich: true, ...(difficulty === null ? {} : { difficulty }), ...(advisorId ? { advisor_id: advisorId } : {}) }, false, undefined, 30_000);
   }
   scenario(id: string) { return this.call<m.ScenarioDetail>(`/scenario-gen/scenarios/${encodeURIComponent(id)}`); }
   scenarioLineage(id: string) { return this.call<m.ScenarioDetail[]>(`/scenario-gen/scenarios/${encodeURIComponent(id)}/lineage`); }
@@ -149,7 +194,7 @@ export class HttpAgentGateway extends MockAgentGateway {
       weaknesses,
       size: 6,
       current_level: 2,
-      languages: ['en'],
+      languages: ['en'],   // what the customer simulator can play
       ...(seed === undefined ? {} : { seed }),
     });
   }

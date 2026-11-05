@@ -108,7 +108,7 @@ export class DeckController {
       personas: Object.entries(PERSONAS).map(([key, v]) => ({ key, label: v.label })),
       difficulties: Object.entries(DIFFICULTIES).map(([key, v]) => ({ key, label: v.label })),
       intents: Object.entries(INTENTS).map(([key, v]) => ({ key, label: v.label })),
-      choices: (Object.keys(MOVES) as MoveKey[]).filter((k) => k !== 'OTHER').map((k) => ({ label: MOVES[k].label, href: next(k) })),
+      choices: (Object.keys(MOVES) as MoveKey[]).filter((k) => k !== 'OTHER' && k !== 'RUDE').map((k) => ({ label: MOVES[k].label, href: next(k) })),
       // the typed-reply form carries the whole call along as hidden fields
       state: {
         persona: call.persona, mix: call.mix ?? '', difficulty: call.difficulty, intent: call.intent, memory: String(call.memory),

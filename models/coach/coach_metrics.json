@@ -2,6 +2,7 @@
   "model": "RandomForestRegressor",
   "features": [
     "accuracy",
+    "communication",
     "compliance",
     "procedure",
     "relevance",
@@ -22,10 +23,10 @@
     "samples": 500,
     "train_samples": 400,
     "test_samples": 100,
-    "mae": 0.0906,
-    "rmse": 0.1401,
-    "r2": 0.7108,
-    "top_skill_accuracy": 0.82,
+    "mae": 0.1379,
+    "rmse": 0.2102,
+    "r2": 0.4789,
+    "top_skill_accuracy": 0.59,
     "implementation": "built-in fallback"
   }
 }

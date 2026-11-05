@@ -290,38 +290,141 @@
         if (!res.ok) { status.textContent = d.error ?? 'Something went wrong.'; return; }
         status.textContent = '';
         byId('r-emotion')!.textContent = d.emotion;
-        byId('r-detail')!.textContent = `${Math.round(d.confidence * 100)}% sure · mood ${d.mood}/100 · ${d.durationSec}s of speech`;
-        const rows = Object.entries<number>(d.probabilities).sort((a, b) => b[1] - a[1]);
-        byId('r-bars')!.replaceChildren(...rows.map(([name, p]) => {
-          const li = make('li'), fill = make('span', { className: 'fill' });
-          fill.style.width = `${Math.round(p * 100)}%`;
-          const track = make('span', { className: 'track' });
-          track.append(fill);
-          li.append(make('span', { textContent: name }), track, make('span', { textContent: `${Math.round(p * 100)}%` }));
-          return li;
-        }));
+        byId('r-detail')!.textContent = `mood ${d.mood}/100 · ${d.durationSec}s of speech`;
         byId('r-timeline')!.replaceChildren(...d.timeline.map((t: { startSec: number; emotion: string }) =>
           make('li', { textContent: `${t.startSec}s ${t.emotion}`, className: ['anger', 'disgust', 'fear', 'sad'].includes(t.emotion) ? 'bad' : '' })));
         // why: which blocks of the recording the model leaned on (occlusion, see models/src/explain.py)
         const why = d.explanation as { target: string; blockSec: number; blocks: { startSec: number; endSec: number; drop: number; rel: number }[]; top: { startSec: number; endSec: number; drop: number }[] } | null;
         byId('r-why-box')!.hidden = !why;
         if (why) {
-          const pts = (x: number) => `${Math.abs(x * 100).toFixed(1)} points`;
           byId('r-why-lead')!.textContent = `Each block is ${why.blockSec} s of the recording. The darker the block, the more it mattered to the answer “${why.target}”.`;
           byId('r-why')!.replaceChildren(...why.blocks.map((b) => {
             const li = make('li', { className: b.drop > 0 ? 'for' : b.drop < 0 ? 'against' : '' }), bar = make('span', { className: 'bar' });
             bar.style.opacity = String(0.25 + 0.75 * Math.abs(b.rel));
-            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}${b.drop ? `, ${pts(b.drop)}` : ''}`);
+            li.setAttribute('aria-label', `${b.startSec} to ${b.endSec} s: ${b.drop > 0 ? 'supports' : b.drop < 0 ? 'argues against' : 'no effect on'} ${why.target}`);
             li.append(bar);
             return li;
           }));
           byId('r-why-end')!.textContent = `${d.durationSec} s`;
           byId('r-why-top')!.textContent = why.top.length
-            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s (${pts(t.drop)} of confidence)`).join(', ')}.`
+            ? `Most influential: ${why.top.map((t) => `${t.startSec} to ${t.endSec} s`).join(', ')}.`
             : 'No single part of the recording stands out.';
         }
         out.hidden = false;
       } catch { status.textContent = 'The app could not be reached. Try again.'; }
+    });
+  }
+
+  // The reasons of a score, one line each with its points (sales offers and churn risk)
+  interface Factor { name: string; points: number; why: string }
+  const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+  const factorList = (factors: Factor[]) => {
+    const ul = make('ul', { className: 'driver-list' });
+    for (const f of factors) {
+      const li = make('li'), body = make('span');
+      body.append(make('strong', { textContent: f.name }), `: ${f.why}`);
+      li.append(make('span', { className: `eff ${f.points >= 0 ? 'pos' : 'neg'}`, textContent: sign(f.points) }), body);
+      ul.append(li);
+    }
+    return ul;
+  };
+
+  // Sales: read a conversation, and record what the customer did with an offer
+  const sales = byId('sales');
+  if (sales) {
+    const csrf = sales.dataset.csrf!;
+    const post = async (path: string, body: object) => {
+      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
+      return data;
+    };
+    interface Offer {
+      offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; counterfactual: string | null; need: { key: string };
+      acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string };
+    }
+    interface Policy { label: string; offers: number; accepted: number; declined: number; rate: number | null; revenue: number }
+    sales.addEventListener('click', async (e) => {
+      const s = hit<HTMLButtonElement>(e, '[data-sample]');
+      if (s) {
+        byId<HTMLTextAreaElement>('sales-text')!.value = s.dataset.sample!;
+        byId<HTMLSelectElement>('sales-customer')!.value = s.dataset.sampleCustomer ?? '';
+        return;
+      }
+      const b = hit<HTMLButtonElement>(e, '[data-outcome]');
+      if (!b) return;
+      const group = b.parentElement!.querySelectorAll<HTMLButtonElement>('[data-outcome]');
+      group.forEach((x) => { x.disabled = true; });
+      try {
+        await post('/sales/outcome', { customerId: b.dataset.customer || null, offerId: b.dataset.offer, outcome: b.dataset.outcome, relevance: Number(b.dataset.relevance), cue: b.dataset.cue, need: b.dataset.need ?? '' });
+        toast(`Recorded: ${b.dataset.outcome}. It counts in the track record.`);
+      } catch (err) { group.forEach((x) => { x.disabled = false; }); toast((err as Error).message); }
+    });
+    byId<HTMLFormElement>('sales-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = byId('sales-status')!, out = byId('sales-result')!, customer = byId<HTMLSelectElement>('sales-customer')!.value;
+      const turns = byId<HTMLTextAreaElement>('sales-text')!.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+        const m = /^([CA])\s*:\s*(.*)$/i.exec(l);
+        return { speaker: m && m[1].toUpperCase() === 'A' ? 'advisor' : 'customer', text: m ? m[2] : l };
+      }).filter((t) => t.text);
+      status.textContent = 'Reading the conversation…';
+      out.hidden = true;
+      try {
+        const d = await post('/sales/detect', { customerId: customer || null, turns });
+        status.textContent = '';
+        const churn = d.churn as { score: number; level: string; factors: Factor[] } | undefined;
+        byId('sales-churn-box')!.hidden = !churn;
+        if (churn) {
+          byId('sales-churn')!.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`;
+          byId('sales-churn-factors')!.replaceChildren(...[...factorList(churn.factors).children]);
+        }
+        const signals = d.signals as { label: string; quote: string; time: string | null; mentions: number; strength: number; source: string }[];
+        byId('sales-signals')!.replaceChildren(...(signals.length ? signals : [null]).map((s) => {
+          const li = make('li'), body = make('span');
+          if (!s) { body.textContent = 'No need found in this conversation.'; li.append(make('span', { className: 'eff', textContent: '–' }), body); return li; }
+          body.append(make('strong', { textContent: s.label }), s.source === 'conversation' ? `: “${s.quote}”${s.time ? ` at ${s.time}` : ''}${s.mentions > 1 ? `, said in ${s.mentions} replies` : ''}` : `: ${s.quote} (from the file)`);
+          li.append(make('span', { className: 'eff pos', textContent: `${Math.round(s.strength * 100)}%` }), body);
+          return li;
+        }));
+        byId('sales-offers')!.replaceChildren(...(d.offers as Offer[]).map((o) => {
+          const li = make('li'), wait = o.timing.cue === 'after_resolution';
+          li.append(make('h4', { textContent: `${o.offer}: ${o.relevance}/100` }), make('p', { className: `timing ${wait ? 'wait' : 'go'}`, textContent: `${wait ? 'Wait: solve the problem first' : 'Good moment to offer'}. ${o.timing.why}` }));
+          if (o.acceptance && o.expected) {
+            li.append(make('p', { className: 'figures', textContent: `Chance of a yes ${Math.round(o.acceptance.probability * 100)}% · worth ${o.expected.ifYes} TND over 12 months if yes · expected ${o.expected.tnd} TND` }));
+          }
+          li.append(factorList(o.factors));
+          if (o.acceptance && o.expected) li.append(make('p', { className: 'muted small', textContent: `Chance of a yes: ${o.acceptance.basis}. Worth: ${o.expected.how}.` }));
+          if (o.counterfactual) li.append(make('p', { className: 'muted small', textContent: o.counterfactual }));
+          const actions = make('div', { className: 'actions' });
+          for (const outcome of ['accepted', 'declined']) {
+            const btn = make('button', { type: 'button', className: outcome === 'accepted' ? 'btn' : 'btn-quiet', textContent: outcome === 'accepted' ? 'Customer accepted' : 'Declined' });
+            Object.assign(btn.dataset, { outcome, customer: d.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key });
+            actions.append(btn);
+          }
+          li.append(actions);
+          return li;
+        }));
+        byId('sales-skipped')!.textContent = d.skipped.length ? `Set aside: ${(d.skipped as { offer: string; why: string }[]).map((s) => `${s.offer} (${s.why})`).join('; ')}.` : '';
+        if (!d.offers.length) byId('sales-offers')!.replaceChildren(make('li', { textContent: `No offer fits. The customer's mood was read as ${d.mood}/100.` }));
+        out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
+    // what a selling rule would earn: send the numbers, redraw the table
+    byId<HTMLFormElement>('sim-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const num = (id: string) => Number(byId<HTMLInputElement>(id)!.value), status = byId('sim-status')!;
+      status.textContent = 'Replaying the history…';
+      try {
+        const d = await post('/sales/simulate', { calls: num('sim-calls'), share: num('sim-share'), minRelevance: num('sim-min'), goodMomentOnly: byId<HTMLInputElement>('sim-good')!.checked });
+        const row = (p: Policy, cls = '') => {
+          const tr = make('tr', cls ? { className: cls } : {});
+          tr.append(make('th', { scope: 'row', textContent: p.label }), ...[p.offers, p.accepted, p.declined, p.rate === null ? '' : `${Math.round(p.rate * 100)}%`, p.revenue].map((v) => make('td', { textContent: String(v) })));
+          return tr;
+        };
+        byId('sim-body')!.replaceChildren(...(d.policies as Policy[]).map((p) => row(p)), row(d.yours as Policy, 'yours'));
+        byId('sim-caption')!.textContent = `One month: ${d.calls} calls, ${d.opportunities} with a chance to offer`;
+        status.textContent = '';
+      } catch (err) { status.textContent = (err as Error).message; }
     });
   }
 
@@ -333,19 +436,66 @@
     const useBtn = byId<HTMLButtonElement>('lv-use')!, sendBtn = $<HTMLButtonElement>('#live-say button[type=submit]')!;
     const voiceOn = byId<HTMLInputElement>('lv-voice');
     if (voiceOn) { voiceOn.checked = store.get('cv-voice') !== 'off'; voiceOn.addEventListener('change', () => { store.set('cv-voice', voiceOn.checked ? 'on' : 'off'); if (!voiceOn.checked) stopSpeaking(); }); }
-    let callId = '', topic = '', personaKey = '';
+    let callId = '', topic = '', personaKey = '', muted = false, running = false;   // muted: no voice while the advisor agent talks by itself
     const post = async (path: string, body: object) => {
       const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       return data;
     };
+    const scenario = live.dataset.scenario ?? '';
     const sayMine = byId<HTMLInputElement>('lv-sayme');
     if (sayMine) { sayMine.checked = store.get('cv-sayme') !== 'off'; sayMine.addEventListener('change', () => store.set('cv-sayme', sayMine.checked ? 'on' : 'off')); }
     const recBtn = byId<HTMLButtonElement>('lv-rec');
     // voice: `after` makes the customer wait until the advisor's own voice has finished; `url` is a recorded voice note
+    // the conversation as the sales agent reads it, and the offer worth keeping in mind
+    let convo: { speaker: string; text: string; mood?: number }[] = [], offerSeq = 0;
+    const offerBox = byId('live-offer')!;
+    const showOffers = async () => {
+      const mine = ++offerSeq;
+      try {
+        const d = await post('/advisor/live/offers', { turns: convo });
+        if (mine !== offerSeq) return;
+        interface Shown { offerId: string; offer: string; price: string; relevance: number; timing: { cue: string; why: string }; factors: Factor[]; need: { key: string };
+          acceptance?: { probability: number; basis: string } | null; expected?: { ifYes: number; tnd: number | null; how: string } }
+        const offers = d.offers as Shown[], churn = d.churn as { score: number; level: string } | undefined;
+        const risk = byId('lv-o-risk')!;
+        risk.hidden = !churn;
+        if (churn) { risk.textContent = `Risk of losing this customer: ${churn.score} · ${churn.level}`; risk.className = `risk ${churn.level.toLowerCase()}`; }
+        const heard = (d.signals as { label: string; source: string }[]).filter((s) => s.source === 'conversation').map((s) => s.label);
+        byId('lv-o-heard')!.textContent = heard.length ? `Heard: ${heard.join(', ')}.` : '';
+        byId('lv-o-top')!.hidden = !offers.length;
+        byId('lv-o-none')!.hidden = !!offers.length;
+        if (offers.length) {
+          const o = offers[0], wait = o.timing.cue === 'after_resolution';
+          byId('lv-o-name')!.textContent = `${o.offer} (${o.relevance}/100)${o.price ? ` · ${o.price}` : ''}`;
+          const timing = byId('lv-o-timing')!;
+          timing.className = `timing ${wait ? 'wait' : 'go'}`;
+          timing.replaceChildren(make('strong', { textContent: wait ? 'Wait: solve the problem first.' : 'Good moment to offer.' }), ` ${o.timing.why}`);
+          byId('lv-o-figures')!.textContent = o.acceptance && o.expected ? `Chance of a yes ${Math.round(o.acceptance.probability * 100)}% · worth ${o.expected.ifYes} TND over 12 months if yes · expected ${o.expected.tnd} TND` : '';
+          byId('lv-o-why')!.replaceChildren(factorList(o.factors), ...(o.acceptance && o.expected ? [make('p', { className: 'muted small', textContent: `Chance of a yes: ${o.acceptance.basis}. Worth: ${o.expected.how}.` })] : []));
+          const actions = byId('lv-o-actions')!;
+          actions.querySelectorAll<HTMLButtonElement>('[data-outcome]').forEach((b) => {
+            b.disabled = false;
+            Object.assign(b.dataset, { customer: d.customerId ?? '', offer: o.offerId, relevance: String(o.relevance), cue: o.timing.cue, need: o.need.key });
+          });
+        }
+        offerBox.hidden = false;
+      } catch { if (mine === offerSeq) offerBox.hidden = true; }   // demo mode or no agents: the panel simply stays away
+    };
+    byId('lv-o-actions')!.addEventListener('click', async (e) => {
+      const b = hit<HTMLButtonElement>(e, '[data-outcome]');
+      if (!b) return;
+      const group = b.parentElement!.querySelectorAll<HTMLButtonElement>('[data-outcome]');
+      group.forEach((x) => { x.disabled = true; });
+      try {
+        await post('/sales/outcome', { customerId: b.dataset.customer || null, offerId: b.dataset.offer, outcome: b.dataset.outcome, relevance: Number(b.dataset.relevance), cue: b.dataset.cue, need: b.dataset.need ?? '' });
+        toast(`Recorded: ${b.dataset.outcome}. It counts in the track record.`);
+      } catch (err) { group.forEach((x) => { x.disabled = false; }); toast((err as Error).message); }
+    });
     const say = (who: string, msg: string, extra = '', mood = 50, voice?: { url?: string; after?: Promise<unknown> }) => {
-      if (who === 'client' && voiceOn?.checked) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
+      convo.push(who === 'client' ? { speaker: 'customer', text: msg, mood } : { speaker: 'advisor', text: msg });
+      if (who === 'client' && voiceOn?.checked && !muted) void (voice?.after ?? Promise.resolve()).then(() => speak(msg, 'customer', mood, personaKey));
       const li = make('li', { className: `live-msg ${who}` });
       li.append(make('strong', { textContent: who === 'client' ? 'Customer' : voice?.url ? 'You (voice note)' : 'You' }), make('span', { textContent: msg }));
       if (who === 'advisor' && voice?.url) {
@@ -370,43 +520,96 @@
       useBtn.disabled = !s;
       if (!s) return;
       byId('lv-s-text')!.textContent = s.text;
-      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'} · match ${s.confidence}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
+      byId('lv-s-meta')!.textContent = `Sources: ${s.sources.join(', ') || 'none'}${s.intents?.length ? ` · intents: ${s.intents.join(', ')}` : ''}`;
       const w = byId('lv-s-warn')!;
       w.hidden = !s.policyWarning;
       w.textContent = s.policyWarning ?? '';
     };
-    byId('live-setup')!.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    const startCall = async (): Promise<boolean> => {
       status.textContent = 'Calling the customer…';
+      byId('live-summary')!.hidden = true;
       try {
-        const d = await post('/advisor/live/start', { persona: sel('lv-persona'), intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
-        callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true;
+        const d = await post('/advisor/live/start', { scenario, persona: sel('lv-persona'), mix: byId<HTMLInputElement>('lv-mix')?.value || null, intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
+        callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true; useBtn.disabled = false;
+        convo = []; offerBox.hidden = true;
         say('client', d.opening, d.persona, d.mood);
+        void showOffers();
         meters(d.mood, d.patience); suggest(d.suggestion);
         sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; text.value = ''; call.hidden = false; status.textContent = ''; text.focus();
-      } catch (err) { status.textContent = (err as Error).message; }
-    });
+        return true;
+      } catch (err) { status.textContent = (err as Error).message; return false; }
+    };
+    byId('live-setup')!.addEventListener('submit', (e) => { e.preventDefault(); void startCall(); });
     useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
     // one way to answer the customer, whether the words were typed or came from a voice note
-    const sendAdvisor = async (msg: string, voiceUrl?: string) => {
-      if (!msg || !callId) return;
+    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null, note = ''): Promise<{ ended: boolean; outcome: { verdict: string } | null; mood: number } | null> => {
+      if (!msg || !callId) return null;
       sendBtn.disabled = true; if (recBtn) recBtn.disabled = true;
       // a typed reply can be said out loud in the advisor's voice; the customer then answers after it
-      const spoken = !voiceUrl && sayMine?.checked ? speak(msg, 'advisor') : undefined;
-      say('advisor', msg, '', 50, { url: voiceUrl });
+      const spoken = !voiceUrl && sayMine?.checked && !muted ? speak(msg, 'advisor') : undefined;
+      const heard: Record<string, string> = { anger: 'angry', disgust: 'disgusted', fear: 'worried', happy: 'happy', neutral: 'calm', sad: 'sad' };
+      say('advisor', msg, tone ? `Your voice sounded ${heard[tone.emotion] ?? tone.emotion}` : note, 50, { url: voiceUrl });
       text.value = '';
       try {
-        const d = await post('/advisor/live/say', { id: callId, text: msg, topic });
-        if (d.client) say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken });
+        const d = await post('/advisor/live/say', { id: callId, text: msg, topic, tone: tone ?? null });
+        if (d.client) { say('client', d.client, d.moveLabel ? `She read this as: ${d.moveLabel}` : '', d.mood, { after: spoken }); void showOffers(); }
         meters(d.mood, d.patience); suggest(d.suggestion);
         if (d.ended) {
           const o = d.outcome, box = byId('live-outcome')!;
           box.textContent = `${o.verdict} Churn risk ${o.churnRisk}%. ${o.notes.join(' ')}`;
           box.hidden = false; useBtn.disabled = true;
         } else { sendBtn.disabled = false; if (recBtn) recBtn.disabled = false; }
-      } catch (err) { status.textContent = (err as Error).message; }
+        return d;
+      } catch (err) { status.textContent = (err as Error).message; return null; }
     };
     byId('live-say')!.addEventListener('submit', (e) => { e.preventDefault(); void sendAdvisor(text.value.trim()); });
+
+    // the advisor agent talks by itself: it reads the call, chooses its next step and has its words checked, then the call is scored and the other agents have their say
+    const autoBtns = $$<HTMLButtonElement>('[data-auto]');
+    const sleep = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
+    const summarise = async (steps: string[], engines: string[], style: string, last: { outcome: { verdict: string } | null; mood: number } | null) => {
+      const box = byId('live-summary')!, list = byId('lv-sum-list')!;
+      list.replaceChildren();
+      const add = (who: string, words: string) => { const li = make('li'); li.append(make('strong', { textContent: who }), ` ${words}`); list.append(li); };
+      add('Customer simulator:', last?.outcome ? `${last.outcome.verdict} Her mood at the end: ${last.mood}/100.` : 'the call is still open.');
+      const written = engines.filter((e) => e.startsWith('local model')).length;
+      add('Advisor agent:', `${steps.length} replies by itself (${steps.join(', ')}), ${style === 'rushed' ? 'in the rushed style, to show what goes wrong' : `${written} written by the local model and checked by the quality rules, ${steps.length - written} in fixed wording`}.`);
+      add('Sales agent:', byId('lv-o-top')!.hidden ? 'no offer fits this call.' : `${byId('lv-o-name')!.textContent}. ${byId('lv-o-timing')!.textContent}`);
+      box.hidden = false;
+      box.scrollIntoView({ block: 'nearest' });
+      try {
+        const r = await post('/advisor/live/review', { id: callId, auto: true });
+        add('Quality analyst:', `${r.callId} scored ${r.overall}/100. What lowered it: ${r.hurt.length ? r.hurt.join('; ') : 'nothing'}. What went well: ${r.helped.length ? r.helped.join('; ') : 'nothing recorded'}.`);
+        const bad = r.hungUp || r.unresolved || (last?.mood ?? 100) <= 25;
+        add('Complaint agent:', bad ? 'the call ended badly (the customer hung up, left upset or nothing was agreed), so it is listed under Complaints, calls that may be complaints.' : 'no complaint expected: the customer was not left upset.');
+      } catch (err) { add('Quality analyst:', (err as Error).message); }
+    };
+    const runAuto = async (style: 'careful' | 'rushed') => {
+      if (running) return;
+      running = true; muted = true; stopSpeaking();
+      autoBtns.forEach((b) => { b.disabled = true; });
+      try {
+        if (!(await startCall())) return;
+        await sleep(900);
+        const steps: string[] = [], engines: string[] = [];
+        let last: Awaited<ReturnType<typeof sendAdvisor>> = null;
+        for (let turn = 0; turn < 6; turn++) {
+          status.textContent = `The advisor agent is reading the call and answering (reply ${turn + 1})…`;
+          const r = await post('/advisor/live/auto', { topic, turn, style, turns: convo, steps, scenario });
+          steps.push(r.step); engines.push(r.engine ?? '');
+          last = await sendAdvisor(r.text, undefined, null, [r.why, r.engine, ...(r.checks ?? [])].filter(Boolean).join(' · '));
+          if (!last || last.ended) break;
+          await sleep(1100);
+        }
+        status.textContent = '';
+        await summarise(steps, engines, style, last);
+      } catch (err) { status.textContent = (err as Error).message; }
+      finally { muted = false; running = false; autoBtns.forEach((b) => { b.disabled = false; }); }
+    };
+    autoBtns.forEach((b) => b.addEventListener('click', () => void runAuto(b.dataset.auto === 'rushed' ? 'rushed' : 'careful')));
+    const begin = live.dataset.autostart;
+    if (begin === 'careful' || begin === 'rushed') void runAuto(begin);
+    else if (begin === 'start') void startCall();
 
     // send the call to the quality queue (the quality analyst scores it from the transcript)
     const reviewBtn = byId<HTMLButtonElement>('lv-review');
@@ -415,8 +618,8 @@
       reviewBtn.disabled = true;
       status.textContent = 'The quality analyst is reading the call…';
       try {
-        const d = await post('/advisor/live/review', { id: callId });
-        status.textContent = `Sent: ${d.callId} scored ${d.overall}/100. Nour sees it in Quality reviews.`;
+        const d = await post('/advisor/live/review', { id: callId, scenario });
+        status.textContent = d.practice ? `Practice saved: ${d.callId} scored ${d.overall}/100. ${d.practice.advice}` : `Sent: ${d.callId} scored ${d.overall}/100. Nour sees it in Quality reviews.`;
       } catch (err) { status.textContent = (err as Error).message; }
       reviewBtn.disabled = false;
     });
@@ -465,7 +668,7 @@
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error ?? 'Could not read the voice note.');
             status.textContent = '';
-            await sendAdvisor(data.text, URL.createObjectURL(recording));
+            await sendAdvisor(data.text, URL.createObjectURL(recording), data.tone);
           } catch (err) {
             status.textContent = (err as Error).message;
             sendBtn.disabled = false; recBtn.disabled = false;
@@ -492,97 +695,10 @@
     byId('no-ideas')!.hidden = !!document.querySelector('.idea:not([hidden])');
   }));
 
-  // Training: scenario builder, replay and what-if (demo data; the Training agent would supply these)
+  // Training: choosing another advisor reloads the coach plan
   const advisorPicker = byId<HTMLSelectElement>('advisor');
   if (advisorPicker) advisorPicker.addEventListener('change', () => advisorPicker.form?.submit());
-  const builderDifficulty = byId<HTMLSelectElement>('gen-diff');
-  const builderDifficultyValue = byId<HTMLInputElement>('gen-diff-value');
-  if (builderDifficulty && builderDifficultyValue) builderDifficulty.addEventListener('change', () => {
-    builderDifficultyValue.value = builderDifficulty.value || 'Medium';
-  });
 
-  const deck = byId('scenarios');
-  if (deck && !byId('builder-form')) {
-    interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
-    interface Variant { title: string; profile: string; difficulty: string }
-    const customers: [string, string][] = [['New', 'a new subscriber'], ['Premium', 'a premium client'],
-      ['Unsatisfied', 'a long-time client who is unhappy'], ['Anxious', 'an anxious first-time caller']];
-    const problems = ['is charged twice on the monthly bill', 'cannot use the roaming bundle abroad', 'wants to cancel and disputes the fee',
-      'sees data limits that do not match the plan', 'was transferred twice and lost the context'];
-    const goals = ['wants an immediate refund', 'wants a written confirmation', 'wants a lower price on the same plan', 'asks for a supervisor'];
-    const levels = ['Easy', 'Medium', 'Hard'];
-    const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
-    const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-
-    const card = (s: Scenario) => {
-      const li = make('li', { className: 'scn fresh' });
-      Object.assign(li.dataset, { id: s.id, title: s.title, profile: s.profile, difficulty: s.difficulty });
-      const top = li.appendChild(make('div', { className: 'scn-top' }));
-      top.append(make('span', { className: 'case-id', textContent: s.id }));
-      const diff = top.appendChild(make('span', { className: 'diff', role: 'img', ariaLabel: `Difficulty ${s.difficulty}` }));
-      for (let k = 0; k < 3; k++) diff.append(make('i', { className: k <= levels.indexOf(s.difficulty) ? 'on' : '' }));
-      li.append(make('h3', { textContent: s.title }));
-      const chips = li.appendChild(make('p', { className: 'chips' }));
-      [s.profile, s.difficulty].forEach((t) => chips.append(make('span', { className: 'chip', textContent: t })));
-      li.append(make('p', { className: 'origin muted small', textContent: s.origin }));
-      const act = li.appendChild(make('div', { className: 'actions' }));
-      const replay = make('button', { type: 'button', className: 'btn', textContent: 'Replay' });
-      replay.dataset.act = 'replay';
-      const whatIf = make('button', { type: 'button', className: 'btn-line', textContent: 'What-if' });
-      whatIf.dataset.act = 'whatif';
-      act.append(replay, whatIf);
-      return li;
-    };
-
-    byId('generate')!.addEventListener('click', () => {
-      const [profile, who] = pick(customers);
-      const wanted = byId<HTMLSelectElement>('gen-diff')!.value;
-      const n = Math.max(0, ...([...deck.children] as HTMLElement[]).map((c) => parseInt((c.dataset.id ?? '').replace(/\D/g, ''), 10) || 0)) + 1;
-      const s: Scenario = { id: `SC-${n}`, profile, difficulty: wanted || pick(levels), origin: 'Template library',
-        title: cap(`${who} ${pick(problems)} and ${pick(goals)}`) };
-      deck.prepend(card(s));
-      toast(`Generated ${s.id}`);
-    });
-
-    deck.addEventListener('click', (e) => {
-      const btn = hit(e, '[data-act]');
-      if (!btn) return;
-      const li = btn.closest<HTMLElement>('.scn')!;
-      const { id, title, profile, difficulty } = li.dataset as Record<string, string>;
-      if (btn.dataset.act === 'replay') { toast(`Replaying ${id}: same client, same events`); return; }
-
-      // what-if: change exactly one parameter, then compare
-      const kind = pick(['difficulty', 'profile', 'event']);
-      const after: Variant = { title, profile, difficulty };
-      let note: string;
-      if (kind === 'difficulty') {
-        const i = levels.indexOf(difficulty);
-        after.difficulty = levels[i === 2 ? 1 : i + 1];
-        note = `Difficulty ${difficulty} to ${after.difficulty}. Same client and problem, so any change in handling is down to the pressure.`;
-      } else if (kind === 'profile') {
-        after.profile = pick(customers.map((c) => c[0]).filter((p) => p !== profile));
-        note = `Client profile ${profile} to ${after.profile}. Same problem, a different personality.`;
-      } else {
-        after.title = `${title} The client is calling for the third time.`;
-        note = 'Added one event: a repeat contact. Compare how memory changes the call.';
-      }
-      const show = (box: HTMLElement, v: Variant, changed: string | null) => {
-        box.replaceChildren();
-        box.append(`${v.title} `);
-        [['profile', v.profile], ['difficulty', v.difficulty]].forEach(([k, val], idx) => {
-          if (idx) box.append(' · ');
-          const el = changed === k ? document.createElement('mark') : document.createElement('span');
-          el.textContent = `${k}: ${val}`; box.append(el);
-        });
-      };
-      show(byId('wi-before')!, { title, profile, difficulty }, null);
-      show(byId('wi-after')!, after, kind);
-      byId('wi-note')!.textContent = note;
-      const panel = byId('whatif')!;
-      panel.hidden = false;
-      panel.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
-    });
-  }
 
   // Workforce: scrub through the day. Moves a marker on the chart and highlights the hour in the heat strip.
   // Wait and SLA are estimates from the mock model (240 s and 71% at the 72 calls/h peak).
@@ -893,6 +1009,45 @@
     };
     byId('history-clear')!.addEventListener('click', () => { calls = []; store.set('cv-calls', '[]'); draw(); toast('History cleared'); });
     draw();
+  }
+
+  // Complaints: read a complaint without saving it (the real complaint agent), then open it as a case with the form's other button
+  const triForm = byId<HTMLFormElement>('tri-form');
+  if (triForm) {
+    const csrf = triForm.dataset.csrf!;
+    document.addEventListener('click', (e) => {
+      const sample = hit<HTMLButtonElement>(e, '[data-tri-sample]');
+      if (!sample) return;
+      byId<HTMLTextAreaElement>('tri-text')!.value = sample.dataset.triSample!;
+      byId<HTMLSelectElement>('tri-customer')!.value = sample.dataset.triCustomer ?? '';
+    });
+    byId('tri-read')!.addEventListener('click', async () => {
+      const status = byId('tri-status')!, out = byId('tri-result')!, text = byId<HTMLTextAreaElement>('tri-text')!.value.trim(), customer = byId<HTMLSelectElement>('tri-customer')!.value;
+      if (text.length < 10) { status.textContent = 'Write the complaint in at least a sentence.'; return; }
+      status.textContent = 'Reading the complaint…';
+      out.hidden = true;
+      try {
+        const res = await fetch('/complaints/triage', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ text, customerId: customer || null }) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error ?? 'Something went wrong.');
+        status.textContent = '';
+        byId('tri-cluster')!.textContent = d.cluster;
+        const level = byId('tri-level')!;
+        level.textContent = `${d.severity} · escalation risk ${d.escalationRisk}`;
+        level.className = `risk ${d.severity === 'Critical' || d.severity === 'High' ? 'high' : d.severity === 'Medium' ? 'medium' : 'low'}`;
+        byId('tri-deadline')!.textContent = `Deadline ${d.deadline.slaHours} h${d.warning ? `. Early warning: ${d.warning.why}.` : ''}`;
+        byId('tri-sev-h')!.textContent = `How serious: ${d.severityScore}/100`;
+        byId('tri-risk-h')!.textContent = `How likely to escalate: ${d.escalationRisk}/100`;
+        byId('tri-sev')!.replaceChildren(...(d.severityFactors.length ? [...factorList(d.severityFactors).children] : [make('li', { textContent: 'Nothing at stake that the agent can see.' })]));
+        byId('tri-risk')!.replaceChildren(...[...factorList(d.riskFactors).children]);
+        byId('tri-actions')!.replaceChildren(...(d.actions as { action: string; why: string; who: string }[]).map((a) => {
+          const li = make('li');
+          li.append(make('strong', { textContent: a.action }), ` ${a.why}. ${a.who}.`);
+          return li;
+        }));
+        out.hidden = false;
+      } catch (err) { status.textContent = (err as Error).message; }
+    });
   }
 
   // Complaints: drag a card to another lane, or press Escalate to move it up one

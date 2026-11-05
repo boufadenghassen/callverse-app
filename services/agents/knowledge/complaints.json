@@ -1,0 +1,45 @@
+{
+  "_note": "Invented rules for the complaint agent (Amine). Levels decide the deadline (hours) a case must be answered in. Clusters are the root causes a complaint is filed under: `rx` finds them in the customer's words, `cause` is the kind of root cause (the same families as the quality analyst), `actions` is what the team usually does first.",
+  "levels": {
+    "Critical": {"min": 50, "sla_hours": 12},
+    "High": {"min": 30, "sla_hours": 24},
+    "Medium": {"min": 15, "sla_hours": 48},
+    "Low": {"min": 0, "sla_hours": 72}
+  },
+  "follow_up_hours": 72,
+  "resolutions": {
+    "refunded": "Refund or credit given",
+    "fixed": "Fault fixed",
+    "explained": "Explained and the customer accepted",
+    "goodwill": "Goodwill gesture",
+    "supervisor": "Handled by a supervisor",
+    "no_action": "Nothing could be done"
+  },
+  "clusters": {
+    "billing_duplicate": {"label": "Billing duplicates", "cause": "Process", "team": "Billing", "rx": "(charged|billed|debited|paid) (me )?(twice|two times|double)|double (charge|billing|payment)|duplicate (charge|payment|bill|invoice)|twice on my (bill|invoice|statement)",
+      "action": "Check the billing history, refund the duplicate and confirm it in writing.", "resolutions": ["refunded", "explained"]},
+    "billing_amount": {"label": "Bill amount disputed", "cause": "Knowledge gap", "team": "Billing", "rx": "(bill|invoice) (is|was) (too high|wrong|incorrect|higher)|overcharg|wrong amount|price (increase|went up)|not what (i|we) agreed|i never (agreed|asked)",
+      "action": "Go through the bill line by line with the customer and correct what is wrong.", "resolutions": ["explained", "refunded", "goodwill"]},
+    "roaming": {"label": "Roaming activation", "cause": "Tools", "team": "Roaming", "rx": "roaming|abroad|overseas|no signal (in|when)|bundle (did not|didn't|does not|doesn't|not) (work|activate|apply)",
+      "action": "Check the roaming activation, credit the days lost and make sure the pass is active.", "resolutions": ["refunded", "fixed", "goodwill"]},
+    "contract_terms": {"label": "Contract terms and fees", "cause": "Policy", "team": "Retention", "rx": "(cancellation|termination|exit|early) fee|commitment|contract (term|period)|locked in|penalty",
+      "action": "Explain the contract terms, check if a waiver applies and offer a retention option.", "resolutions": ["explained", "goodwill", "supervisor"]},
+    "network": {"label": "Network and service quality", "cause": "Network", "team": "Technical", "rx": "(internet|data|connection|network|wifi) (has been |is |was |keeps |kept )?(very )?(slow|down|unstable|cutting out|dropping)|slow (internet|data|connection)|no (signal|network|coverage|service)|dropped calls?|cuts? (out|off)|outage|down for|coverage|keeps disconnecting",
+      "action": "Open a technical ticket for the area, give a date for the fix and offer a credit for the lost service.", "resolutions": ["fixed", "refunded", "goodwill"]},
+    "data_usage": {"label": "Data usage", "cause": "Knowledge gap", "team": "Care", "rx": "data (finished|ran out|is gone|limit|usage)|ran out of data|consumed (all )?my data|used (all )?my data|usage (is|was) wrong",
+      "action": "Check the real usage with the customer and explain how the allowance works.", "resolutions": ["explained", "goodwill"]},
+    "repeat_contact": {"label": "Repeat contact, nothing solved", "cause": "Process", "team": "Care", "rx": "(second|third|fourth|2nd|3rd|4th|fifth) (time|contact|call)|again and again|still (not|no)|nobody (called|got back)|no one (called|got back)|promised (me )?a call ?back|never called back",
+      "action": "Give the case one owner, call the customer back and do not transfer again.", "resolutions": ["supervisor", "fixed", "goodwill"]},
+    "conduct": {"label": "Advisor conduct", "cause": "Soft skills", "team": "Quality", "rx": "\\brude\\b|shouted|hung up on me|insult|disrespect|transferred (me )?(again|twice|three)|nobody (helped|listened)|did not listen|didn't listen",
+      "action": "Apologise, review the call with the quality analyst and coach the advisor.", "resolutions": ["goodwill", "supervisor", "explained"]},
+    "device": {"label": "Device or SIM", "cause": "Tools", "team": "Logistics", "rx": "\\b(phone|sim|handset|delivery|delivered|replacement|parcel)\\b",
+      "action": "Check the order or the replacement and give a delivery date.", "resolutions": ["fixed", "refunded", "goodwill"]}
+  },
+  "signals": {
+    "legal": "\\b(lawyer|solicitor|legal action|sue|court|consumer (protection|association|rights)|regulator|ministry|ombudsman|official complaint)\\b",
+    "public": "\\b(post (it |this |that )?(online|everywhere)|social media|facebook|twitter|tweet|instagram|tiktok|review (site|online)|tell everyone|go public|the press|the media|journalist)\\b",
+    "affected": "\\b(everyone|all (my|the) (colleagues|neighbours|neighbors|family|employees)|whole (building|street|office|area|neighbourhood)|many (customers|people)|hundreds of)\\b",
+    "repeat": "(second|third|fourth|fifth|2nd|3rd|4th|5th) (time|contact|call)|again and again|still (not|no)|nobody (called|got back)|no one (called|got back)|promised (me )?a call ?back|never called back|for (weeks|months|days)",
+    "tone": "\\b(furious|unacceptable|outrageous|disgusting|ridiculous|scandal|scandalous|fed up|sick of|fraud|scam|thieves|useless|worst)\\b"
+  }
+}

@@ -31,6 +31,30 @@
   [
    "Let me verify the eligibility rules.",
    "CHECK_POLICY"
+  ],
+  [
+   "WHAT ARE YOU DOING!!!",
+   "RUDE"
+  ],
+  [
+   "Don't be stupid.",
+   "RUDE"
+  ],
+  [
+   "Why did you put $2,000?",
+   "OTHER"
+  ],
+  [
+   "Good morning, how can I help?",
+   "OTHER"
+  ],
+  [
+   "Is this about 45 TND?",
+   "OTHER"
+  ],
+  [
+   "shut up and listen",
+   "RUDE"
   ]
  ],
  "cases": [
@@ -164,7 +188,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Alright... go on. Can we speed this up?",
+     "client": "Hello. So, about my cancellation? Can we speed this up?",
      "mood": 56,
      "patience": 47
     },
@@ -232,7 +256,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Alright... go on. I hope I'm explaining this properly.",
+     "client": "Hi. Can you help me with my bill? I hope I'm explaining this properly.",
      "mood": 42,
      "patience": 76
     },
@@ -309,7 +333,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Hm, okay. And then? I hope I'm explaining this properly.",
+     "client": "Hello. So, about my roaming bundle? I hope I'm explaining this properly.",
      "mood": 48,
      "patience": 54
     },
@@ -395,7 +419,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Alright... go on. I hope I'm explaining this properly.",
+     "client": "Hi. Can you help me with my cancellation? I hope I'm explaining this properly.",
      "mood": 49,
      "patience": 31
     },
@@ -480,7 +504,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "I'm not sure I follow. Can you be more specific?",
+     "client": "Hello. So, about my bill?",
      "mood": 30,
      "patience": 27
     },
@@ -674,7 +698,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Alright, I see. Please continue. This is why I stayed with you.",
+     "client": "Hello! Thank you for taking my call. It is about my roaming bundle. This is why I stayed with you.",
      "mood": 61,
      "patience": 57
     },
@@ -742,7 +766,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Hm, okay. And then? I would hate to leave after all this time.",
+     "client": "Hi. Can you help me with my cancellation? I would hate to leave after all this time.",
      "mood": 39,
      "patience": 15
     },
@@ -819,7 +843,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Mm-hm, go ahead.",
+     "client": "Hello! Thank you for taking my call. It is about my bill.",
      "mood": 65,
      "patience": 77
     },
@@ -905,7 +929,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "Mm-hm, go ahead.",
+     "client": "Hi there. I am calling about my roaming bundle.",
      "mood": 71,
      "patience": 67
     },
@@ -990,7 +1014,7 @@
     {
      "move": "OTHER",
      "said": "Hello, how are you today?",
-     "client": "I'm not sure I follow. Can you be more specific?",
+     "client": "Hello. So, about my cancellation?",
      "mood": 51,
      "patience": 30
     },
@@ -1011,6 +1035,161 @@
      "Customer effort: the client had to repeat or be transferred 2 time(s).",
      "Memory ignored: the history was on file but the client was asked to repeat.",
      "The call ended without a written follow-up."
+    ]
+   }
+  },
+  {
+   "persona": "IMPATIENT",
+   "mix": null,
+   "difficulty": "MEDIUM",
+   "intent": "BILLING",
+   "memory": false,
+   "said": [
+    "Hello, how are you today?",
+    "Why did you put $2,000?",
+    "WHAT ARE YOU DOING!!!",
+    "Can you give me your name?"
+   ],
+   "moves": [
+    "OTHER",
+    "OTHER",
+    "RUDE",
+    "OTHER"
+   ],
+   "opening": "I was charged twice on my September bill.",
+   "turns": [
+    {
+     "move": "OTHER",
+     "said": "Hello, how are you today?",
+     "client": "Hello. So, about my bill?",
+     "mood": 56,
+     "patience": 62
+    },
+    {
+     "move": "OTHER",
+     "said": "Why did you put $2,000?",
+     "client": "Sorry, $2,000? I don't think that is the amount I'm asking about. Can we speed this up?",
+     "mood": 57,
+     "patience": 59
+    },
+    {
+     "move": "RUDE",
+     "said": "WHAT ARE YOU DOING!!!",
+     "client": "I would like you to speak to me politely, please. Can we speed this up?",
+     "mood": 39,
+     "patience": 34
+    },
+    {
+     "move": "OTHER",
+     "said": "Can you give me your name?",
+     "client": "I'm not sure what you mean. Can we go back to my bill? Can we speed this up?",
+     "mood": 40,
+     "patience": 31
+    }
+   ],
+   "outcome": null
+  },
+  {
+   "persona": "ANGRY_PREMIUM",
+   "mix": null,
+   "difficulty": "HARD",
+   "intent": "ROAMING",
+   "memory": true,
+   "said": [
+    "Don't be stupid.",
+    "I SAID NOW!!!",
+    "I'm sorry."
+   ],
+   "moves": [
+    "RUDE",
+    "RUDE",
+    "EMPATHY"
+   ],
+   "opening": "My roaming bundle did not work abroad. This is the third time I call about it.",
+   "turns": [
+    {
+     "move": "RUDE",
+     "said": "Don't be stupid.",
+     "client": "This is pointless. I am hanging up.",
+     "mood": 10,
+     "patience": 0
+    }
+   ],
+   "outcome": {
+    "verdict": "The client hung up.",
+    "expectationMet": false,
+    "churnRisk": 100,
+    "effort": 0,
+    "notes": [
+     "Conduct: the advisor raised their voice or was rude to the client."
+    ]
+   }
+  },
+  {
+   "persona": "ANXIOUS",
+   "mix": null,
+   "difficulty": "EASY",
+   "intent": "CANCELLATION",
+   "memory": false,
+   "said": [
+    "Is this about 45 TND?",
+    "shut up and listen",
+    "I understand, sorry.",
+    "Let me check the policy.",
+    "I will email you a confirmation."
+   ],
+   "moves": [
+    "OTHER",
+    "RUDE",
+    "EMPATHY",
+    "CHECK_POLICY",
+    "FOLLOW_UP"
+   ],
+   "opening": "I want to cancel, and this fee makes no sense.",
+   "turns": [
+    {
+     "move": "OTHER",
+     "said": "Is this about 45 TND?",
+     "client": "Sorry, 45 TND? I don't think that is the amount I'm asking about. I hope I'm explaining this properly.",
+     "mood": 51,
+     "patience": 87
+    },
+    {
+     "move": "RUDE",
+     "said": "shut up and listen",
+     "client": "Was that really necessary? I only want this fixed. I hope I'm explaining this properly.",
+     "mood": 38,
+     "patience": 72
+    },
+    {
+     "move": "EMPATHY",
+     "said": "I understand, sorry.",
+     "client": "Okay, I'm listening.",
+     "mood": 50,
+     "patience": 76
+    },
+    {
+     "move": "CHECK_POLICY",
+     "said": "Let me check the policy.",
+     "client": "Fine, take your time but don't forget me. I hope I'm explaining this properly.",
+     "mood": 52,
+     "patience": 72
+    },
+    {
+     "move": "FOLLOW_UP",
+     "said": "I will email you a confirmation.",
+     "client": "Wonderful, that's exactly what I hoped for. Thank you for being patient with me.",
+     "mood": 66,
+     "patience": 78
+    }
+   ],
+   "outcome": {
+    "verdict": "Closed, but trust is shaky.",
+    "expectationMet": false,
+    "churnRisk": 46,
+    "effort": 0,
+    "notes": [
+     "Conduct: the advisor raised their voice or was rude to the client."
     ]
    }
   }

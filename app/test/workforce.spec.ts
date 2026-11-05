@@ -121,7 +121,7 @@ test('the Coach generates scenarios only for the selected advisor and replays th
   const before = await coach.get('/training?advisor=Karim%20B.').expect(200);
   assert.doesNotMatch(before.text, /Generate targeted scenarios/);
 
-  const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Hard' });
+  const generated = await post(coach, '/training/generate', '/training', { difficulty: 'Hard', advisor: 'Hela M.' });
   assert.equal(generated.status, 302);
   const generatedPath = generated.headers.location as string;
   assert.match(generatedPath, /training\/scenarios\//);
@@ -147,9 +147,9 @@ test('the Coach renders one scenario list and keeps generation and replay routes
   assert.equal((before.text.match(/id="targeted-simulations"/g) ?? []).length, 1);
   assert.equal((before.text.match(/id="scenarios"/g) ?? []).length, 0);
   assert.doesNotMatch(before.text, /Generate targeted scenarios/);
-  assert.match(before.text, /action="\/training\/scenarios\/generate\?advisor=Hela%20M\."/);
+  assert.match(before.text, /action="\/training\/generate"/);
 
-  const generated = await post(coach, '/training/scenarios/generate?advisor=Hela%20M.', '/training', { difficulty: 'Medium' });
+  const generated = await post(coach, '/training/generate', '/training', { difficulty: 'Medium', advisor: 'Hela M.' });
   assert.equal(generated.status, 302);
   const generatedPath = generated.headers.location as string;
   const scenarioId = generatedPath.match(/\/training\/scenarios\/([^?]+)/)?.[1];

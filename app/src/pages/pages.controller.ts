@@ -4,6 +4,7 @@ import { AgentGateway } from '../agents/agent.gateway';
 import { Roles } from '../auth/access.guard';
 import { lineChart } from './charts';
 import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
+import { simSettings, SimSettings } from './scenario-sim';
 
 const CHART_W = 640, CHART_H = 280;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -35,14 +36,24 @@ export class PagesController {
 
   // ---- Karim: advisor console ----------------------------------------------------------------
 
-  @Roles('ADVISOR') @Get('advisor') @Render('advisor')
-  async advisor(@Query('customer') customerParam?: string, @Query('q') qParam?: string) {
+  @Roles('ADVISOR', 'TRAINER') @Get('advisor') @Render('advisor')
+  async advisor(@Query('customer') customerParam?: string, @Query('q') qParam?: string, @Query('scenario') scenarioParam?: string, @Query('auto') auto?: string, @Query('start') start?: string) {
     const customerId = customerParam || 'YT-1042', raw = qParam || 'double charge on monthly bill';
     if (typeof customerId !== 'string' || !/^[A-Z]{2}-\d{4}$/.test(customerId)) throw new BadRequestException('Invalid customer id');
     if (typeof raw !== 'string' || raw.length < 3 || raw.length > 200) throw new BadRequestException('Search must be 3 to 200 characters');
     const query = raw.replace(/\p{Cc}/gu, ' ').trim();
-    const [customer, answer] = await Promise.all([this.agents.customerContext(customerId), this.agents.suggestAnswer(customerId, query)]);
-    return { customer, query, answer, personas: PERSONAS, difficulties: DIFFICULTIES, intents: INTENTS };
+    // a training scenario to practise: read into the simulator's settings, with the reasons
+    let play: { id: string; title: string; brief: string; criteria: string[]; settings: SimSettings } | null = null, playError = '';
+    if (typeof scenarioParam === 'string' && scenarioParam) {
+      if (!/^[A-Za-z0-9_-]{2,40}$/.test(scenarioParam)) throw new BadRequestException('Invalid scenario id');
+      try {
+        const sc = await this.agents.scenario(scenarioParam);
+        play = { id: sc.id, title: sc.title, brief: sc.trainer_brief ?? '', criteria: sc.success_criteria ?? [], settings: simSettings(sc) };
+      } catch { playError = 'That training scenario was not found.'; }
+    }
+    const autostart = play ? (auto === 'careful' || auto === 'rushed' ? auto : start === '1' ? 'start' : '') : '';
+    const [customer, answer, scenarios] = await Promise.all([this.agents.customerContext(customerId), this.agents.suggestAnswer(customerId, query), this.agents.scenarios().catch(() => [])]);
+    return { customer, query, answer, personas: PERSONAS, difficulties: DIFFICULTIES, intents: INTENTS, play, playError, autostart, scenarios: scenarios.slice(0, 6) };
   }
 
   // ---- Sana: workforce twin ------------------------------------------------------------------
@@ -77,17 +88,8 @@ export class PagesController {
 
   // ---- Nour, Amine, Rim, Leila ---------------------------------------------------------------
 
-  @Roles('COMPLAINT') @Get('complaints') @Render('complaints')
-  async complaints() {
-    const cases = await this.agents.openComplaints();
-    const lanes: Record<string, typeof cases> = {};
-    for (const severity of ['Critical', 'High', 'Medium']) lanes[severity] = cases.filter((c) => c.severity === severity);
-    const avgRisk = cases.length ? Math.round(cases.reduce((sum, c) => sum + c.escalationRisk, 0) / cases.length) : 0;
-    return { cases, lanes, critical: lanes.Critical.length, avgRisk };
-  }
-
   @Roles('TRAINER') @Get('training') @Render('training')
-  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('whatif') whatIfId?: string, @Query('op') operation?: string, @Query('generated') generated?: string) {
+  async training(@Query('advisor') advisorParam?: string, @Query('replay') replayId?: string, @Query('generated') generated?: string) {
     const advisor = typeof advisorParam === 'string' && advisorParam.trim() ? advisorParam.trim().slice(0, 60) : 'Karim B.';
     const analytics = await this.agents.qualityAnalytics();
     const report = analytics.advisors.find((item) => item.advisor === advisor) ?? null;
@@ -95,10 +97,7 @@ export class PagesController {
     const weaknesses = report
       ? Object.entries(report.avgByCriterion).map(([criterion, score]) => ({ criterion, score: score * 10 }))
       : [];
-    const [reviews, opportunities] = await Promise.all([
-      this.agents.recentReviews({ advisor: selectedAdvisor }),
-      this.agents.opportunities(),
-    ]);
+    const opportunities = await this.agents.opportunities();
     const plan = weaknesses.length
       ? await this.agents.trainingPlan(selectedAdvisor, weaknesses)
       : {
@@ -108,18 +107,16 @@ export class PagesController {
         scenarios: [],
         rationale: ['No Quality Analyst weaknesses are available for this advisor yet.'],
       };
-    const scenarios = await this.agents.scenarios(selectedAdvisor);
+    const [scenarios, practice] = await Promise.all([this.agents.scenarios(selectedAdvisor), this.agents.practice(selectedAdvisor)]);
     const advisorNames = analytics.advisors.length ? analytics.advisors.map((item) => item.advisor) : QA_ADVISORS;
-    const salesOffset = Math.max(0, advisorNames.indexOf(selectedAdvisor)) % Math.max(1, opportunities.length);
-    const coachOpportunities = opportunities.length
-      ? opportunities.map((item, index) => opportunities[(index + salesOffset) % opportunities.length])
-      : [];
-    const actionId = typeof replayId === 'string' ? replayId : typeof whatIfId === 'string' ? whatIfId : '';
-    const action = replayId ? await this.agents.replayScenario(replayId)
-      : whatIfId ? await this.agents.mutateScenario(whatIfId, operation === 'easier' || operation === 'add_second_problem' ? operation : 'harder')
-      : null;
-    const history = scenarios;
-    return { scenarios, advisor: selectedAdvisor, report, reviews, opportunities: coachOpportunities, plan, advisorNames, action, history, generated: generated === '1' };
+    // Replaying only reads (the same seed gives the same scenario); anything that creates a scenario is a POST below.
+    let action: Awaited<ReturnType<AgentGateway['replayScenario']>> | null = null;
+    if (typeof replayId === 'string' && replayId) {
+      try { action = await this.agents.replayScenario(replayId.slice(0, 80)); } catch { throw new NotFoundException('Scenario not found'); }
+    }
+    // Offers are the team's best of the day (they belong to customers, not to this advisor), so the same list is shown for every advisor.
+    // (nunjucks' `slice(n)` splits a list into n columns, so the first items are taken here)
+    return { scenarios: scenarios.filter((s) => s.origin.startsWith('QA weakness')), history: scenarios.filter((s) => !s.origin.startsWith('QA weakness')).slice(0, 12), practice, advisor: selectedAdvisor, report, opportunities: opportunities.slice(0, 3), plan, advisorNames, action, generated: generated === '1' };
   }
 
   @Roles('TRAINER') @Post('training/generate-targeted')
@@ -134,14 +131,6 @@ export class PagesController {
     return res.redirect(`/training?advisor=${encodeURIComponent(advisor)}&generated=1`);
   }
 
-  @Roles('TRAINER') @Post('training/scenarios/generate')
-  async generateTrainingScenario(@Body() body: Record<string, unknown>, @Query('advisor') advisor: string | undefined, @Res() res: Response) {
-    const selectedAdvisor = typeof advisor === 'string' && advisor.trim() ? advisor.trim().slice(0, 60) : 'Karim B.';
-    const difficulty = body.difficulty === 'Easy' || body.difficulty === 'Hard' ? body.difficulty : 'Medium';
-    const scenario = await this.agents.generateScenario(selectedAdvisor, difficulty);
-    return res.redirect(`/training/scenarios/${encodeURIComponent(scenario.id)}?advisor=${encodeURIComponent(selectedAdvisor)}`);
-  }
-
   @Roles('TRAINER') @Get('training/scenarios/:id') @Render('training-scenario')
   async trainingScenario(@Param('id') id: string, @Query('advisor') advisor?: string, @Query('replayed') replayed?: string) {
     let scenario: Awaited<ReturnType<AgentGateway['scenario']>>;
@@ -152,6 +141,17 @@ export class PagesController {
     }
     const lineage = await this.agents.scenarioLineage(id);
     return { scenario, lineage, advisor: typeof advisor === 'string' ? advisor : 'Karim B.', replayed: replayed === '1' };
+  }
+
+  /** The scenario builder: a new scenario from the generator, then its detail page. */
+  @Roles('TRAINER') @Post('training/generate')
+  async generateTrainingScenario(@Body() body: Record<string, unknown>, @Res() res: Response) {
+    const levels: Record<string, number | null> = { '': null, Easy: 2, Medium: 3, Hard: 4 };
+    const choice = body.difficulty === undefined ? '' : body.difficulty;
+    if (typeof choice !== 'string' || !Object.hasOwn(levels, choice)) throw new BadRequestException();
+    const owner = typeof body.advisor === 'string' && body.advisor.trim() ? body.advisor.trim().slice(0, 60) : undefined;
+    const scenario = await this.agents.generateScenario(levels[choice], owner);
+    return res.redirect(`/training/scenarios/${encodeURIComponent(scenario.id)}${owner ? `?advisor=${encodeURIComponent(owner)}` : ''}`);
   }
 
   @Roles('TRAINER') @Post('training/scenarios/:id/mutate')
@@ -174,12 +174,5 @@ export class PagesController {
     await this.agents.deleteScenario(id);
     const suffix = typeof res.req.query.advisor === 'string' ? `?advisor=${encodeURIComponent(res.req.query.advisor)}` : '';
     return res.redirect(`/training${suffix}`);
-  }
-
-  @Roles('SALES') @Get('sales') @Render('sales')
-  async sales() {
-    const initials = (name: string) => { const [a, b = ''] = name.split(' '); return a.charAt(0) + b.charAt(0); };
-    const opportunities = (await this.agents.opportunities()).map((o) => ({ ...o, initials: initials(o.customer) }));
-    return { opportunities };
   }
 }

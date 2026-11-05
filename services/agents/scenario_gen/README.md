@@ -19,6 +19,7 @@ QA weaknesses ──► Scenario Gen ──scenario──► Customer Sim ──
 | **Replay & what-if**: replay, what-if, mutation | `mutations.py`, `store.py` | `POST /scenarios/{id}/replay`, `POST /scenarios/{id}/mutate`, `GET /scenarios/{id}/lineage` |
 | **Stress & edge cases**: multi-event, rare events, difficulty ramp | `generator.py` (`mode`, `ramp_specs`) | `generate` with `mode`, `POST /scenarios/ramp` |
 | **Adaptive training**: recommendations from QA weaknesses | `adaptive.py` | `POST /training-plan`, `POST /progress` |
+| **Practice results**: a practice call compared with the advisor's usual level, and the next step | `practice.py`, `openings.py` | `POST` and `GET /training/practice` (in `main.py`) |
 
 All endpoints are under `/scenario-gen`. Interactive docs at `/docs`.
 

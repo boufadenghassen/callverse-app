@@ -11,7 +11,7 @@
     <header class="page-head">
       <p class="eyebrow">Nour · Quality analyst agent</p>
       <h1>Quality reviews</h1>
-      <p class="lede">Every call is scored. Each lost point shows the moment in the transcript that caused it, and the team view shows what to coach.</p>
+      <p class="lede">Every call is scored. Each lost point shows the moment in the transcript that caused it, each good move shows what it protected, and the team view shows what to coach and what each advisor already does well.</p>
     </header>
 
     {% if analytics.team %}
@@ -32,6 +32,14 @@
           <h3>Team average, last 8 weeks</h3>
           {{ spark(analytics.team.lines, 240, 56, 'Team average score by week, oldest first') }}
         </div>
+        {% if analytics.team.topStrengths | length %}
+        <div>
+          <h3>What the team does well</h3>
+          <ul class="bars good">
+            {% for s in analytics.team.topStrengths %}<li><span>{{ s.label }}</span><meter min="0" max="100" value="{{ (s.share * 100) | round }}" aria-label="{{ (s.share * 100) | round }} percent of calls"></meter><span>{{ (s.share * 100) | round }}%</span></li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         <div>
           <h3>Most frequent errors</h3>
           <ul class="bars">
@@ -48,7 +56,7 @@
 
       <h3>Advisors</h3>
       <table class="data advisors" aria-label="Advisors, their average and what to coach">
-        <thead><tr><th scope="col">Advisor</th><th scope="col">Calls</th><th scope="col">Average</th><th scope="col">8 weeks</th><th scope="col">Weakest</th><th scope="col">Most frequent error</th><th scope="col">Coaching plan</th></tr></thead>
+        <thead><tr><th scope="col">Advisor</th><th scope="col">Calls</th><th scope="col">Average</th><th scope="col">8 weeks</th><th scope="col">Does well</th><th scope="col">Weakest</th><th scope="col">Most frequent error</th><th scope="col">Coaching plan</th></tr></thead>
         <tbody>
           {% for a in analytics.advisors %}
           <tr>
@@ -56,11 +64,13 @@
             <td>{{ a.calls }}</td>
             <td>{{ a.avgOverall }} <span class="muted">({{ '+' if a.vsTeam > 0 }}{{ a.vsTeam }} vs team)</span></td>
             <td>{{ spark(a.lines, 96, 28, a.advisor ~ ': average score by week, ' ~ a.trendWord) }}<span class="muted">{{ a.trendWord }}</span></td>
+            <td>{% if a.topStrengths | length %}{{ a.topStrengths[0].label }} <span class="muted">({{ (a.topStrengths[0].share * 100) | round }}%)</span>{% else %}<span class="muted">n/a</span>{% endif %}</td>
             <td>{{ a.weakest.criterion }} <span class="muted">({{ a.weakest.avg }}/10)</span></td>
             <td>{{ a.topErrors[0].label if a.topErrors | length else 'none' }}</td>
             <td>
               <details>
                 <summary>Plan</summary>
+                {% if a.topStrengths | length %}<p class="keep"><strong>Keep doing:</strong> {% for s in a.topStrengths %}{{ s.label | lower }} ({{ (s.share * 100) | round }}% of calls){{ '; ' if not loop.last }}{% endfor %}.</p>{% endif %}
                 <ol class="plan">{% for c in a.coaching %}
                   <li><strong>{{ c.label }}</strong> in {{ c.calls }} call{{ '' if c.calls == 1 else 's' }}.
                     <span data-speak>{{ c.tip }}</span>
@@ -111,6 +121,9 @@
         <p class="meta muted">{% if r.source %}<span class="badge">{{ r.source }}</span> {% endif %}{{ r.date }}{% if r.intent %} · {{ r.intent }}{% endif %}{% if r.adjusted %} · adjusted after review (was {{ r.originalOverall }}){% endif %}</p>
         <p class="score{% if r.overall < 70 %} low{% endif %}">{{ r.overall }}/100</p>
       </header>
+      {% if r.strengths is defined or r.errors is defined %}
+      <p class="balance"><span class="chip good-chip">✓ {{ r.strengths | length if r.strengths else 0 }} done well</span> <span class="chip bad-chip">✗ {{ r.errors | length if r.errors else 0 }} lost points</span></p>
+      {% endif %}
 
       <div class="timeline-wrap">
         <svg class="timeline" viewBox="0 0 600 72" role="group" aria-label="Timeline of the call; each pin is a scored moment">
@@ -145,7 +158,7 @@
           <th scope="row">{{ c.name }}</th>
           <td><meter min="0" max="{{ c.max }}" value="{{ c.score }}" low="{{ c.max * 0.6 }}" high="{{ c.max * 0.85 }}" optimum="{{ c.max }}"></meter>
               <span>{{ c.score }}/{{ c.max }}</span></td>
-          <td>{{ c.evidence }}</td>
+          <td>{% if c.score == c.max and c.good | length %}<span class="good-note">✓ {{ c.good | join('; ') }}</span>{% else %}{{ c.evidence }}{% if c.good | length %}<br><span class="good-note">✓ Done well: {{ c.good | join('; ') }}</span>{% endif %}{% endif %}</td>
           <td class="muted">{{ c.timestamp }}</td>
         </tr>
         {% endfor %}
@@ -156,26 +169,27 @@
       {% if r.drivers %}
       <details class="drivers" open>
         <summary>What moved this score</summary>
-        <p class="muted small">What the advisor said that lowered the score, and what protected it. Each number is a what-if on the {{ r.overall }}/100: the score the call would get if only that one thing were different.</p>
+        <p class="muted small">What the advisor did well, and what lowered the score. Each number is a what-if on the {{ r.overall }}/100: the score the call would get if only that one thing were different.</p>
         <div class="driver-cols">
           <div>
-            <h3>Lowered the score</h3>
+            <h3>What went well</h3>
+            {% if r.drivers.helped | length %}
+            <ul class="driver-list">{% for d in r.drivers.helped %}
+              <li><span class="eff pos">{% if d.effect %}+{{ d.effect }}{% else %}0{% endif %}</span>
+                <span><strong>{{ d.label }}</strong> at {{ d.timestamp }}.{% if d.quote %} <q>{{ d.quote }}</q>{% endif %}
+                {% if d.why %}<em class="muted">Why it matters: {{ d.why }}</em> {% endif %}
+                {% if d.prevents | length %}<em class="muted">It protected the call: without it this would have been flagged ({{ d.prevents | join(', ') }}).</em>{% else %}<em class="muted">No points were at stake in this call, but it is the right habit.</em>{% endif %}</span></li>
+            {% endfor %}</ul>
+            {% else %}<p class="muted">No strength was found in this call.</p>{% endif %}
+          </div>
+          <div>
+            <h3>What lowered the score</h3>
             {% if r.drivers.hurt | length %}
             <ul class="driver-list">{% for d in r.drivers.hurt %}
               <li><span class="eff neg">{% if d.effect %}−{{ 0 - d.effect }}{% else %}0{% endif %}</span>
                 <span><strong>{{ d.label }}</strong> at {{ d.timestamp }}.{% if d.quote %} <q>{{ d.quote }}</q>{% endif %}{% if d.floored %} <em class="muted">On its own this changes nothing: {{ d.criterion }} is already at 0 because of other mistakes.</em>{% endif %}</span></li>
             {% endfor %}</ul>
             {% else %}<p class="muted">Nothing lowered it.</p>{% endif %}
-          </div>
-          <div>
-            <h3>Protected the score</h3>
-            {% if r.drivers.helped | length %}
-            <ul class="driver-list">{% for d in r.drivers.helped %}
-              <li><span class="eff pos">{% if d.effect %}+{{ d.effect }}{% else %}0{% endif %}</span>
-                <span><strong>{{ d.label }}</strong> at {{ d.timestamp }}.{% if d.quote %} <q>{{ d.quote }}</q>{% endif %}
-                {% if d.prevents | length %}<em class="muted">Without it, this would have been flagged: {{ d.prevents | join(', ') }}.</em>{% else %}<em class="muted">Good practice, but no points were at stake in this call.</em>{% endif %}</span></li>
-            {% endfor %}</ul>
-            {% else %}<p class="muted">No strength was found.</p>{% endif %}
           </div>
         </div>
         <p class="muted small">The effects do not add up to the gap from 100: a criterion stops at 0, so two mistakes in it can share the same points.</p>
@@ -194,13 +208,20 @@
         {% endfor %}</ul>
       </details>
       {% endif %}
-      {% if r.strengths and r.strengths | length %}
+      {% if r.strengths and r.strengths | length and not r.drivers %}
       <p class="strengths"><strong>Done well:</strong> {% for g in r.strengths %}<span class="chip">{{ g.text }} at {{ g.timestamp }}</span> {% endfor %}</p>
       {% endif %}
-      {% if r.coaching and r.coaching | length %}
-      <details class="lost">
+      {% if (r.coaching and r.coaching | length) or (r.strengths and r.strengths | length) %}
+      <details class="lost" open>
         <summary>Coaching for this call</summary>
+        {% if r.strengths and r.strengths | length %}
+        <h4>Keep doing</h4>
+        <ul class="keep-list">{% for g in r.strengths %}<li>{{ g.text }} at {{ g.timestamp }}.{% if g.why %} <span class="muted">{{ g.why }}</span>{% endif %}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if r.coaching and r.coaching | length %}
+        <h4>To improve</h4>
         <ol>{% for c in r.coaching %}<li><span data-speak>{{ c.tip }}</span> <span class="muted">Practise: {{ c.scenario }}.</span></li>{% endfor %}</ol>
+        {% endif %}
       </details>
       {% endif %}
       {% if v.turns | length %}

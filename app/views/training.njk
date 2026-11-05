@@ -13,9 +13,9 @@
       <div class="panel-head">
         <div>
           <h2 id="coach-plan">Coach plan for {{ advisor }}</h2>
-          <p class="muted">Select an advisor first. The report, focus and scenarios below belong only to that advisor.</p>
+          <p class="muted">Review performance signals and prepare the next practice set.</p>
         </div>
-        <form method="get" action="/training">
+        <form method="get" action="/training" class="advisor-picker">
           <label for="advisor">Advisor</label>
           <select id="advisor" name="advisor">
             {% for name in advisorNames %}<option value="{{ name }}" {% if name == advisor %}selected{% endif %}>{{ name }}</option>{% endfor %}
@@ -31,13 +31,16 @@
           {% if report.coaching %}<ul>{% for item in report.coaching %}<li>{{ item.tip }} <span class="muted small">({{ item.scenario }})</span></li>{% endfor %}</ul>{% endif %}
         </article>
         <article class="scn">
-          <h3>Sales recommendations</h3>
-          {% if opportunities %}<ul>{% for item in opportunities %}<li><strong>{{ item.offer }}</strong> for {{ item.customer }} — {{ item.reason }}</li>{% endfor %}</ul>{% else %}<p class="muted">No sales recommendations.</p>{% endif %}
+          <h3>Offers to practise today</h3>
+          <p class="muted small">Current recommendations that can be used in practice conversations.</p>
+          {% if opportunities %}<ul>{% for item in opportunities %}<li><strong>{{ item.offer }}</strong> for {{ item.customer }}: {{ item.reason }}</li>{% endfor %}</ul>{% else %}<p class="muted">No sales recommendations.</p>{% endif %}
         </article>
         <article class="scn">
           <h3>Automatic focus</h3>
-          {% if plan.coach_model %}<p class="muted small">Model: {{ plan.coach_model }}</p>{% endif %}
+          {% if plan.coach_model %}<p class="muted small">Plan model: {{ plan.coach_model }}</p>{% endif %}
           {% if plan.coach_metrics %}<p class="muted small">Evaluation · MAE {{ plan.coach_metrics.mae }} · RMSE {{ plan.coach_metrics.rmse }} · R² {{ plan.coach_metrics.r2 }}</p>{% endif %}
+          {% if plan.coach_summary %}<p class="coach">{{ plan.coach_summary }}</p>{% endif %}
+          {% if plan.coach_actions %}<ul>{% for action in plan.coach_actions %}<li>{{ action }}</li>{% endfor %}</ul>{% endif %}
           {% if plan.focus %}<ul>{% for item in plan.focus %}<li>{{ item.skill }} · gap {{ item.gap }} · {{ item.criteria | join(', ') }}</li>{% endfor %}</ul>{% else %}<p class="muted">No weakness requires training right now.</p>{% endif %}
           {% for reason in plan.rationale %}<p class="muted small">{{ reason }}</p>{% endfor %}
         </article>
@@ -48,7 +51,6 @@
     </section>
 
     <section class="panel" aria-labelledby="targeted-simulations">
-      <h2 id="targeted-simulations">Targeted simulations</h2>
       <div class="panel-head targeted-head">
         <div>
           <h2 id="targeted-simulations">Targeted simulations</h2>
@@ -63,14 +65,14 @@
       {% if generated %}<p class="coach" role="status">A new practice set is ready.</p>{% endif %}
       {% if scenarios %}
       <ul class="deck-cards">{% for s in scenarios %}
-        <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form></div></li>
+        <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder"><button class="btn-line" type="submit">What-if harder</button></form></div></li>
       {% endfor %}</ul>
       {% else %}<p class="muted">No targeted scenarios are available for this advisor yet.</p>{% endif %}
     </section>
 
     {% if action %}
     <section class="panel" aria-labelledby="scenario-action">
-      <h2 id="scenario-action">{% if action.parent_id %}What-if simulation created{% else %}Replay loaded{% endif %}</h2>
+      <h2 id="scenario-action">Replay loaded</h2>
       <article class="scn">
         <span class="case-id">{{ action.id }}</span>
         <h3>{{ action.title }}</h3>
@@ -78,14 +80,44 @@
         {% if action.mutation_log %}<p class="muted">Changed: {{ action.mutation_log | join(', ') }}</p>{% endif %}
         <p class="coach">This scenario is now selected for the next Customer Simulator session.</p>
       </article>
-      {% if action.parent_id %}<p class="muted">Previous scenario: <a href="/training?advisor={{ advisor | urlencode }}&replay={{ action.parent_id | urlencode }}">{{ action.parent_id }}</a></p>{% endif %}
     </section>
     {% endif %}
 
+    <section class="panel" aria-labelledby="practice-results">
+      <h2 id="practice-results">Practice results for {{ advisor }}</h2>
+      {% if practice.attempts | length %}
+      <p class="muted">{{ practice.count }} practice {{ "call" if practice.count == 1 else "calls" }} · best {{ practice.best }}/100{% if practice.trend !== null %} · {{ "up" if practice.trend >= 0 else "down" }} {{ practice.trend | abs }} points from the first to the latest{% endif %}. Practice calls do not count in the advisor's quality averages.</p>
+      <ul class="deck-cards">{% for a in practice.attempts %}
+        <li class="scn">
+          <span class="case-id">{{ a.callId }}</span> <span class="muted small">{{ a.date }}</span>
+          <h3>{{ a.title }}</h3>
+          <p class="chips"><span class="chip">{{ a.overall }}/100</span>{% for c in a.changes %}{% if c.status != 'unchanged' %}<span class="chip">{{ c.criterion }} {{ c.before }} to {{ c.after }}</span>{% endif %}{% endfor %}</p>
+          <p class="coach">{{ a.advice }}</p>
+          <div class="actions">
+            {% if a.next == 'harder' %}<form method="post" action="/training/scenarios/{{ a.scenarioId | urlencode }}/mutate?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder"><button type="submit" class="btn">Make it harder</button></form>
+            {% else %}<a class="btn" href="/advisor?scenario={{ a.scenarioId | urlencode }}&amp;start=1#live">Practise it again</a>{% endif %}
+          </div>
+        </li>
+      {% endfor %}</ul>
+      {% else %}<p class="muted">No practice yet. Open a scenario and play it in the console: when the call is sent to review, the result comes back here.</p>{% endif %}
+    </section>
+
     <section class="panel" aria-labelledby="scenario-history">
       <h2 id="scenario-history">Scenario history</h2>
-      <p class="muted">This is the saved history for {{ advisor }}. Replay opens the selected scenario and records the replay state.</p>
-      {% if history %}<ul>{% for s in history | slice(0, 12) %}<li><a href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">{{ s.id }}</a> — {{ s.title }} ({{ s.origin }})</li>{% endfor %}</ul>{% else %}<p class="muted">History is empty until you generate a scenario.</p>{% endif %}
+      <p class="muted">Replay shows the same scenario again (same seed). What-if creates a harder copy and opens it.</p>
+      {% if not history | length %}<p class="muted">No other scenario yet: generate one below, or make a harder version of a targeted one.</p>{% endif %}
+      <ul class="history-list">
+        {% for s in history %}
+        <li>
+          <span class="case-id">{{ s.id }}</span> <span class="muted small">{{ s.title }}</span>
+          <a class="btn-line" href="/training?advisor={{ advisor | urlencode }}&replay={{ s.id | urlencode }}">Replay</a>
+          <form method="post" action="/training/scenarios/{{ s.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}" class="inline-form">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder">
+            <button type="submit" class="btn-line">What-if harder</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
     </section>
 
     <section class="panel builder" aria-labelledby="sb">
@@ -93,22 +125,11 @@
         <h2 id="sb">Create one scenario for {{ advisor }}</h2>
         <p class="muted">Create an additional custom scenario for this advisor. QA-targeted scenarios are generated automatically above.</p>
       </div>
-      <form id="builder-form" class="builder-actions" method="post" action="/training/scenarios/generate?advisor={{ advisor | urlencode }}">
-        <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <form method="post" action="/training/generate" class="builder-actions">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="advisor" value="{{ advisor }}">
         <label for="gen-diff" class="sr-only">Difficulty</label>
-        <select id="gen-diff"><option value="">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
-        <input type="hidden" name="difficulty" id="gen-diff-value" value="Medium">
-        <button type="submit" class="btn">Generate scenario</button>
+        <select id="gen-diff" name="difficulty"><option value="">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
+        <button type="submit" class="btn" id="generate">Generate scenario</button>
       </form>
-    </section>
-
-    <section id="whatif" class="panel whatif" hidden aria-labelledby="wi">
-      <h2 id="wi">What-if: one parameter changed</h2>
-      <div class="compare">
-        <div><h3>Original</h3><p id="wi-before"></p></div>
-        <div class="arrow" aria-hidden="true">→</div>
-        <div><h3>Mutated</h3><p id="wi-after"></p></div>
-      </div>
-      <p class="coach" id="wi-note"></p>
     </section>
 {% endblock %}

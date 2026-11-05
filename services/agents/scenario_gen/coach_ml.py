@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import random
 import json
+import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -164,17 +165,19 @@ class CoachMLModel:
     def _save_artifacts(self, seed: int) -> None:
         self.artifact_path.parent.mkdir(parents=True, exist_ok=True)
         self.metrics_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.artifact_path.open("wb") as handle:
-            pickle.dump(
-                {
-                    "model": self.model,
-                    "criteria": self.criteria,
-                    "skills": self.skills,
-                    "seed": seed,
-                    "metrics": self.metrics,
-                },
-                handle,
-            )
+        if not self.artifact_path.exists() or os.getenv("COACH_RETRAIN_ARTIFACT") == "1":
+            with self.artifact_path.open("wb") as handle:
+                pickle.dump(
+                    {
+                        "model": self.model,
+                        "criteria": self.criteria,
+                        "skills": self.skills,
+                        "seed": seed,
+                        "metrics": self.metrics,
+                    },
+                    handle,
+                    protocol=pickle.HIGHEST_PROTOCOL,
+                )
         self.metrics_path.write_text(
             json.dumps(
                 {

@@ -3,52 +3,172 @@
 {% set title = "Complaints" %}
 {% set active = "complaints" %}
 {% set bodyClass = "p-complaint" %}
+{% macro factors(list) %}<ul class="driver-list">{% for f in list %}
+  <li><span class="eff {{ 'pos' if f.points >= 0 else 'neg' }}">{{ '+' ~ f.points if f.points > 0 else ('−' ~ (0 - f.points) if f.points < 0 else '0') }}</span>
+    <span><strong>{{ f.name }}</strong>: {{ f.why }}</span></li>
+{% endfor %}</ul>{% endmacro %}
+{% macro post(action, id, label, cls, back) %}<form method="post" action="/complaints/{{ id }}/{{ action }}" class="inline-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="back" value="{{ back }}"><button type="submit" class="{{ cls }}">{{ label }}</button></form>{% endmacro %}
 {% block content %}
     <header class="page-head">
       <p class="eyebrow">Amine · Complaint manager agent</p>
       <h1>Open complaints</h1>
+      {% if real %}
+      <p class="lede">Each case comes with the root cause the agent found, how serious it is, how likely it is to escalate and its deadline, every number with its reasons in points. A complaint is closed when the customer trusts us again, not when it is answered.</p>
+      <p class="head-actions"><span class="badge cov live">Real agent, invented cases and customers</span></p>
+      {% else %}
       <p class="lede">Sorted into severity lanes, with the escalation risk and the root-cause cluster each case belongs to. Drag a card to another lane, or press Escalate to move it up one.</p>
+      {% endif %}
     </header>
 
-    {% for c in cases %}{% if c.escalationRisk >= 80 %}
+    {% if error %}<p class="warning" role="alert">{{ error }}</p>{% endif %}
+
+    {% for c in warnings %}
     <div class="early-warning" role="alert">
       <span class="pulse" aria-hidden="true"></span>
+      {% if real %}
+      <p><strong>Early warning:</strong> <a href="/complaints/{{ c.id }}">{{ c.id }}</a> {{ c.summary }}: {{ c.warning.why }}. {% if c.warning.alerted %}A supervisor was alerted.{% else %}Alert a supervisor now.{% endif %}</p>
+      {% if not c.warning.alerted %}{{ post('alert', c.id, 'Alert supervisor', 'btn-line', 'list') }}{% endif %}
+      {% else %}
       <p><strong>Early warning:</strong> <span>{{ c.id }}</span> may escalate within
         <span>{{ c.hoursLeft }}</span> h. Alert a supervisor now.</p>
       <button type="button" class="btn-line" data-toast="Supervisor alerted about {{ c.id }} (demo, nothing was sent)">Alert supervisor</button>
+      {% endif %}
     </div>
-    {% endif %}{% endfor %}
+    {% endfor %}
 
     <section class="stats" aria-label="Summary">
       <div class="stat"><strong>{{ cases.length }}</strong><span>open cases</span></div>
       <div class="stat prod"><strong>{{ critical }}</strong><span>critical</span></div>
       <div class="stat"><strong>{{ avgRisk }}%</strong><span>average escalation risk</span></div>
+      {% if real %}
+      <div class="stat"><strong>{{ overdue }}</strong><span>past their deadline</span></div>
+      <div class="stat"><strong>{{ followUps | length }}</strong><span>waiting for the follow-up call</span></div>
+      {% endif %}
     </section>
 
-    <div class="lanes">
+    {% if real %}
+    <section class="panel" aria-labelledby="tri">
+      <h2 id="tri">Read a complaint</h2>
+      <p class="muted">Paste what the customer said. The agent finds the root cause, says how serious it is and how likely to escalate, gives the deadline and the first actions. Nothing is saved until you open the case.</p>
+      <p class="samples">{% for s in samples %}<button type="button" class="btn-line" data-tri-sample="{{ s.text }}" data-tri-customer="{{ s.customerId }}">{{ s.label }}</button> {% endfor %}</p>
+      <form id="tri-form" method="post" action="/complaints/new" data-csrf="{{ csrf }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label for="tri-customer">Customer</label>
+        <select id="tri-customer" name="customerId"><option value="">Not on file</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+        <label for="tri-text">The complaint</label>
+        <textarea id="tri-text" name="text" rows="4" maxlength="1500" required placeholder="I was charged twice for 180 dinars and this is the third time I write."></textarea>
+        <p class="actions"><button type="button" class="btn" id="tri-read">Read it</button> <button type="submit" class="btn-line">Open this case</button></p>
+      </form>
+      <p id="tri-status" role="status" class="muted"></p>
+      <div id="tri-result" hidden>
+        <p><span class="badge" id="tri-cluster"></span> <span class="risk" id="tri-level"></span> <span class="muted" id="tri-deadline"></span></p>
+        <div class="driver-cols">
+          <div><h3 id="tri-sev-h">How serious</h3><ul class="driver-list" id="tri-sev"></ul></div>
+          <div><h3 id="tri-risk-h">How likely to escalate</h3><ul class="driver-list" id="tri-risk"></ul></div>
+        </div>
+        <h3>What to do first</h3>
+        <ol id="tri-actions"></ol>
+      </div>
+    </section>
+    {% endif %}
+
+    <div class="lanes{% if real %} real{% endif %}">
       {% for severity, laneCases in lanes %}
-      <section class="lane lane-{{ severity | lower }}" data-lane="{{ severity | lower }}">
+      <section class="lane lane-{{ severity | lower }}"{% if not real %} data-lane="{{ severity | lower }}"{% endif %}>
         <h2 class="lane-head"><span>{{ severity }}</span><span class="count">{{ laneCases.length }}</span></h2>
         {% if laneCases.length == 0 %}<p class="lane-empty muted">Nothing here.</p>{% endif %}
         {% for c in laneCases %}
-        <article class="case" draggable="true" data-id="{{ c.id }}">
-          <div class="case-top"><span class="case-id">{{ c.id }}</span>
+        <article class="case"{% if not real %} draggable="true"{% endif %} data-id="{{ c.id }}">
+          <div class="case-top"><span class="case-id">{% if real %}<a href="/complaints/{{ c.id }}">{{ c.id }}</a>{% else %}{{ c.id }}{% endif %}</span>
             <span class="muted small">{{ c.cluster }}</span></div>
           <p class="case-sum">{{ c.summary }}</p>
+          {% if real %}<p class="muted small">{{ c.customer or 'Customer not on file' }} · {{ 'taken by ' ~ c.assigned if c.status == 'taken' else 'nobody owns it yet' }}{% if c.overridden %} · level set by hand{% endif %}</p>{% endif %}
           <div class="case-mid">
             <div class="risk">{{ m.ring(c.escalationRisk) }}<span class="small muted">Escalation risk</span></div>
             <div class="deadline">
-              <meter min="0" max="48" low="12" high="24" optimum="48" value="{{ c.hoursLeft }}"></meter>
-              <span class="small">{{ c.hoursLeft }} h left</span>
+              <meter min="0" max="{{ c.deadline.slaHours if real else 48 }}" low="{{ (c.deadline.slaHours * 0.25) if real else 12 }}" high="{{ (c.deadline.slaHours * 0.5) if real else 24 }}" optimum="{{ c.deadline.slaHours if real else 48 }}" value="{{ c.hoursLeft if c.hoursLeft > 0 else 0 }}"></meter>
+              <span class="small">{% if c.hoursLeft < 0 %}<strong class="late">{{ 0 - c.hoursLeft }} h late</strong>{% else %}{{ c.hoursLeft }} h left{% endif %}</span>
             </div>
           </div>
+          {% if real %}
+          <details class="why"><summary>Why</summary>
+            <h4>How serious: {{ c.severityScore }}</h4>{{ factors(c.severityFactors) }}
+            <h4>Escalation risk: {{ c.escalationRisk }}</h4>{{ factors(c.riskFactors) }}
+          </details>
+          <div class="actions">
+            {% if c.status == 'open' %}{{ post('take', c.id, 'Take case', 'btn', 'list') }}{% endif %}
+            {% if c.severity != 'Critical' %}{{ post('escalate', c.id, 'Escalate', 'btn-quiet', 'list') }}{% endif %}
+            <a class="btn-line" href="/complaints/{{ c.id }}">Open</a>
+          </div>
+          {% else %}
           <div class="actions">
             <button type="button" class="btn" data-toast="Case {{ c.id }} assigned (demo)">Take case</button>
             <button type="button" class="btn-quiet" data-escalate>Escalate</button>
           </div>
+          {% endif %}
         </article>
         {% endfor %}
       </section>
       {% endfor %}
     </div>
+
+    {% if real %}
+    {% if followUps | length %}
+    <section class="panel" aria-labelledby="fu">
+      <h2 id="fu">Waiting for the follow-up call</h2>
+      <p class="muted">Resolved is not closed. After 72 hours the customer is called to check they trust us again; a case that was resolved but not trusted comes back to the lanes.</p>
+      <ul class="history-list">{% for f in followUps %}
+        <li><span class="case-id"><a href="/complaints/{{ f.id }}">{{ f.id }}</a></span> <span>{{ f.summary }}</span> <span class="muted small">{{ f.resolution }} · {% if f.dueInHours > 0 %}call in {{ f.dueInHours }} h{% else %}<strong class="late">call due {{ 0 - f.dueInHours }} h ago</strong>{% endif %}</span></li>
+      {% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if candidates | length %}
+    <section class="panel" aria-labelledby="fc">
+      <h2 id="fc">Calls that may be complaints</h2>
+      <p class="muted">Calls the quality analyst scored where the customer hung up, left upset or nothing was agreed, and that are not a case yet.</p>
+      <ul class="candidates">{% for k in candidates %}
+        <li>
+          <div><strong>{{ k.callId }}</strong> · {{ k.advisor }} · scored {{ k.overall }}/100 <span class="muted small">({{ k.why | join('; ') }})</span>
+            <blockquote class="heard">{{ k.text | truncate(180) }}</blockquote>
+            <span class="muted small">The agent would read it as: {{ k.triage.cluster }}, {{ k.triage.severity | lower }}, escalation risk {{ k.triage.escalationRisk }}.</span></div>
+          <form method="post" action="/complaints/from-call" class="inline-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="callId" value="{{ k.callId }}"><button type="submit" class="btn-line">Open a case</button></form>
+        </li>
+      {% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if insights %}
+    <section class="panel" aria-labelledby="ins">
+      <h2 id="ins">Where complaints come from</h2>
+      <div class="qa-stats">
+        <p><strong>{{ insights.resolved }}</strong><span>cases resolved</span></p>
+        <p><strong>{{ insights.avgResolutionHours }} h</strong><span>average time to resolve</span></p>
+        <p><strong>{{ ((insights.slaMetRate or 0) * 100) | round }}%</strong><span>answered within the deadline</span></p>
+        <p><strong>{{ ((insights.trustRate or 0) * 100) | round }}%</strong><span>customers satisfied at the follow-up ({{ insights.reopened }} came back)</span></p>
+        <p><strong>{{ ((insights.repeatRate or 0) * 100) | round }}%</strong><span>of cases from a customer who already contacted us</span></p>
+      </div>
+      <div class="qa-grid">
+        <div>
+          <h3>Cases opened per week</h3>
+          <ul class="bars">{% for n in insights.weeks %}<li><span>{{ 'This week' if loop.last else (8 - loop.index0) ~ ' weeks ago' }}</span><meter min="0" max="{{ weekMax }}" value="{{ n }}" aria-label="{{ n }} cases"></meter><span>{{ n }}</span></li>{% endfor %}</ul>
+        </div>
+        <div>
+          <h3>Root causes</h3>
+          <ul class="bars">{% for c in insights.causes %}<li><span>{{ c.cause }}</span><meter min="0" max="100" value="{{ (c.share * 100) | round }}" aria-label="{{ (c.share * 100) | round }} percent of cases"></meter><span>{{ (c.share * 100) | round }}%</span></li>{% endfor %}</ul>
+        </div>
+      </div>
+      <table class="conv" aria-label="Complaints by root cause">
+        <caption>By root cause: the last 28 days against the 28 before</caption>
+        <thead><tr><th scope="col">Root cause</th><th scope="col">Last 28 days</th><th scope="col">Before</th><th scope="col">Trend</th><th scope="col">Open now</th><th scope="col">Average time to resolve</th><th scope="col">What usually works</th></tr></thead>
+        <tbody>{% for k in insights.clusters %}
+          <tr><th scope="row">{{ k.label }} <span class="muted small">({{ k.cause | lower }})</span></th><td>{{ k.last28 }}</td><td>{{ k.previous28 }}</td>
+            <td class="{{ 'rising' if k.trend > 0 else '' }}">{% if k.trend > 0 %}▲ +{{ k.trend }}{% elif k.trend < 0 %}▼ {{ k.trend }}{% else %}–{% endif %}</td><td>{{ k.open }}</td>
+            <td>{{ (k.avgHours ~ ' h') if k.avgHours !== null else '–' }}</td><td>{% if k.worked %}{{ k.worked.label }} <span class="muted">({{ k.worked.count }} of {{ k.worked.of }})</span>{% else %}–{% endif %}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+      <details class="how"><summary>How this was computed</summary><p class="muted">{{ insights.method }}</p></details>
+    </section>
+    {% endif %}
+    {% endif %}
 {% endblock %}

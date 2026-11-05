@@ -29,6 +29,8 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
+  async autoReply(_topic: string, _turn: number, _style: 'careful' | 'rushed', _context?: m.AutoContext): Promise<m.AutoReply> { throw new NeedsRealAgentsError('the advisor agent answers by itself only with the real agents'); }
+
   private readonly calls = new Map<string, Call>();
   private replayOf(c: Call) {
     const { persona, mix, difficulty, intent, memory } = c.cfg;
@@ -44,12 +46,12 @@ export class MockAgentGateway extends AgentGateway {
     return { id, persona: PERSONAS[cfg.persona as PersonaKey].label, opening: r.opening, mood: r.mood, patience: r.patience };
   }
 
-  async say(id: string, text: string): Promise<m.CallReply> {
+  async say(id: string, text: string, tone?: m.Tone | null): Promise<m.CallReply> {
     const call = this.calls.get(id);
     if (!call) throw new UnknownCallError(id);
     const before = this.replayOf(call);
     if (before.outcome) return { ended: true, outcome: before.outcome, mood: before.mood, patience: before.patience, client: null, move: null, moveLabel: null };
-    const move = readAdvisor(text);
+    const move = readAdvisor(text, tone);
     call.moves.push(move); call.said.push(text);
     const r = this.replayOf(call), t = r.turns[r.turns.length - 1];
     return { ended: !!r.outcome, outcome: r.outcome, mood: t.mood, patience: t.patience, client: t.client, move, moveLabel: MOVES[move].label };
@@ -111,12 +113,14 @@ export class MockAgentGateway extends AgentGateway {
       topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 1, cause: 'Process skipped' }],
       coaching: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, tip: 'Check the policy before promising anything.', scenario: 'Double charge, customer asks for an immediate refund' }],
       lastCalls: ['CALL-3381'],
+      topStrengths: [{ rule: 'empathy', label: "Acknowledges the customer's feelings", calls: 1, share: 1, why: 'Naming the feeling lowers the tension and keeps the customer talking.' }],
     };
     const names = ['Karim B.', 'Hela M.', 'Sami R.', 'Rania K.', 'Mehdi T.', 'Ines F.'];
     return {
       method: 'Demo data: the real quality agent scores every stored call.',
       team: { calls: 2, avgOverall: 75, avgByCriterion: crit, weeks: [null, null, null, null, null, null, 62, 88], causes: [{ cause: 'Process skipped', calls: 1, share: 1 }], byIntent: [{ intent: 'Billing', calls: 2, avg: 75 }],
-        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }] },
+        topErrors: [{ rule: 'promise_before_check', label: 'Promise before the policy check', calls: 1, share: 0.5, cause: 'Process skipped' }],
+        topStrengths: [{ rule: 'empathy', label: "Acknowledges the customer's feelings", calls: 2, share: 1, why: 'Naming the feeling lowers the tension and keeps the customer talking.' }, { rule: 'greeting', label: 'Greets the customer', calls: 1, share: 0.5, why: 'A clear opening sets a calm tone and shows who is speaking.' }] },
       advisors: names.map((advisor, index) => ({
         ...base,
         advisor,
@@ -127,7 +131,10 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
-  async reviewCall(_callId: string, _advisor: string): Promise<m.QualityReview> {
+  async practiceCall(callId: string, _scenarioId: string, advisor: string): Promise<m.QualityReview & { practice?: m.PracticeAttempt }> { return this.reviewCall(callId, advisor); }
+  async practice(_advisor: string): Promise<m.PracticeHistory> { return { attempts: [], count: 0, best: null, trend: null }; }
+
+  async reviewCall(_callId: string, _advisor: string, _source?: 'live call' | 'automatic'): Promise<m.QualityReview> {
     throw new NeedsRealAgentsError('demo mode cannot review live calls');
   }
 
@@ -172,6 +179,16 @@ export class MockAgentGateway extends AgentGateway {
     ];
   }
 
+  private demoOnly(): never { throw new NeedsRealAgentsError('the demo data keeps no complaint cases'); }
+  async complaint(_id: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintTriage(_text: string, _customerId: string | null): Promise<m.ComplaintCase> { return this.demoOnly(); }
+  async complaintCreate(_text: string, _customerId: string | null, _channel: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintAct(_id: string, _act: m.ComplaintAct): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+  async complaintInsights(): Promise<m.ComplaintInsights | null> { return null; }
+  async complaintFollowUps(): Promise<m.ComplaintFollowUp[]> { return []; }
+  async complaintCandidates(): Promise<m.ComplaintCandidate[]> { return []; }
+  async complaintFromCall(_callId: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
+
   async scenarios(advisorId?: string): Promise<m.Scenario[]> {
     const base = [
       { id: 'SC-31', title: 'Double charge, customer threatens to post online', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'QA weakness: compliance' },
@@ -186,23 +203,21 @@ export class MockAgentGateway extends AgentGateway {
     return [...(advisorId === 'Karim B.' ? base : []), ...owned];
   }
 
-  async generateScenario(advisorId: string, difficulty = 'Medium'): Promise<m.ScenarioDetail> {
-    const source = await this.scenario('SC-31');
-    const id = `SC-${advisorId.replace(/[^a-z0-9]/gi, '').toLowerCase()}-${this.scenarioSequence++}`;
+  private generated = 0;
+  /** Demo generator: a scenario from a short list, so the builder works without the Python agents. */
+  async generateScenario(difficulty: number | null, advisorId?: string): Promise<m.ScenarioDetail> {
+    const level = difficulty ?? 3, n = 32 + this.generated;
+    const [title, segment, profile] = [
+      ['Double charge, customer asks for an immediate refund', 'dissatisfied', 'Unsatisfied'], ['First call from a new subscriber about data limits', 'new', 'New'],
+      ['Roaming bundle unusable abroad, premium customer', 'premium', 'Premium'], ['Cancellation fee disputed by a loyal customer', 'loyal', 'Loyal'],
+    ][this.generated++ % 4];
     const scenario: m.ScenarioDetail = {
-      ...source,
-      id,
-      difficulty,
-      origin: 'QA weakness',
-      kind: 'adaptive',
-      mutation_log: [`generated for ${advisorId}`],
-      spec: {
-        segment: source.spec?.segment ?? source.profile.toLowerCase(),
-        difficulty: difficulty === 'Hard' ? 4 : difficulty === 'Easy' ? 2 : 3,
-      },
+      id: `SC-${n}`, title, profile, difficulty: level >= 4 ? 'Hard' : level === 3 ? 'Medium' : 'Easy', origin: 'Template library', kind: 'generated', mutation_log: [],
+      spec: { segment, difficulty: level }, customer_card: 'Demo scenario: the real generator writes the customer situation here.',
+      trainer_brief: `Practise: ${title.toLowerCase()} (demo data).`, complications: [], success_criteria: ['Acknowledges the problem', 'Checks the policy before promising', 'Confirms in writing'],
     };
-    this.scenarioVariants.set(id, scenario);
-    this.scenarioOwners.set(id, advisorId);
+    this.scenarioVariants.set(scenario.id, scenario);
+    if (advisorId) this.scenarioOwners.set(scenario.id, advisorId);
     return scenario;
   }
 
@@ -264,7 +279,7 @@ export class MockAgentGateway extends AgentGateway {
       needs_training: focus.length > 0,
       focus,
       scenarios: focus.length
-        ? await Promise.all(focus.slice(0, 3).map(() => this.generateScenario(advisorId)))
+        ? await Promise.all(focus.slice(0, 3).map(() => this.generateScenario(null, advisorId)))
         : await this.scenarios(advisorId),
       rationale: focus.length
         ? focus.map((f) => `${f.skill}: coaching scenario recommended from ${f.criteria.join(', ')}.`)
@@ -278,5 +293,21 @@ export class MockAgentGateway extends AgentGateway {
       { customer: 'Mounir Sassi', offer: 'Family bundle', relevance: 82, reason: 'Asked twice about adding a line' },
       { customer: 'Salma Hammami', offer: 'Loyalty data top-up', relevance: 71, reason: 'Usage dropping, churn risk; retention offer' },
     ];
+  }
+
+  async salesDetect(_customerId: string | null, _turns: m.SalesTurn[]): Promise<m.SalesDetection> {
+    throw new NeedsRealAgentsError('demo mode cannot read a conversation');
+  }
+
+  async salesOutcome(_outcome: m.SalesOutcome): Promise<void> {
+    throw new NeedsRealAgentsError('demo mode keeps no outcomes');
+  }
+
+  async salesAnalytics(): Promise<m.SalesAnalytics | null> {
+    return null;
+  }
+
+  async salesSimulate(_request: m.SalesSimulationRequest): Promise<m.SalesSimulation> {
+    throw new NeedsRealAgentsError('demo mode has no history to replay');
   }
 }

@@ -3,6 +3,7 @@ import hashlib
 import random
 
 from .catalog import Catalog, CatalogError
+from .openings import OPENINGS
 from .schemas import (
     GenerateRequest,
     Kind,
@@ -213,6 +214,7 @@ class ScenarioGenerator:
             f"{spec.model_dump_json()}|{kind}|{parent_id}".encode()
         ).hexdigest()[:10]
 
+        opening, topic = OPENINGS.get(spec.intent, ("", ""))
         return TrainingScenario(
             id=scenario_id,
             kind=kind,
@@ -225,6 +227,8 @@ class ScenarioGenerator:
             success_criteria=criteria,
             complications=complications,
             customer_card=intent.card[spec.language],
+            opening_line=opening,
+            call_topic=topic,
             trainer_brief=brief,
             tags=[intent.category, f"level-{spec.difficulty}", spec.language, spec.segment]
             + (["multi-event"] if len(events) >= 2 else [])

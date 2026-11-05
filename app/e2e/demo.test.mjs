@@ -104,9 +104,10 @@ test('the demo tour walks from the home page to the simulator', async () => {
   await ctx.close();
 });
 
-test('escalating a complaint moves it up a lane and updates the counts', async () => {
+test('escalating a complaint moves it up a lane and updates the counts', async (t) => {
   const { ctx, page } = await signIn('admin');
   await page.goto(`${BASE}/complaints`);
+  if ((await page.locator('.lane[data-lane]').count()) === 0) { await ctx.close(); return t.skip('the real complaint agent is running: see the test after this one'); }
   const high = page.locator('.lane[data-lane="high"]');
   await high.locator('[data-escalate]').click();
   assert.equal(await page.locator('.lane[data-lane="critical"] .case').count(), 2);
@@ -137,16 +138,21 @@ test('no page scrolls sideways on a phone', async () => {
   await ctx.close();
 });
 
-test('the training builder adds a scenario and what-if compares one change', async () => {
+test('the training builder makes a scenario on the server, and what-if makes a harder copy that can be deleted', async () => {
   const { ctx, page } = await signIn('admin');
   await page.goto(`${BASE}/training`);
+  assert.equal(await page.locator('#whatif').count(), 0, 'the old in-page builder is gone');
   await page.selectOption('#gen-diff', 'Hard');
   await page.click('#generate');
-  assert.equal(await page.locator('#scenarios .scn').count(), 4);
-  assert.match(await page.textContent('#scenarios .scn:first-child .chips'), /Hard/);
-  await page.click('#scenarios .scn:first-child [data-act="whatif"]');
-  assert.equal(await page.locator('#whatif').isVisible(), true);
-  assert.ok((await page.textContent('#wi-note')).length > 20);
+  await page.waitForURL(/\/training\/scenarios\//);
+  assert.match(await page.textContent('main'), /Difficulty 4\/5/);
+  const original = page.url();
+  await page.click('button:has-text("Make harder")');
+  await page.waitForURL((u) => /\/training\/scenarios\//.test(u.pathname) && u.href !== original);
+  assert.ok(await page.locator('h2', { hasText: 'Scenario history' }).count(), 'the history shows the original and the copy');
+  assert.ok((await page.locator('ol a').count()) >= 2);
+  await page.click('button:has-text("Delete scenario")');                                        // leave the store as it was found
+  await page.waitForURL(/\/training(\?advisor=.*)?$/);
   await ctx.close();
 });
 
@@ -560,7 +566,8 @@ test('quality: a live call sent by the advisor shows up as a review for Nour', a
   assert.match(await card.innerText(), /live call/);
   assert.equal(await nour.page.locator('article.review').first().getAttribute('id'), id, 'the focused call comes first');
   const drivers = card.locator('.drivers');
-  assert.match(await drivers.innerText(), /Lowered the score/);
+  assert.match(await drivers.innerText(), /What went well[\s\S]*What lowered the score/, 'the good is reported first, next to the bad');
+  assert.match(await card.locator('.balance').innerText(), /✓ \d+ done well[\s\S]*✗ \d+ lost points/);
   assert.match(await drivers.locator('.driver-list li', { hasText: 'Promised a refund before checking' }).first().innerText(), /^−\d+/, 'its cost on the score');
   assert.match(await drivers.locator('.driver-list li', { hasText: 'Promised a refund before checking' }).first().locator('q').innerText(), /refund you right away/);
   await card.locator('summary', { hasText: 'points were lost' }).click();
@@ -692,7 +699,198 @@ test('call review: the emotion answer comes with a map of which parts of the rec
   await page.click('#review-form button[type=submit]');
   await page.locator('#r-why-box').waitFor({ state: 'visible', timeout: 90000 });
   assert.ok(await page.locator('#r-why li').count() >= 5, 'one block per half second');
-  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: .* s \(.* points of confidence\)|No single part/);
+  assert.match(await page.locator('#r-why-top').innerText(), /Most influential: [\d.]+ to [\d.]+ s|No single part/);
   assert.match(await page.locator('#r-why li').first().getAttribute('aria-label'), /s: (supports|argues against|no effect on) /);
+  await ctx.close();
+});
+
+test('sales: offers come with their reasons in points, a conversation is read, and an outcome is recorded', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('leila');
+  await page.goto(`${BASE}/sales`);
+  assert.ok(await page.locator('#opps .opp').count() >= 3, 'an offer for each customer on file');
+  const first = page.locator('#opps .opp').first();
+  await first.locator('summary', { hasText: 'Why this offer' }).click();
+  const whyOffer = first.locator('details:has(summary:text("Why this offer")) .driver-list');
+  assert.match(await whyOffer.innerText(), /What the file says[\s\S]*Fit with the contract/);
+  assert.ok(await whyOffer.locator('.eff').count() >= 3, 'every factor has its points');
+  // a conversation: the customer says she is travelling, the agent finds the need and the roaming offer
+  await page.click('button[data-sample-customer="YT-1042"]');
+  assert.match(await page.inputValue('#sales-text'), /travelling to Paris/);
+  await page.click('#sales-form button[type=submit]');
+  await page.locator('#sales-result').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#sales-signals').innerText(), /Travelling abroad[\s\S]*Paris/);
+  const offers = page.locator('#sales-offers > li');
+  assert.match(await offers.first().innerText(), /Roaming Pass 5 GB: \d+\/100/);
+  assert.match(await offers.first().locator('.driver-list').innerText(), /What the customer said/);
+  await offers.first().locator('button[data-outcome=accepted]').click();
+  await page.locator('.toast', { hasText: 'Recorded: accepted' }).waitFor({ timeout: 10000 });
+  assert.equal(await offers.first().locator('button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
+  assert.ok(await page.locator('table.conv').count() >= 4, 'what converts');
+  // propensity: churn risk, the chance of a yes and what it is worth, on the card and in the conversation reader
+  assert.match(await first.locator('.risk').innerText(), /Churn risk \d+ · (Low|Medium|High)/);
+  assert.match(await first.locator('.figures').innerText(), /Chance of a yes \d+% · worth -?\d+ TND over 12 months if yes · expected -?\d+ TND/);
+  await first.locator('summary', { hasText: 'Why this churn risk' }).click();
+  assert.match(await first.locator('details:has(summary:text("Why this churn risk")) .driver-list').innerText(), /Starting point/);
+  assert.match(await offers.first().locator('.figures').innerText(), /Chance of a yes \d+%/);
+  assert.match(await page.locator('#sales-churn').innerText(), /Risk of losing this customer: \d+ · /);
+  // commercial simulation: a stricter rule makes fewer offers, then redraws the table
+  const rows = page.locator('#sim-body tr');
+  assert.equal(await rows.count(), 5, 'four rules and yours');
+  const offersBefore = Number((await rows.last().locator('td').first().innerText()).trim());
+  await page.fill('#sim-min', '70');
+  await page.check('#sim-good');
+  await page.click('#sim-form button[type=submit]');
+  await page.waitForFunction(() => /relevance 70 or more, at a good moment/i.test(document.querySelector('#sim-body tr.yours th')?.textContent ?? ''), null, { timeout: 15000 });
+  const offersAfter = Number((await rows.last().locator('td').first().innerText()).trim());
+  assert.ok(offersAfter < offersBefore, 'fewer offers under a stricter rule');
+  await page.fill('#sim-calls', '2000');
+  await page.click('#sim-form button[type=submit]');
+  await page.waitForFunction(() => /2000 calls/.test(document.querySelector('#sim-caption')?.textContent ?? ''), null, { timeout: 15000 });
+  await ctx.close();
+});
+
+test('sales in the live call: an offer to keep in mind appears with its timing and the advisor reports the outcome', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('karim');
+  await page.goto(`${BASE}/advisor`);
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
+  assert.equal(await page.locator('#live-offer').isVisible(), false, 'no offer before a call');
+  await page.click('#live-setup button[type=submit]');
+  await page.locator('#live-offer').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#lv-o-name').innerText(), /Upgrade to Premium Unlimited \(\d+\/100\)/);
+  assert.match(await page.locator('#lv-o-timing').innerText(), /Wait: solve the problem first/);   // the customer file has an open ticket
+  assert.match(await page.locator('#lv-o-risk').innerText(), /Risk of losing this customer: \d+ · (Low|Medium|High)/);
+  assert.match(await page.locator('#lv-o-figures').innerText(), /Chance of a yes \d+% · worth \d+ TND over 12 months if yes · expected \d+ TND/);
+  await page.locator('#live-offer summary', { hasText: 'Why this offer' }).click();
+  assert.match(await page.locator('#lv-o-why').innerText(), /What the file says[\s\S]*The moment/);
+  // the advisor answers; the panel follows the conversation and the outcome can be reported once
+  await page.fill('#lv-text', 'I am sorry about this. Let me check the refund policy before I promise anything.');
+  await page.click('#live-say button[type=submit]');
+  await page.locator('.live-msg.client').nth(1).waitFor({ timeout: 20000 });
+  await page.locator('#lv-o-name').waitFor({ state: 'visible' });
+  await page.click('#lv-o-actions button[data-outcome=declined]');
+  await page.locator('.toast', { hasText: 'Recorded: declined' }).waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('#lv-o-actions button[data-outcome]').first().isDisabled(), true, 'one outcome per offer');
+  await ctx.close();
+});
+
+test('the customer reacts to shouting and to what was actually said, not just to polite phrases', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('karim');
+  await page.goto(`${BASE}/advisor`);
+  await page.uncheck('#lv-voice'); await page.uncheck('#lv-sayme');
+  await page.click('#live-setup button[type=submit]');
+  await page.locator('.live-msg.client').first().waitFor({ timeout: 20000 });
+  const reply = async (words) => {
+    const before = await page.locator('.live-msg.client').count();
+    await page.fill('#lv-text', words);
+    await page.click('#live-say button[type=submit]');
+    await page.waitForFunction((n) => document.querySelectorAll('.live-msg.client').length > n, before, { timeout: 20000 });
+    return page.locator('.live-msg.client').last().innerText();
+  };
+  const mood = async () => Number(await page.locator('#lv-mood-n').innerText());
+  const start = await mood();
+  assert.match(await reply('Why did you put $2,000?'), /\$2,000/);                               // she answers the amount that was said
+  assert.match(await reply('Hello, how are you today?'), /my bill|my roaming|my cancellation/);   // a greeting gets a greeting, and the subject
+  const calm = await mood();
+  const shouted = await reply('I WANT MY MONEY BACK NOW!!!');
+  assert.doesNotMatch(shouted, /Alright|Mm-hm|go on|Okay, sure/i);                                // not the empty filler she used to give
+  assert.match(await page.locator('.live-msg.client').last().innerText(), /She read this as: Raised your voice or was rude/);
+  assert.ok((await mood()) < calm - 10, `her mood must drop after shouting (${calm} -> ${await mood()}, started at ${start})`);
+  await ctx.close();
+});
+
+test('complaints: cases come with their reasons, a complaint is read, opened, taken, resolved and closed after the follow-up', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/complaints`);
+  assert.ok(await page.locator('.lane').count() >= 4, 'critical, high, medium and low lanes');
+  assert.ok(await page.locator('.case').count() >= 4 && await page.locator('.early-warning').count() >= 1, 'open cases and an early warning');
+  const card = page.locator('.case').first();
+  await card.locator('summary', { hasText: 'Why' }).click();
+  assert.ok(await card.locator('.driver-list .eff').count() >= 3, 'every number has its points');
+  // read a complaint without saving it
+  await page.click('button[data-tri-sample]:has-text("Charged twice")');
+  await page.click('#tri-read');
+  await page.locator('#tri-result').waitFor({ state: 'visible', timeout: 20000 });
+  assert.match(await page.locator('#tri-cluster').innerText(), /Billing duplicates/);
+  assert.match(await page.locator('#tri-level').innerText(), /(Critical|High) · escalation risk \d+/);
+  assert.ok(await page.locator('#tri-sev li').count() >= 2 && await page.locator('#tri-actions li').count() >= 3);
+  // open it as a case, then take it, resolve it and close it after the follow-up call
+  await page.click('#tri-form button[type=submit]');
+  await page.waitForURL(/\/complaints\/CMP-\d+$/);
+  assert.match(await page.textContent('main'), /Why this level and this risk[\s\S]*What to do first/);
+  await page.click('button:has-text("Take case")');
+  assert.match(await page.textContent('.page-head .lede'), /taken by admin/);
+  await page.selectOption('#res', 'refunded');
+  await page.fill('#res-note', 'refunded the duplicate');
+  await page.click('button:has-text("Resolve")');
+  assert.match(await page.textContent('main'), /Follow-up call: is the customer satisfied\?/);
+  await page.selectOption('#tr', 'yes');
+  await page.click('button:has-text("Close the follow-up")');
+  assert.match(await page.textContent('main'), /Closed: the customer is satisfied/);
+  assert.match(await page.textContent('main'), /opened[\s\S]*taken[\s\S]*resolved[\s\S]*closed/);
+  // a call the quality analyst scored badly can become a case
+  await page.goto(`${BASE}/complaints`);
+  const open = page.locator('form[action="/complaints/from-call"] button');
+  if (await open.count()) {
+    await open.first().click();
+    await page.waitForURL(/\/complaints\/CMP-\d+$/);
+    assert.match(await page.textContent('main'), /from the call/);
+  }
+  await ctx.close();
+});
+
+test('the advisor agent talks by itself: the call is scored and the sales, quality and complaint agents have their say', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/advisor`);
+  await page.click('[data-auto="careful"]');
+  await page.locator('#live-summary').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#lv-sum-list li', { hasText: 'Complaint agent:' }).waitFor({ timeout: 30000 });
+  const summary = await page.locator('#live-summary').innerText();
+  assert.match(summary, /Customer simulator: Resolved/);
+  assert.match(summary, /Advisor agent: \d replies by itself \(acknowledge, check the policy, .*follow up in writing\), \d written by the local model and checked by the quality rules, \d in fixed wording/);
+  assert.match(summary, /Sales agent: /);
+  assert.match(summary, /Quality analyst: CALL-\d+ scored \d+\/100\. What lowered it: .*What went well: .*(Acknowledged|Checked|Gave)/);
+  assert.match(summary, /Complaint agent: no complaint expected/);
+  const replies = await page.locator('.live-msg.advisor').count();
+  assert.ok(replies >= 4 && replies <= 6, 'the four steps, and up to two replies for what the customer needs');
+  assert.equal(await page.locator('.live-msg.client').count(), replies + 1, 'her opening and an answer to each reply');
+  assert.equal(await page.locator('[data-auto]').first().isDisabled(), false, 'the buttons are free again');
+  await ctx.close();
+});
+
+test('a rushed advisor ends the call badly, and the call shows up for the complaint agent', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/advisor`);
+  await page.click('[data-auto="rushed"]');
+  await page.locator('#lv-sum-list li', { hasText: 'Complaint agent:' }).waitFor({ timeout: 60000 });
+  const summary = await page.locator('#live-summary').innerText();
+  assert.doesNotMatch(summary, /Customer simulator: Resolved/);
+  assert.match(summary, /in the rushed style, to show what goes wrong/);
+  assert.match(summary, /Quality analyst: CALL-\d+ scored \d+\/100\. What lowered it: .*(refund|asked|Transferred)/i);
+  assert.match(summary, /Complaint agent: the call ended badly/);
+  await page.goto(`${BASE}/complaints`);
+  assert.match(await page.textContent('main'), /Calls that may be complaints[\s\S]*CALL-\d+/);
+  await ctx.close();
+});
+
+test('a training scenario can be played in the console, and the advisor agent can play it', async (t) => {
+  if (!(await agentsUp())) return t.skip('the Python agents are not running');
+  const { ctx, page } = await signIn('admin');
+  await page.goto(`${BASE}/training`);
+  await page.selectOption('#gen-diff', 'Hard');
+  await page.click('#generate');
+  await page.waitForURL(/\/training\/scenarios\//);
+  await page.click('a:has-text("Let the advisor agent play it")');
+  await page.waitForURL(/\/advisor\?scenario=.*auto=careful/);
+  assert.match(await page.textContent('.play-banner'), /Training scenario:[\s\S]*How the scenario was read by the customer simulator[\s\S]*Difficulty 4\/5 becomes “Hard”/);
+  assert.equal(await page.inputValue('#lv-diff'), 'HARD');
+  await page.locator('#live-summary').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#lv-sum-list li', { hasText: 'Quality analyst:' }).waitFor({ timeout: 30000 });
+  assert.match(await page.locator('#live-summary').innerText(), /Advisor agent: \d replies by itself/);
   await ctx.close();
 });

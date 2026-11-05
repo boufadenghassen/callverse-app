@@ -122,6 +122,20 @@ POSITIVES = {
     "empathy": "Acknowledged the customer's feelings", "check_first": "Checked the policy before promising", "identity": "Verified the customer's identity",
     "follow_up": "Gave a written confirmation or follow-up", "closing": "Closed the call properly", "greeting": "Greeted the customer", "mood_up": "The customer's mood rose",
 }
+# The same behaviours as habits (for the team view) and why each one matters: the analyst talks about the good as much as about the mistakes.
+HABITS = {
+    "identity": "Verifies the customer's identity", "check_first": "Checks the policy before promising", "empathy": "Acknowledges the customer's feelings",
+    "greeting": "Greets the customer", "follow_up": "Confirms in writing and sets a follow-up", "closing": "Closes with a question or thanks", "mood_up": "Turns the customer's mood around",
+}
+POSITIVE_WHY = {
+    "identity": "Knowing who is calling before touching the account protects the customer and the company.",
+    "check_first": "A promise that follows the policy is one the company can keep.",
+    "empathy": "Naming the feeling lowers the tension and keeps the customer talking.",
+    "greeting": "A clear opening sets a calm tone and shows who is speaking.",
+    "follow_up": "The customer leaves knowing what happens next and when.",
+    "closing": "It lets the customer raise anything that is still open.",
+    "mood_up": "The customer ended this reply in a better mood than they started it.",
+}
 
 
 CLAUSE = re.compile(r"[,;:]|but", re.I)
@@ -364,6 +378,7 @@ def criteria_rows(issues: list[dict], good: list[dict], scores: dict[str, int]) 
     rows = []
     for c in CRITERIA:
         mine = sorted((f for f in issues if f["criterion"] == c), key=lambda f: -f["points"])
+        done = [g["text"] for g in good if g["rule"] in POSITIVE_FOR[c]]
         if mine:
             evidence = mine[0]["reason"] + (f" (+{len(mine) - 1} more)" if len(mine) > 1 else "")
             ts = mine[0]["timestamp"]
@@ -371,7 +386,7 @@ def criteria_rows(issues: list[dict], good: list[dict], scores: dict[str, int]) 
             pos = [g for g in good if g["rule"] in POSITIVE_FOR[c]]
             evidence = pos[0]["text"] if pos else "No error found"
             ts = pos[0]["timestamp"] if pos else "00:00"
-        rows.append(dict(name=c, score=scores[c], max=MAX, evidence=evidence, timestamp=ts))
+        rows.append(dict(name=c, score=scores[c], max=MAX, evidence=evidence, timestamp=ts, good=done))
     return rows
 
 
@@ -425,11 +440,11 @@ def explained(review: dict, disputed=frozenset()) -> dict:
             new = [f for f in appears[(g["turn"], g["rule"])] if f["rule"] in PREVENTS[g["rule"]]]
             if new:
                 effect, labels = base - overall(score(kept + new)), sorted({RULE_LABELS[f["rule"]] for f in new})
-        strengths.append(dict(g, effect=effect, prevents=labels))
+        strengths.append(dict(g, effect=effect, prevents=labels, why=POSITIVE_WHY.get(g["rule"], "")))
     hurt = sorted((dict(turn=e["turn"], timestamp=e["timestamp"], rule=e["rule"], label=e["reason"], criterion=e["criterion"], points=e["points"],
                         effect=e["effect"], quote=e.get("quote", ""), floored=e["floored"])
                    for e in errors if (e["rule"], e["turn"]) not in disputed), key=lambda d: (d["effect"], -d["points"]))
-    helped = sorted((dict(turn=g["turn"], timestamp=g["timestamp"], rule=g["rule"], label=g["text"], effect=g["effect"], prevents=g["prevents"], quote=quote(g["turn"]))
+    helped = sorted((dict(turn=g["turn"], timestamp=g["timestamp"], rule=g["rule"], label=g["text"], effect=g["effect"], prevents=g["prevents"], why=g["why"], quote=quote(g["turn"]))
                      for g in strengths), key=lambda d: -d["effect"])
     return dict(review, errors=errors, strengths=strengths, drivers=dict(hurt=hurt, helped=helped))
 

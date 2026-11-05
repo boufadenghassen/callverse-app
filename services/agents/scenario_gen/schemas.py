@@ -58,6 +58,8 @@ class TrainingScenario(BaseModel):
     success_criteria: list[str]
     complications: list[str]  # English text of each event, for trainers and for Customer Sim prompts
     customer_card: str  # situation card in the scenario language (what the customer lives)
+    opening_line: str = ""  # what the customer says first in a practice call, in English (openings.py)
+    call_topic: str = ""  # how the customer names the problem during that call
     trainer_brief: str  # English summary for the trainer or the advisor
     tags: list[str] = Field(default_factory=list)
 
