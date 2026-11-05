@@ -40,13 +40,21 @@ test('a demo scenario (a card only) is read from its profile, difficulty and tit
 
 let demo: NestExpressApplication, real: NestExpressApplication;
 const asked: { topic: string; turn: number; style: string }[] = [];
+const contexts: (m.AutoContext | undefined)[] = [], calls: m.CallConfig[] = [], reviewed: string[][] = [];
+const ATTEMPT: m.PracticeAttempt = { callId: 'CALL-3501', scenarioId: 'sc_abc', title: 'Refund follow-up (level 4, en)', advisor: 'Hela M.', overall: 88, date: '2026-11-05', next: 'harder', advice: 'Passed at 88/100 with nothing worse than usual: try the harder version.',
+  changes: [{ criterion: 'Compliance', before: 5.1, after: 9, status: 'improved' }] };
 class FakeGateway extends MockAgentGateway {
-  async scenario(id: string) { if (id === 'nope') throw new Error('Unknown scenario'); return id === 'SC-31' ? super.scenario(id) : { ...REAL, id }; }
-  async autoReply(topic: string, turn: number, style: 'careful' | 'rushed'): Promise<m.AutoReply> {
+  async scenario(id: string) { if (id === 'nope') throw new Error('Unknown scenario'); return id === 'SC-31' ? super.scenario(id) : { ...REAL, id, opening_line: 'I lost my phone.', call_topic: 'my lost SIM', customer_card: 'You lost your phone.', complications: ['The customer is abroad.'] }; }
+  async startCall(c: m.CallConfig): Promise<m.CallStart> { calls.push(c); return { id: '0123456789abcdef', persona: 'Impatient', opening: c.opening ?? 'Hello', mood: 50, patience: 60 }; }
+  async practiceCall(callId: string, scenarioId: string, advisor: string) { reviewed.push(['practice', scenarioId, advisor]); return { ...(await this.reviewCall(callId, advisor)), practice: ATTEMPT }; }
+  async practice(advisor: string): Promise<m.PracticeHistory> { return advisor === 'Hela M.' ? { attempts: [ATTEMPT], count: 1, best: 88, trend: null } : { attempts: [], count: 0, best: null, trend: null }; }
+  async autoReply(topic: string, turn: number, style: 'careful' | 'rushed', context?: m.AutoContext): Promise<m.AutoReply> {
     asked.push({ topic, turn, style });
+    contexts.push(context);
     return { text: 'I am sorry about this.', step: 'acknowledge', turn, last: false, sources: ['Billing policy §4.2'], intents: ['Billing'], policyWarning: null, style };
   }
-  async reviewCall(callId: string, advisor: string): Promise<m.QualityReview> {
+  async reviewCall(callId: string, advisor: string, source?: 'live call' | 'automatic'): Promise<m.QualityReview> {
+    reviewed.push(['review', advisor, source ?? '']);
     return {
       callId: 'CALL-3500', advisor, overall: 92, counterfactual: '', criteria: [],
       errors: [{ rule: 'no_closing', criterion: 'Resolution', points: 2, turn: 4, timestamp: '00:30', quote: '', reason: 'The call ended without a closing question', fix: '', cause: 'Soft skills' }],
@@ -130,6 +138,45 @@ test('scoring the call says what lowered it, what went well and whether it ended
     const agent = await client(real, user);
     const token = tokenOf((await agent.get('/advisor')).text);
     const r = await agent.post('/advisor/live/review').set('X-CSRF-Token', token).send({ id }).expect(200);
-    assert.deepEqual(r.body, { callId: 'CALL-3500', overall: 92, hurt: ['The call ended without a closing question'], helped: ["Acknowledged the customer's feelings"], hungUp: false, unresolved: false });   // only what protected points
+    assert.deepEqual(r.body, { practice: null, callId: 'CALL-3500', overall: 92, hurt: ['The call ended without a closing question'], helped: ["Acknowledged the customer's feelings"], hungUp: false, unresolved: false });   // only what protected points
   }
+});
+
+test('a scenario call starts with the scenario\'s own words, and the advisor agent reads the conversation and the scenario', async () => {
+  const karim = await client(real, 'karim');
+  const html = (await karim.get('/advisor').query({ scenario: 'sc_abc' }).expect(200)).text;
+  assert.match(html, /data-scenario="sc_abc"/);
+  assert.match(html, /opens with the scenario(&#39;|')s own words/);
+  const token = tokenOf(html);
+  const start = { persona: 'IMPATIENT', difficulty: 'MEDIUM', intent: 'BILLING', memory: false };
+  const r = await karim.post('/advisor/live/start').set('X-CSRF-Token', token).send({ ...start, scenario: 'sc_abc' }).expect(200);
+  assert.equal(r.body.opening, 'I lost my phone.');
+  assert.deepEqual([calls.at(-1)?.opening, calls.at(-1)?.topic], ['I lost my phone.', 'my lost SIM']);
+  await karim.post('/advisor/live/start').set('X-CSRF-Token', token).send({ ...start, scenario: 'nope' }).expect(200);
+  assert.equal(calls.at(-1)?.opening, undefined, 'a scenario that is gone leaves a plain call');
+
+  const turns = [{ speaker: 'customer', text: 'I lost my phone.', mood: 40 }, { speaker: 'nobody', text: 'dropped' }];
+  await karim.post('/advisor/live/auto').set('X-CSRF-Token', token).send({ topic: 'I lost my phone.', turn: 1, turns, steps: ['acknowledge', 7], scenario: 'sc_abc' }).expect(200);
+  assert.deepEqual(contexts.at(-1), { turns: [turns[0]], steps: ['acknowledge'], brief: 'You lost your phone. The customer is abroad.' });
+});
+
+test('the advisor agent\'s call is not filed under the person watching, and a practice call goes to the coach', async () => {
+  const id = '0123456789abcdef', rim = await client(real, 'rim');
+  const token = tokenOf((await rim.get('/advisor')).text);
+  await rim.post('/advisor/live/review').set('X-CSRF-Token', token).send({ id, auto: true, scenario: 'sc_abc' }).expect(200);
+  assert.deepEqual(reviewed.at(-1), ['review', 'Advisor agent', 'automatic']);
+  const r = await rim.post('/advisor/live/review').set('X-CSRF-Token', token).send({ id, scenario: 'sc_abc' }).expect(200);
+  assert.deepEqual(reviewed.find((x) => x[0] === 'practice'), ['practice', 'sc_abc', 'Rim']);
+  assert.equal(r.body.practice.next, 'harder');
+});
+
+test('the coach sees the practice results, with the next step they call for', async () => {
+  const rim = await client(real, 'rim');
+  const html = (await rim.get('/training').query({ advisor: 'Hela M.' }).expect(200)).text;
+  assert.match(html, /Practice results for Hela M\./);
+  assert.match(html, /1 practice call · best 88\/100/);
+  assert.match(html, /Compliance 5.1 to 9/);
+  assert.match(html, /Passed at 88\/100/);
+  assert.match(html, /Make it harder/);
+  assert.match((await rim.get('/training').query({ advisor: 'Sami R.' }).expect(200)).text, /No practice yet/);
 });

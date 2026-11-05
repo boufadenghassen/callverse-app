@@ -8,12 +8,14 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Path, Query, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 import advisor
+import advisor_agent
 import customer
+import local_llm
 from quality_analyst import audio as quality_audio
 from quality_analyst import engine as quality
 from quality_analyst import evaluation as quality_eval
@@ -28,8 +30,12 @@ import voice
 import routing
 import scheduling
 import workforce
+from scenario_gen import practice
+from scenario_gen.router import get_service
 from scenario_gen.router import router as scenario_gen_router
 from scenario_gen.router import training_router as scenario_gen_training_router
+from scenario_gen.service import ScenarioService
+from scenario_gen.store import ScenarioNotFound
 
 
 @asynccontextmanager
@@ -51,6 +57,7 @@ def _warm_up():
         steps.append(stt._pipeline)
     if quality.SEMANTIC:   # the first review otherwise waits ~15 s for the embedding model, and the accuracy page for its report
         steps.append(lambda: (quality_semantic.scores("Ready."), quality_eval.report()))
+    steps.append(local_llm.warm)
     for step in steps:
         try:
             step()
@@ -77,6 +84,8 @@ class CallIn(BaseModel):
     difficulty: Literal["EASY", "MEDIUM", "HARD"] = "MEDIUM"
     intent: Literal["BILLING", "ROAMING", "CANCELLATION"] = "BILLING"
     memory: bool = False
+    opening: str | None = Field(None, max_length=300)     # a training scenario's own first words
+    topic: str | None = Field(None, max_length=60)
 
 
 class Tone(BaseModel):
@@ -99,7 +108,7 @@ class SpeakIn(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available()}
+    return {"status": "UP", "agents": ["customer", "advisor", "workforce", "quality", "sales", "complaints", "scenario_gen"], "voice": voice.available(), "listen": stt.available(), "writer": local_llm.model() if local_llm.available() else None}
 
 
 @app.post("/voice/speak")
@@ -115,23 +124,28 @@ def suggest(body: SuggestIn):
     return advisor.suggest(body.query)
 
 
+class AutoTurn(BaseModel):
+    speaker: Literal["advisor", "customer"]
+    text: str = Field(min_length=1, max_length=1000)
+    mood: int | None = Field(None, ge=0, le=100)
+
+
 class AutoIn(BaseModel):
     topic: str = Field(min_length=3, max_length=300)
     turn: int = Field(0, ge=0, le=10)
     customer_id: str | None = Field(None, pattern=r"^[A-Z]{2}-\d{4}$")
     style: Literal["careful", "rushed"] = "careful"
+    turns: list[AutoTurn] = Field(default_factory=list, max_length=30)
+    steps: list[str] = Field(default_factory=list, max_length=12)
+    brief: str | None = Field(None, max_length=1500)
 
 
 @app.post("/advisor/auto")
 def advisor_auto(body: AutoIn):
-    """What the advisor agent says by itself at this point of a call (acknowledge, check the policy, give the solution, confirm in writing)."""
-    name = None
-    if body.customer_id:
-        record = advisor.get_customer(body.customer_id)
-        if record is None:
-            raise HTTPException(404, f"No customer with id {body.customer_id}.")
-        name = None  # the greeting by name is left out: the live call is with a simulated customer, not the file's customer
-    return advisor.auto_reply(body.topic, body.turn, name, body.style)
+    """What the advisor agent says by itself at this point of a call: it reads the conversation, chooses the next step and has its words checked (advisor_agent.py)."""
+    if body.customer_id and advisor.get_customer(body.customer_id) is None:
+        raise HTTPException(404, f"No customer with id {body.customer_id}.")
+    return advisor_agent.reply(body.topic, body.turn, [t.model_dump() for t in body.turns], body.steps, body.style, body.brief)
 
 
 @app.get("/advisor/customers/{customer_id}")
@@ -145,7 +159,7 @@ def advisor_customer(customer_id: str = Path(pattern=r"^[A-Z]{2}-\d{4}$")):
 
 @app.post("/customer/sessions")
 def start_call(body: CallIn):
-    return customer.start(body.persona, body.mix, body.difficulty, body.intent, body.memory)
+    return customer.start(body.persona, body.mix, body.difficulty, body.intent, body.memory, body.opening, body.topic)
 
 
 @app.post("/customer/sessions/{sid}/say")
@@ -222,6 +236,7 @@ class ReviewIn(BaseModel):
 class ReviewCallIn(BaseModel):
     callId: str = Field(pattern=r"^[0-9a-f]{16}$")
     advisor: str = Field(min_length=1, max_length=60)
+    source: Literal["live call", "automatic"] = "live call"
 
 
 def _store(turns: list[dict], advisor_name: str, source: str, outcome: dict | None = None) -> dict:
@@ -244,7 +259,35 @@ def quality_review_call(body: ReviewCallIn):
         raise HTTPException(404, "Unknown call.")
     if not any(t["speaker"] == "advisor" for t in turns):
         raise HTTPException(400, "Say something to the customer first: there is nothing to review yet.")
-    return _store(turns, body.advisor.strip(), "live call", outcome)
+    return _store(turns, body.advisor.strip(), body.source, outcome)
+
+
+class PracticeIn(BaseModel):
+    callId: str = Field(pattern=r"^[0-9a-f]{16}$")
+    scenario_id: str = Field(min_length=1, max_length=80)
+    advisor: str = Field(min_length=1, max_length=60)
+
+
+@app.post("/training/practice")
+def training_practice(body: PracticeIn, service: ScenarioService = Depends(get_service)):
+    """A practice call of a training scenario: scored by the quality analyst, compared with the advisor's usual level, and kept for the coach."""
+    try:
+        scenario = service.get(body.scenario_id)
+        turns, outcome, _persona = customer.transcript(body.callId)
+    except (KeyError, ScenarioNotFound):
+        raise HTTPException(404, "Unknown call or scenario.")
+    if not any(t["speaker"] == "advisor" for t in turns):
+        raise HTTPException(400, "Say something to the customer first: there is nothing to review yet.")
+    owner = scenario.sim_extensions.get("advisor_id") or body.advisor.strip()
+    usual = next((a["avgByCriterion"] for a in quality_store.analytics()["advisors"] if a["advisor"] == owner), None)
+    review = _store(turns, owner, "practice", outcome)
+    return dict(review, practice=practice.record(scenario.id, scenario.title, owner, review, usual))
+
+
+@app.get("/training/practice")
+def training_practice_history(advisor_name: str = Query(alias="advisor", min_length=1, max_length=60)):
+    """An advisor's practice attempts, for the coach."""
+    return practice.history(advisor_name)
 
 
 @app.post("/quality/review-audio")

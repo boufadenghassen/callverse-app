@@ -12,7 +12,7 @@ flowchart LR
   W -->|"Call review"| E["models/src/serve.py<br/>fine-tuned WavLM<br/><b>built</b>"]
   A -->|"mood of the customer's voice"| E
   A --> R["Knowledge search<br/>built: TF-IDF over an invented KB"]
-  A --> L["LLM API<br/>planned (no LLM today)"]
+  A --> L["Local language model<br/>Ollama, qwen2.5:7b (advisor agent, scenario wording)"]
   W --- S[("Session store<br/>memory now, Redis later")]
   A --- D[("SQLite files today<br/>Postgres planned")]
 ```
@@ -68,5 +68,5 @@ real sign-in (OIDC, for example Keycloak or Microsoft Entra), and never commit `
 1. Merge the local branches into `main` through pull requests, one topic each (sales, complaints, training, quality strengths, the automatic call), and tell the team about the contract additions in `app/src/agents/models.ts`.
 2. Real sign-in before any outside user sees it (the demo password and in-memory sessions are for a local demo only).
 3. `docker-compose.yml` (web + agents + emotion model); a real database instead of SQLite files.
-4. An LLM-style judge next to the rules of the quality analyst, compared on the same calls; an advisor agent that reacts to the customer's mood (today a fixed routine).
+4. An LLM-style judge next to the rules of the quality analyst, compared on the same calls; a customer simulator that speaks through the language model, as the advisor agent now does.
 5. Real labelled calls and the human-agreement study, then trials with real advisors and analysts. Learn the churn, chance-of-a-yes and escalation scores from real data (today hand-weighted).

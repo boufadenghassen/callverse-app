@@ -152,7 +152,7 @@ test('the training builder makes a scenario on the server, and what-if makes a h
   assert.ok(await page.locator('h2', { hasText: 'Scenario history' }).count(), 'the history shows the original and the copy');
   assert.ok((await page.locator('ol a').count()) >= 2);
   await page.click('button:has-text("Delete scenario")');                                        // leave the store as it was found
-  await page.waitForURL(`${BASE}/training`);
+  await page.waitForURL(/\/training(\?advisor=.*)?$/);
   await ctx.close();
 });
 
@@ -851,12 +851,13 @@ test('the advisor agent talks by itself: the call is scored and the sales, quali
   await page.locator('#lv-sum-list li', { hasText: 'Complaint agent:' }).waitFor({ timeout: 30000 });
   const summary = await page.locator('#live-summary').innerText();
   assert.match(summary, /Customer simulator: Resolved/);
-  assert.match(summary, /Advisor agent: 4 replies by itself \(acknowledge, check the policy, give the solution, follow up in writing\), following the good practices/);
+  assert.match(summary, /Advisor agent: \d replies by itself \(acknowledge, check the policy, .*follow up in writing\), \d written by the local model and checked by the quality rules, \d in fixed wording/);
   assert.match(summary, /Sales agent: /);
   assert.match(summary, /Quality analyst: CALL-\d+ scored \d+\/100\. What lowered it: .*What went well: .*(Acknowledged|Checked|Gave)/);
   assert.match(summary, /Complaint agent: no complaint expected/);
-  assert.equal(await page.locator('.live-msg.client').count(), 5, 'her opening and four answers');
-  assert.equal(await page.locator('.live-msg.advisor').count(), 4);
+  const replies = await page.locator('.live-msg.advisor').count();
+  assert.ok(replies >= 4 && replies <= 6, 'the four steps, and up to two replies for what the customer needs');
+  assert.equal(await page.locator('.live-msg.client').count(), replies + 1, 'her opening and an answer to each reply');
   assert.equal(await page.locator('[data-auto]').first().isDisabled(), false, 'the buttons are free again');
   await ctx.close();
 });

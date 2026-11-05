@@ -92,11 +92,9 @@ def _sentences(text: str) -> list[str]:
 
 
 def auto_reply(topic: str, turn: int, customer_name: str | None = None, style: str = "careful") -> dict:
-    """What the advisor agent says by itself, one step per turn: acknowledge the problem, check the policy, give the solution, confirm in writing.
+    """The fixed routine, one step per turn: acknowledge the problem, check the policy, give the solution, confirm in writing. `turn` counts the advisor's replies so far.
 
-    The facts come from the same sourced answer the console suggests (`suggest`); the steps are the good practices the quality analyst checks for,
-    so an automatic call is the advisor agent's knowledge wrapped in a fixed, honest routine. It is not a language model and it does not read the
-    customer's mood: after the last step the call is closed. `turn` counts the advisor's replies so far (0 for the first one).
+    It does not read the conversation. advisor_agent.py is the agent that does, and it comes back to the rushed script here for demonstrations.
     """
     if style == "rushed":
         step, text = RUSHED[min(max(turn, 0), len(RUSHED) - 1)]

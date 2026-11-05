@@ -12,6 +12,8 @@ const MAX_CALLS = 200; // ponytail: oldest call is dropped past this
 @Injectable()
 export class MockAgentGateway extends AgentGateway {
   private readonly scenarioVariants = new Map<string, m.ScenarioDetail>();
+  private readonly scenarioOwners = new Map<string, string>();
+  private scenarioSequence = 1;
 
   async customerContext(id: string): Promise<m.CustomerContext> {
     return { id, name: 'Yasmine Toumi', profile: 'Loyal customer, 6 years', intents: ['Billing', 'Plan change'],
@@ -27,7 +29,7 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
-  async autoReply(_topic: string, _turn: number, _style: 'careful' | 'rushed'): Promise<m.AutoReply> { throw new NeedsRealAgentsError('the advisor agent answers by itself only with the real agents'); }
+  async autoReply(_topic: string, _turn: number, _style: 'careful' | 'rushed', _context?: m.AutoContext): Promise<m.AutoReply> { throw new NeedsRealAgentsError('the advisor agent answers by itself only with the real agents'); }
 
   private readonly calls = new Map<string, Call>();
   private replayOf(c: Call) {
@@ -129,7 +131,10 @@ export class MockAgentGateway extends AgentGateway {
     };
   }
 
-  async reviewCall(_callId: string, _advisor: string): Promise<m.QualityReview> {
+  async practiceCall(callId: string, _scenarioId: string, advisor: string): Promise<m.QualityReview & { practice?: m.PracticeAttempt }> { return this.reviewCall(callId, advisor); }
+  async practice(_advisor: string): Promise<m.PracticeHistory> { return { attempts: [], count: 0, best: null, trend: null }; }
+
+  async reviewCall(_callId: string, _advisor: string, _source?: 'live call' | 'automatic'): Promise<m.QualityReview> {
     throw new NeedsRealAgentsError('demo mode cannot review live calls');
   }
 
@@ -184,17 +189,23 @@ export class MockAgentGateway extends AgentGateway {
   async complaintCandidates(): Promise<m.ComplaintCandidate[]> { return []; }
   async complaintFromCall(_callId: string): Promise<m.ComplaintDetail> { return this.demoOnly(); }
 
-  async scenarios(): Promise<m.Scenario[]> {
-    return [
+  async scenarios(advisorId?: string): Promise<m.Scenario[]> {
+    const base = [
       { id: 'SC-31', title: 'Double charge, customer threatens to post online', profile: 'Unsatisfied', difficulty: 'Hard', origin: 'QA weakness: compliance' },
       { id: 'SC-30', title: 'First call from a new subscriber about data limits', profile: 'New', difficulty: 'Easy', origin: 'Template library' },
       { id: 'SC-29', title: 'Premium customer, two intents, transferred once', profile: 'Premium', difficulty: 'Medium', origin: 'What-if mutation' },
     ];
+    const owned = [...this.scenarioOwners.entries()]
+      .filter(([, owner]) => !advisorId || owner === advisorId)
+      .map(([id]) => this.scenarioVariants.get(id))
+      .filter((item): item is m.ScenarioDetail => !!item);
+    if (!advisorId) return [...base, ...owned];
+    return [...(advisorId === 'Karim B.' ? base : []), ...owned];
   }
 
   private generated = 0;
   /** Demo generator: a scenario from a short list, so the builder works without the Python agents. */
-  async generateScenario(difficulty: number | null): Promise<m.ScenarioDetail> {
+  async generateScenario(difficulty: number | null, advisorId?: string): Promise<m.ScenarioDetail> {
     const level = difficulty ?? 3, n = 32 + this.generated;
     const [title, segment, profile] = [
       ['Double charge, customer asks for an immediate refund', 'dissatisfied', 'Unsatisfied'], ['First call from a new subscriber about data limits', 'new', 'New'],
@@ -206,6 +217,7 @@ export class MockAgentGateway extends AgentGateway {
       trainer_brief: `Practise: ${title.toLowerCase()} (demo data).`, complications: [], success_criteria: ['Acknowledges the problem', 'Checks the policy before promising', 'Confirms in writing'],
     };
     this.scenarioVariants.set(scenario.id, scenario);
+    if (advisorId) this.scenarioOwners.set(scenario.id, advisorId);
     return scenario;
   }
 
@@ -214,7 +226,12 @@ export class MockAgentGateway extends AgentGateway {
     if (variant) return variant;
     const found = (await this.scenarios()).find((item) => item.id === id);
     if (!found) throw new Error(`Unknown scenario ${id}`);
-    return { ...found, kind: 'generated', mutation_log: [] };
+    return {
+      ...found,
+      kind: 'generated',
+      mutation_log: [],
+      spec: { segment: found.profile.toLowerCase(), difficulty: found.difficulty === 'Hard' ? 4 : found.difficulty === 'Easy' ? 2 : 3 },
+    };
   }
 
   async scenarioLineage(id: string): Promise<m.ScenarioDetail[]> {
@@ -235,13 +252,20 @@ export class MockAgentGateway extends AgentGateway {
       origin: 'What-if mutation',
       parent_id: original.id,
       mutation_log: [operation],
+      spec: {
+        segment: original.spec?.segment ?? original.profile.toLowerCase(),
+        difficulty: operation === 'harder' ? 4 : operation === 'easier' ? 2 : original.spec?.difficulty ?? 3,
+      },
     };
     this.scenarioVariants.set(mutated.id, mutated);
+    const owner = this.scenarioOwners.get(id);
+    if (owner) this.scenarioOwners.set(mutated.id, owner);
     return mutated;
   }
 
   async deleteScenario(id: string): Promise<void> {
     this.scenarioVariants.delete(id);
+    this.scenarioOwners.delete(id);
   }
 
   async trainingPlan(advisorId: string, weaknesses: m.TrainingWeakness[]): Promise<m.TrainingPlan> {
@@ -254,7 +278,9 @@ export class MockAgentGateway extends AgentGateway {
       advisor_id: advisorId,
       needs_training: focus.length > 0,
       focus,
-      scenarios: (await this.scenarios()).map((s) => ({ ...s, origin: focus.length ? 'QA weakness' : s.origin })),
+      scenarios: focus.length
+        ? await Promise.all(focus.slice(0, 3).map(() => this.generateScenario(null, advisorId)))
+        : await this.scenarios(advisorId),
       rationale: focus.length
         ? focus.map((f) => `${f.skill}: coaching scenario recommended from ${f.criteria.join(', ')}.`)
         : ['No QA criterion is below the coaching threshold.'],

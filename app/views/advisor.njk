@@ -47,7 +47,7 @@
       </section>
     </div>
 
-    <section class="panel" id="live" data-csrf="{{ csrf }}" data-autostart="{{ autostart }}" aria-labelledby="lv">
+    <section class="panel" id="live" data-csrf="{{ csrf }}" data-autostart="{{ autostart }}" data-scenario="{{ play.id if play else '' }}" aria-labelledby="lv">
       <h2 id="lv">Live call with a simulated customer</h2>
       <p class="muted">The customer agent answers in real time. After each of her messages, the advisor agent suggests the next answer with its sources. Or let the advisor agent talk by itself: the call is then scored by the quality analyst, and the offers and the complaint check follow.</p>
       {% if playError %}<p class="warning" role="alert">{{ playError }}</p>{% endif %}

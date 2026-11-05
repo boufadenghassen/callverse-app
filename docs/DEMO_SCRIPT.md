@@ -59,11 +59,11 @@ Full version: about 21 minutes. Short version (about 17 minutes): skip slides 4,
 *If it fails:* the slide shows the scenario page.
 
 ### Demo 3, slide 13: the agents run a call by themselves (1 min 30 s)
-1. On the advisor console (the one that demo 2 just opened, with the scenario's settings): press **Let the advisor agent talk**. It starts a new call with the same settings; wait about 10 to 20 seconds while it plays out by itself.
-2. When "What the agents did on this call" appears, read it line by line: the simulator's outcome, the advisor's four steps, the sales agent's offer and its timing, the quality analyst's score (about 90) with what lowered it and what went well, and the complaint agent's verdict (no complaint).
+1. On the advisor console (the one that demo 2 just opened, with the scenario's settings): press **Let the advisor agent talk**. It starts a new call with the same settings; wait about 30 seconds while it plays out by itself.
+2. When "What the agents did on this call" appears, read it line by line: the simulator's outcome, the advisor's four steps, the sales agent's offer and its timing, the quality analyst's score (usually 95 to 100) with what lowered it and what went well, and the complaint agent's verdict (no complaint).
 3. Press **Show a rushed advisor**. About 15 seconds later the same box reads: the customer hung up, the score is under 40, the complaint agent lists the call.
 4. Open `/complaints`: the call is under "Calls that may be complaints". (If the tab is open, press reload.)
-5. Say: the advisor agent is a fixed routine built from the sourced answer. It is not a language model and it does not read the customer's mood.
+5. Say: the rules choose the step from the conversation and the customer's mood, a local language model writes the words from the sourced passage, and the quality analyst's rules check every reply before it is said. Under each reply you can read why that step was chosen and who wrote it. If Ollama is not running, the same steps use fixed wording.
 *If it fails:* the slide shows both results. Say "this is what it produced when we ran it".
 
 ### Slide 14: the quality analyst (optional live part)

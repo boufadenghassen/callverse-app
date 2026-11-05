@@ -39,5 +39,6 @@ export function simSettings(s: ScenarioDetail): SimSettings {
   why.push(`Difficulty ${spec ? `${spec.difficulty}/5` : s.difficulty} becomes “${difficulty[0] + difficulty.slice(1).toLowerCase()}”.`);
   const memory = !!spec?.events?.includes('repeat_caller');
   if (memory) why.push('The customer is a repeat caller: the call starts as a repeat contact.');
+  if (s.opening_line) why.push(`The customer opens with the scenario's own words: “${s.opening_line}”`);
   return { persona, mix, difficulty, intent, memory, why };
 }

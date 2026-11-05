@@ -73,7 +73,7 @@ def from_calls():
     """Calls the quality analyst scored where the customer hung up, left upset or nothing was agreed, and that are not a complaint yet."""
     have = {c["call_id"] for c in store.all_cases() if c["call_id"]}
     now, out = store.now(), []
-    for r in quality_store.recent(limit=200):
+    for r in quality_store.recent(limit=200, with_drivers=False):
         if r["callId"] in have:
             continue
         rules = {e["rule"] for e in r.get("errors", [])}

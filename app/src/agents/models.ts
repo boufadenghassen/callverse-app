@@ -4,7 +4,9 @@ export interface Evidence { source: string; score: number; excerpt: string }
 export interface SuggestedAnswer { text: string; sources: string[]; policyWarning: string | null; confidence: number; intents?: string[]; evidence?: Evidence[] }
 export interface Transcript { text: string; seconds: number }
 /** What the advisor agent says by itself at one point of a call: one step of its routine (acknowledge, check the policy, give the solution, confirm in writing), or a rushed advisor for demonstrations. */
-export interface AutoReply { text: string; step: string; turn: number; last: boolean; sources: string[]; intents: string[]; policyWarning: string | null; style: 'careful' | 'rushed' }
+/** What the advisor agent reads before it answers: the conversation, the steps it already took, and the training scenario when there is one. */
+export interface AutoContext { turns: SalesTurn[]; steps: string[]; brief: string | null }
+export interface AutoReply { text: string; step: string; turn: number; last: boolean; sources: string[]; intents: string[]; policyWarning: string | null; engine?: string; why?: string; checks?: string[]; style: 'careful' | 'rushed' }
 /** How the advisor's voice sounded (the emotion model on a voice note): one of anger, disgust, fear, happy, neutral, sad and a 0-100 mood. */
 export interface Tone { emotion: string; mood: number }
 export interface SpeakRequest { text: string; role: 'advisor' | 'customer'; persona: string | null; mood: number }
@@ -20,7 +22,7 @@ export interface Overtime { queue: string; hour: string; advisors: number; sla: 
 /** Lunch plan for a typical day (everybody at noon against a planned spread) and the overtime still needed. */
 export interface SchedulePlan { baselineSla: number; plannedSla: number; idealSla: number; queues: ScheduleQueue[]; overtime: Overtime[]; overtimeHours: number; method: string }
 /** A live call with the simulated customer: `moveLabel` says how the customer's agent read the advisor's last reply. */
-export interface CallConfig { persona: string; mix: string | null; difficulty: string; intent: string; memory: boolean }
+export interface CallConfig { persona: string; mix: string | null; difficulty: string; intent: string; memory: boolean; opening?: string; topic?: string }
 export interface CallStart { id: string; persona: string; opening: string; mood: number; patience: number }
 export interface CallOutcome { verdict: string; expectationMet: boolean; churnRisk: number; effort: number; notes: string[] }
 export interface CallReply { ended: boolean; outcome: CallOutcome | null; mood: number; patience: number; client: string | null; move: string | null; moveLabel: string | null }
@@ -95,8 +97,15 @@ export interface ComplaintInsights {
 }
 export interface ComplaintAct { action: 'take' | 'escalate' | 'severity' | 'alert' | 'resolve' | 'close' | 'reopen'; by: string; note?: string; resolution?: string; level?: string; trusted?: boolean }
 export interface Scenario { id: string; title: string; profile: string; difficulty: string; origin: string }
+/** One practice call: its score, what moved against the advisor's usual level (out of 10), and what the coach should do next. */
+export interface PracticeAttempt {
+  callId: string; scenarioId: string; title: string; advisor: string; overall: number; date: string; next: 'harder' | 'replay'; advice: string;
+  changes: { criterion: string; before: number; after: number; status: 'improved' | 'regressed' | 'unchanged' }[];
+}
+export interface PracticeHistory { attempts: PracticeAttempt[]; count: number; best: number | null; trend: number | null }
 export interface ScenarioDetail extends Scenario {
   customer_card?: string; trainer_brief?: string; complications?: string[]; success_criteria?: string[];
+  opening_line?: string; call_topic?: string;
   kind?: string;
   parent_id?: string | null;
   mutation_log?: string[];

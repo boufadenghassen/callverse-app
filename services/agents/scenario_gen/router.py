@@ -143,8 +143,14 @@ training_router = APIRouter(prefix="/training", tags=["training"])
 
 
 @training_router.get("/scenarios")
-def training_scenarios(service: ScenarioService = Depends(get_service)) -> list[WebScenario]:
+def training_scenarios(
+    advisor_id: str | None = Query(None, min_length=1, max_length=60),
+    service: ScenarioService = Depends(get_service),
+) -> list[WebScenario]:
     """The contract with the web app: flat scenario cards for the training page."""
+    scenarios = service.store.find(limit=100)
+    if advisor_id:
+        scenarios = [s for s in scenarios if s.sim_extensions.get("advisor_id") == advisor_id]
     return [
         WebScenario(
             id=s.id,
@@ -153,5 +159,5 @@ def training_scenarios(service: ScenarioService = Depends(get_service)) -> list[
             difficulty=_DIFFICULTY_LABELS.get(s.spec.difficulty, "Medium"),
             origin=_ORIGIN_LABELS.get(s.kind, s.kind.title()),
         )
-        for s in service.store.find(limit=100)
+        for s in scenarios
     ]

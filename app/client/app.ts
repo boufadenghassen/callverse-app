@@ -443,6 +443,7 @@
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       return data;
     };
+    const scenario = live.dataset.scenario ?? '';
     const sayMine = byId<HTMLInputElement>('lv-sayme');
     if (sayMine) { sayMine.checked = store.get('cv-sayme') !== 'off'; sayMine.addEventListener('change', () => store.set('cv-sayme', sayMine.checked ? 'on' : 'off')); }
     const recBtn = byId<HTMLButtonElement>('lv-rec');
@@ -528,7 +529,7 @@
       status.textContent = 'Calling the customer…';
       byId('live-summary')!.hidden = true;
       try {
-        const d = await post('/advisor/live/start', { persona: sel('lv-persona'), mix: byId<HTMLInputElement>('lv-mix')?.value || null, intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
+        const d = await post('/advisor/live/start', { scenario, persona: sel('lv-persona'), mix: byId<HTMLInputElement>('lv-mix')?.value || null, intent: sel('lv-intent'), difficulty: sel('lv-diff'), memory: byId<HTMLInputElement>('lv-memory')!.checked });
         callId = d.id; topic = d.opening; personaKey = sel('lv-persona'); log.replaceChildren(); byId('live-outcome')!.hidden = true; useBtn.disabled = false;
         convo = []; offerBox.hidden = true;
         say('client', d.opening, d.persona, d.mood);
@@ -541,13 +542,13 @@
     byId('live-setup')!.addEventListener('submit', (e) => { e.preventDefault(); void startCall(); });
     useBtn.addEventListener('click', () => { text.value = byId('lv-s-text')!.textContent ?? ''; text.focus(); });
     // one way to answer the customer, whether the words were typed or came from a voice note
-    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null): Promise<{ ended: boolean; outcome: { verdict: string } | null; mood: number } | null> => {
+    const sendAdvisor = async (msg: string, voiceUrl?: string, tone?: { emotion: string; mood: number } | null, note = ''): Promise<{ ended: boolean; outcome: { verdict: string } | null; mood: number } | null> => {
       if (!msg || !callId) return null;
       sendBtn.disabled = true; if (recBtn) recBtn.disabled = true;
       // a typed reply can be said out loud in the advisor's voice; the customer then answers after it
       const spoken = !voiceUrl && sayMine?.checked && !muted ? speak(msg, 'advisor') : undefined;
       const heard: Record<string, string> = { anger: 'angry', disgust: 'disgusted', fear: 'worried', happy: 'happy', neutral: 'calm', sad: 'sad' };
-      say('advisor', msg, tone ? `Your voice sounded ${heard[tone.emotion] ?? tone.emotion}` : '', 50, { url: voiceUrl });
+      say('advisor', msg, tone ? `Your voice sounded ${heard[tone.emotion] ?? tone.emotion}` : note, 50, { url: voiceUrl });
       text.value = '';
       try {
         const d = await post('/advisor/live/say', { id: callId, text: msg, topic, tone: tone ?? null });
@@ -563,20 +564,21 @@
     };
     byId('live-say')!.addEventListener('submit', (e) => { e.preventDefault(); void sendAdvisor(text.value.trim()); });
 
-    // the advisor agent talks by itself: one step of its routine per turn, then the call is scored and the other agents have their say
+    // the advisor agent talks by itself: it reads the call, chooses its next step and has its words checked, then the call is scored and the other agents have their say
     const autoBtns = $$<HTMLButtonElement>('[data-auto]');
     const sleep = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
-    const summarise = async (steps: string[], style: string, last: { outcome: { verdict: string } | null; mood: number } | null) => {
+    const summarise = async (steps: string[], engines: string[], style: string, last: { outcome: { verdict: string } | null; mood: number } | null) => {
       const box = byId('live-summary')!, list = byId('lv-sum-list')!;
       list.replaceChildren();
       const add = (who: string, words: string) => { const li = make('li'); li.append(make('strong', { textContent: who }), ` ${words}`); list.append(li); };
       add('Customer simulator:', last?.outcome ? `${last.outcome.verdict} Her mood at the end: ${last.mood}/100.` : 'the call is still open.');
-      add('Advisor agent:', `${steps.length} replies by itself (${steps.join(', ')}), ${style === 'rushed' ? 'in the rushed style, to show what goes wrong' : 'following the good practices'}.`);
+      const written = engines.filter((e) => e.startsWith('local model')).length;
+      add('Advisor agent:', `${steps.length} replies by itself (${steps.join(', ')}), ${style === 'rushed' ? 'in the rushed style, to show what goes wrong' : `${written} written by the local model and checked by the quality rules, ${steps.length - written} in fixed wording`}.`);
       add('Sales agent:', byId('lv-o-top')!.hidden ? 'no offer fits this call.' : `${byId('lv-o-name')!.textContent}. ${byId('lv-o-timing')!.textContent}`);
       box.hidden = false;
       box.scrollIntoView({ block: 'nearest' });
       try {
-        const r = await post('/advisor/live/review', { id: callId });
+        const r = await post('/advisor/live/review', { id: callId, auto: true });
         add('Quality analyst:', `${r.callId} scored ${r.overall}/100. What lowered it: ${r.hurt.length ? r.hurt.join('; ') : 'nothing'}. What went well: ${r.helped.length ? r.helped.join('; ') : 'nothing recorded'}.`);
         const bad = r.hungUp || r.unresolved || (last?.mood ?? 100) <= 25;
         add('Complaint agent:', bad ? 'the call ended badly (the customer hung up, left upset or nothing was agreed), so it is listed under Complaints, calls that may be complaints.' : 'no complaint expected: the customer was not left upset.');
@@ -589,18 +591,18 @@
       try {
         if (!(await startCall())) return;
         await sleep(900);
-        const steps: string[] = [];
+        const steps: string[] = [], engines: string[] = [];
         let last: Awaited<ReturnType<typeof sendAdvisor>> = null;
         for (let turn = 0; turn < 6; turn++) {
-          status.textContent = `The advisor agent is answering (step ${turn + 1})…`;
-          const r = await post('/advisor/live/auto', { topic, turn, style });
-          steps.push(r.step);
-          last = await sendAdvisor(r.text);
+          status.textContent = `The advisor agent is reading the call and answering (reply ${turn + 1})…`;
+          const r = await post('/advisor/live/auto', { topic, turn, style, turns: convo, steps, scenario });
+          steps.push(r.step); engines.push(r.engine ?? '');
+          last = await sendAdvisor(r.text, undefined, null, [r.why, r.engine, ...(r.checks ?? [])].filter(Boolean).join(' · '));
           if (!last || last.ended) break;
           await sleep(1100);
         }
         status.textContent = '';
-        await summarise(steps, style, last);
+        await summarise(steps, engines, style, last);
       } catch (err) { status.textContent = (err as Error).message; }
       finally { muted = false; running = false; autoBtns.forEach((b) => { b.disabled = false; }); }
     };
@@ -616,8 +618,8 @@
       reviewBtn.disabled = true;
       status.textContent = 'The quality analyst is reading the call…';
       try {
-        const d = await post('/advisor/live/review', { id: callId });
-        status.textContent = `Sent: ${d.callId} scored ${d.overall}/100. Nour sees it in Quality reviews.`;
+        const d = await post('/advisor/live/review', { id: callId, scenario });
+        status.textContent = d.practice ? `Practice saved: ${d.callId} scored ${d.overall}/100. ${d.practice.advice}` : `Sent: ${d.callId} scored ${d.overall}/100. Nour sees it in Quality reviews.`;
       } catch (err) { status.textContent = (err as Error).message; }
       reviewBtn.disabled = false;
     });

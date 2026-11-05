@@ -20,9 +20,21 @@ if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyConti
 $logs = Join-Path $env:TEMP "orqestra-logs"
 New-Item -ItemType Directory -Force $logs | Out-Null
 
+function Test-Port($port) {
+    $c = New-Object Net.Sockets.TcpClient
+    try { $c.Connect("127.0.0.1", $port); $true } catch { $false } finally { $c.Close() }
+}
 function Stop-Port($port) {
     $p = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess
-    if ($p) { Stop-Process -Id $p -Force; Write-Host "stopped the service on port $port" }
+    if ($p) { Stop-Process -Id $p -Force; Write-Host "stopped the service on port $port"; Start-Sleep -Seconds 1 }
+    # Get-NetTCPConnection does not list the port on every machine, and a service left running would keep serving the old code
+    if (Test-Port $port) {
+        $service = @{ 8000 = 'uvicorn.*main:app'; 8001 = 'uvicorn.*serve:app'; 8080 = 'dist[/\\]main\.js' }[$port]
+        Get-CimInstance Win32_Process -Filter "name='python.exe' or name='node.exe'" | Where-Object { $_.CommandLine -match $service } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; Write-Host "stopped the service on port $port" }
+        Start-Sleep -Seconds 2
+    }
+    if (Test-Port $port) { Write-Host "Port $port is still in use by another program: close it, then start again." -ForegroundColor Red; exit 1 }
 }
 function Wait-Up($name, $url, $seconds) {
     $until = (Get-Date).AddSeconds($seconds)
@@ -47,11 +59,11 @@ if ($Reset) {
 if ($Clean) {
     $data = Join-Path $agents "data"
     $backup = Join-Path $data ("backup-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
-    $stores = Get-ChildItem $data -File | Where-Object { $_.Name -match '^(complaints|sales|quality)\.db' }
+    $stores = Get-ChildItem $data -File | Where-Object { $_.Name -match '^((complaints|sales|quality|training)\.db|scenarios\.jsonl)' }
     if ($stores) {
         New-Item -ItemType Directory -Force $backup | Out-Null
         $stores | Move-Item -Destination $backup
-        Write-Host "the complaint, sales and quality stores were moved to $backup; they are recreated with their simulated history"
+        Write-Host "the complaint, sales, quality and training stores were moved to $backup; they are recreated with their simulated history"
     }
 }
 
@@ -65,6 +77,7 @@ Pop-Location
 if (-not $env:CALLVERSE_DEMO_PASSWORD) { $env:CALLVERSE_DEMO_PASSWORD = "demo-password-123" }
 $env:CALLVERSE_COOKIE_SECURE = "false"      # plain http://localhost
 $env:AGENTS_MODE = "http"                   # the web app calls the real agents
+$env:SCENARIO_STORE_PATH = Join-Path $agents "data\scenarios.jsonl"   # training scenarios survive a restart
 
 Write-Host "Starting the services (logs in $logs)..."
 Start-Process $py -ArgumentList "-m", "uvicorn", "main:app", "--port", "8000" -WorkingDirectory $agents -WindowStyle Hidden `

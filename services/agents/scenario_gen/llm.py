@@ -1,4 +1,4 @@
-"""Optional LLM enrichment through OpenRouter.
+"""Optional LLM enrichment, through OpenRouter when a key is set, otherwise through the local model (local_llm.py).
 
 The generator never needs it: templates are the source of truth. The LLM only rewrites two texts
 (the customer's situation card and the trainer brief) to add variety. Any problem (no key, network
@@ -11,6 +11,8 @@ import logging
 import re
 
 import httpx
+
+import local_llm
 
 from .config import Settings
 from .schemas import TrainingScenario
@@ -42,12 +44,14 @@ class LLMClient:
 
     @property
     def available(self) -> bool:
-        return bool(self.settings.openrouter_api_key)
+        return bool(self.settings.openrouter_api_key) or local_llm.enabled()
 
     def enrich(self, scenario: TrainingScenario) -> TrainingScenario | None:
         """Return a copy with rewritten texts, or None if enrichment was not possible."""
         if not self.available:
             return None
+        if not self.settings.openrouter_api_key:
+            return self._local(scenario)
         payload = {
             "model": self.settings.openrouter_model,
             "temperature": 0.8,
@@ -76,6 +80,14 @@ class LLMClient:
                 raise ValueError("missing customer_card or trainer_brief")
         except Exception as error:  # noqa: BLE001 - any failure falls back to templates
             log.warning("LLM enrichment failed (%s): %s", type(error).__name__, error)
+            return None
+        return scenario.model_copy(update={"customer_card": card, "trainer_brief": brief, "enrichment": "llm"})
+
+    def _local(self, scenario: TrainingScenario) -> TrainingScenario | None:
+        parsed = local_llm.chat_json(SYSTEM_PROMPT, self._user_prompt(scenario), temperature=0.7, max_tokens=300)
+        card, brief = clean_text((parsed or {}).get("customer_card"), MAX_CARD), clean_text((parsed or {}).get("trainer_brief"), MAX_BRIEF)
+        if not card or not brief:
+            log.warning("Local enrichment gave no usable answer")
             return None
         return scenario.model_copy(update={"customer_card": card, "trainer_brief": brief, "enrichment": "llm"})
 

@@ -71,9 +71,9 @@ test('the http gateway asks the Scenario Gen agent to generate, with or without 
   try {
     const gw = new HttpAgentGateway();
     assert.equal((await gw.generateScenario(4)).id, 'sc_abc');
-    assert.equal(seen.at(-1), 'POST /scenario-gen/scenarios/generate {"difficulty":4}');
+    assert.equal(seen.at(-1), 'POST /scenario-gen/scenarios/generate {"language":"en","enrich":true,"difficulty":4}');
     await gw.generateScenario(null);
-    assert.equal(seen.at(-1), 'POST /scenario-gen/scenarios/generate {}');
+    assert.equal(seen.at(-1), 'POST /scenario-gen/scenarios/generate {"language":"en","enrich":true}');
     assert.ok(RejectedError);                                                                       // (the generator answers 422 for a value it does not accept; the page never sends one)
   } finally {
     if (was === undefined) delete process.env.CALLVERSE_AGENTS_URL; else process.env.CALLVERSE_AGENTS_URL = was;

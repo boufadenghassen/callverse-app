@@ -24,7 +24,7 @@ export abstract class AgentGateway {
   abstract customerContext(customerId: string): Promise<m.CustomerContext>;
   abstract suggestAnswer(customerId: string, query: string): Promise<m.SuggestedAnswer>;
   /** The advisor agent answering by itself (the automatic call). Throws NeedsRealAgentsError in demo mode. */
-  abstract autoReply(topic: string, turn: number, style: 'careful' | 'rushed'): Promise<m.AutoReply>;
+  abstract autoReply(topic: string, turn: number, style: 'careful' | 'rushed', context?: m.AutoContext): Promise<m.AutoReply>;
   abstract startCall(config: m.CallConfig): Promise<m.CallStart>;
   /** Throws UnknownCallError when the call id is not known (for example the agents service restarted). */
   abstract say(callId: string, text: string, tone?: m.Tone | null): Promise<m.CallReply>;
@@ -46,7 +46,10 @@ export abstract class AgentGateway {
   abstract qualityReview(callId: string): Promise<m.QualityReview | null>;
   abstract qualityAnalytics(): Promise<m.QualityAnalytics>;
   /** Score a live call (a customer simulator session). Throws UnknownCallError, RejectedError or NeedsRealAgentsError. */
-  abstract reviewCall(callId: string, advisor: string): Promise<m.QualityReview>;
+  abstract reviewCall(callId: string, advisor: string, source?: 'live call' | 'automatic'): Promise<m.QualityReview>;
+  /** A practice call of a training scenario: reviewed, compared with the advisor's usual level and kept for the coach. */
+  abstract practiceCall(callId: string, scenarioId: string, advisor: string): Promise<m.QualityReview & { practice?: m.PracticeAttempt }>;
+  abstract practice(advisor: string): Promise<m.PracticeHistory>;
   /** Score a two-channel recording (advisor left, customer right). Throws BadAudioError, RejectedError, VoiceUnavailableError or NeedsRealAgentsError. */
   abstract reviewAudio(audio: Buffer, advisor: string): Promise<m.QualityReview>;
   /** A two-channel example call (WAV). */
@@ -63,9 +66,9 @@ export abstract class AgentGateway {
   abstract complaintFollowUps(): Promise<m.ComplaintFollowUp[]>;
   abstract complaintCandidates(): Promise<m.ComplaintCandidate[]>;
   abstract complaintFromCall(callId: string): Promise<m.ComplaintDetail>;
-  abstract scenarios(): Promise<m.Scenario[]>;
-  /** A new scenario from the generator (`difficulty` 1 to 5, or null for any). */
-  abstract generateScenario(difficulty: number | null): Promise<m.ScenarioDetail>;
+  abstract scenarios(advisorId?: string): Promise<m.Scenario[]>;
+  /** A new scenario from the generator (`difficulty` 1 to 5, or null for any), owned by `advisorId` when given. */
+  abstract generateScenario(difficulty: number | null, advisorId?: string): Promise<m.ScenarioDetail>;
   abstract scenario(id: string): Promise<m.ScenarioDetail>;
   abstract scenarioLineage(id: string): Promise<m.ScenarioDetail[]>;
   abstract replayScenario(id: string): Promise<m.ScenarioDetail>;

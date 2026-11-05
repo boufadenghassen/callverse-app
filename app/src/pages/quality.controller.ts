@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import {
   AgentDownError, AgentGateway, BadAudioError, NeedsRealAgentsError, RejectedError, UnknownCallError, VoiceUnavailableError,
 } from '../agents/agent.gateway';
+import type { PracticeAttempt, QualityReview } from '../agents/models';
 import { Roles } from '../auth/access.guard';
 import { qualityView, sparkline } from './charts';
 
@@ -76,8 +77,13 @@ export class QualityController {
   @Roles('ADVISOR', 'TRAINER') @HttpCode(200) @Post('advisor/live/review')
   async reviewLiveCall(@Body() b: Record<string, unknown>, @Req() req: Request, @Res() res: Response) {
     if (typeof b.id !== 'string' || !/^[0-9a-f]{16}$/.test(b.id)) return res.status(400).json({ error: 'This call is not valid. Start a new one.' });
-    return this.run(res, async () => { const r = await this.agents.reviewCall(b.id as string, advisorName(req.session.user?.name)); const rules = (r.errors ?? []).map((e) => e.rule);
+    const id = b.id, who = advisorName(req.session.user?.name), scenario = typeof b.scenario === 'string' && /^[A-Za-z0-9_-]{2,40}$/.test(b.scenario) ? b.scenario : '';
+    return this.run(res, async () => {
+      // the advisor agent's own call and a practice call are reviewed like the others, but they are not this advisor's work with a customer
+      const r: QualityReview & { practice?: PracticeAttempt } = b.auto === true ? await this.agents.reviewCall(id, 'Advisor agent', 'automatic') : scenario ? await this.agents.practiceCall(id, scenario, who) : await this.agents.reviewCall(id, who);
+      const rules = (r.errors ?? []).map((e) => e.rule);
       return {
+        practice: r.practice ?? null,
         callId: r.callId, overall: r.overall, hurt: (r.drivers?.hurt ?? []).slice(0, 2).map((d) => d.label), helped: (r.drivers?.helped ?? []).filter((d) => d.effect > 0).slice(0, 2).map((d) => d.label),
         hungUp: rules.includes('hang_up'), unresolved: rules.includes('unresolved'),
       };

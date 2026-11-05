@@ -7,6 +7,7 @@ import { DIFFICULTIES, INTENTS, PERSONAS } from './client-simulator';
 import { cleanTurns } from './sales.controller';
 
 const CUSTOMER_ID = 'YT-1042'; // the demo customer the advisor console shows
+const SCENARIO_ID = /^[A-Za-z0-9_-]{2,40}$/;
 
 const EMOTIONS = ['anger', 'disgust', 'fear', 'happy', 'neutral', 'sad'];
 /** A tone from the page (the emotion model's reading of a voice note), or null when it is missing or not valid. */
@@ -33,7 +34,9 @@ export class LiveCallController {
     const mix = b.mix ? oneOf(PERSONAS, b.mix) : null;
     if (!persona || !difficulty || !intent || (b.mix && !mix)) return res.status(400).json({ error: 'Choose a customer, a difficulty and a reason for the call.' });
     return this.run(res, async () => {
-      const call = await this.agents.startCall({ persona, mix: mix ?? null, difficulty, intent, memory: b.memory === true });
+      const scenario = await this.scenarioOf(b.scenario);
+      const words = scenario?.opening_line ? { opening: scenario.opening_line, topic: scenario.call_topic } : {};
+      const call = await this.agents.startCall({ persona, mix: mix ?? null, difficulty, intent, memory: b.memory === true, ...words });
       return { ...call, suggestion: await this.agents.suggestAnswer(CUSTOMER_ID, call.opening) };
     });
   }
@@ -70,7 +73,18 @@ export class LiveCallController {
     const turn = typeof b.turn === 'number' && Number.isInteger(b.turn) ? b.turn : -1;
     const style = b.style === undefined ? 'careful' : b.style;
     if (topic.length < 3 || turn < 0 || turn > 10 || (style !== 'careful' && style !== 'rushed')) return res.status(400).json({ error: 'The call is not valid. Start a new one.' });
-    return this.run(res, () => this.agents.autoReply(topic, turn, style));
+    const turns = cleanTurns(b.turns), steps = (Array.isArray(b.steps) ? b.steps : []).filter((s): s is string => typeof s === 'string').map((s) => s.slice(0, 40)).slice(0, 12);
+    return this.run(res, async () => {
+      const s = await this.scenarioOf(b.scenario);
+      const brief = s ? [s.customer_card, ...(s.complications ?? [])].filter(Boolean).join(' ').slice(0, 1500) : null;
+      return this.agents.autoReply(topic, turn, style, { turns, steps, brief });
+    });
+  }
+
+  /** The training scenario this call plays, if any. A scenario that has gone just leaves a plain call. */
+  private async scenarioOf(id: unknown) {
+    if (typeof id !== 'string' || !SCENARIO_ID.test(id)) return null;
+    return this.agents.scenario(id).catch(() => null);
   }
 
   private async run(res: Response, work: () => Promise<object>) {

@@ -287,19 +287,30 @@ class Session:
     memory: bool
     moves: list[str] = field(default_factory=list)
     said: list[str | None] = field(default_factory=list)
+    opening: str | None = None      # a training scenario's own first words
+    topic: str | None = None        # and how the customer names the problem
 
 
 SESSIONS: dict[str, Session] = {}
 MAX_SESSIONS = 200  # ponytail: oldest call is dropped past this; a database if calls must survive restarts
 
 
-def start(persona: str, mix: str | None, difficulty: str, intent: str, memory: bool) -> dict:
+def _opening(s: Session, line: str) -> str:
+    return s.opening + (" This is the third time I call about it." if s.memory else "") if s.opening else line
+
+
+def _heard(s: Session, line: str | None) -> str | None:
+    """The simulator's line, with the problem named as this scenario names it."""
+    return line.replace(TOPIC[s.intent], s.topic) if line and s.topic else line
+
+
+def start(persona: str, mix: str | None, difficulty: str, intent: str, memory: bool, opening: str | None = None, topic: str | None = None) -> dict:
     if len(SESSIONS) >= MAX_SESSIONS:
         SESSIONS.pop(next(iter(SESSIONS)))
     sid = secrets.token_hex(8)
-    SESSIONS[sid] = Session(persona, mix, difficulty, intent, memory)
+    s = SESSIONS[sid] = Session(persona, mix, difficulty, intent, memory, opening=opening, topic=topic)
     r = replay(persona, mix, difficulty, intent, memory, [], [])
-    return dict(id=sid, persona=PERSONAS[persona]["label"], opening=r.opening, mood=r.mood, patience=r.patience)
+    return dict(id=sid, persona=PERSONAS[persona]["label"], opening=_opening(s, r.opening), mood=r.mood, patience=r.patience)
 
 
 def say(sid: str, text: str, tone: dict | None = None) -> dict:
@@ -312,7 +323,7 @@ def say(sid: str, text: str, tone: dict | None = None) -> dict:
     s.said.append(text)
     r = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
     t = r.turns[-1]
-    return dict(ended=r.outcome is not None, outcome=r.outcome, mood=t.mood, patience=t.patience, client=t.client, move=move, moveLabel=MOVES[move])
+    return dict(ended=r.outcome is not None, outcome=r.outcome, mood=t.mood, patience=t.patience, client=_heard(s, t.client), move=move, moveLabel=MOVES[move])
 
 
 def transcript(sid: str) -> tuple[list[dict], dict | None, str]:
@@ -320,7 +331,7 @@ def transcript(sid: str) -> tuple[list[dict], dict | None, str]:
     s = SESSIONS[sid]  # KeyError = unknown call
     start = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, [], [])
     run = replay(s.persona, s.mix, s.difficulty, s.intent, s.memory, s.moves, s.said)
-    turns = [dict(speaker="customer", text=start.opening, mood=start.mood)]
+    turns = [dict(speaker="customer", text=_opening(s, start.opening), mood=start.mood)]
     for i, t in enumerate(run.turns):
-        turns += [dict(speaker="advisor", text=s.said[i]), dict(speaker="customer", text=t.client, mood=t.mood)]
+        turns += [dict(speaker="advisor", text=s.said[i]), dict(speaker="customer", text=_heard(s, t.client), mood=t.mood)]
     return turns, run.outcome, s.persona

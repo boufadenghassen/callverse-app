@@ -13,7 +13,7 @@
       <div class="panel-head">
         <div>
           <h2 id="coach-plan">Coach plan for {{ advisor }}</h2>
-          <p class="muted">The plan is refreshed from the selected advisor's latest quality report.</p>
+          <p class="muted">Select an advisor first. The report, focus and scenarios below belong only to that advisor.</p>
         </div>
         <form method="get" action="/training">
           <label for="advisor">Advisor</label>
@@ -49,12 +49,12 @@
 
     <section class="panel" aria-labelledby="targeted-simulations">
       <h2 id="targeted-simulations">Targeted simulations</h2>
-      <p class="muted">These scenarios are generated from the advisor's weaknesses and stored for the Customer Simulator.</p>
-      {% if plan.scenarios %}
-      <ul class="deck-cards">{% for s in plan.scenarios %}
-        <li class="scn"><a href="/training/scenarios/{{ s.id | urlencode }}"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.spec.segment if s.spec else s.profile }}</span><span class="chip">{{ s.spec.difficulty if s.spec else s.difficulty }}</span></p><p class="origin muted small">Open scenario details</p></a></li>
+      <p class="muted">Only scenarios owned by <strong>{{ advisor }}</strong> are shown. They are created automatically from the advisor's Quality Analyst weaknesses.</p>
+      {% if scenarios %}
+      <ul class="deck-cards">{% for s in scenarios %}
+        <li class="scn"><span class="case-id">{{ s.id }}</span><h3>{{ s.title }}</h3><p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p><p class="origin muted small">{{ s.origin }}</p><div class="actions"><a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/replay?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn-line" type="submit">Replay</button></form><form method="post" action="/training/scenarios/{{ s.id | urlencode }}/mutate?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder"><button class="btn-line" type="submit">What-if harder</button></form></div></li>
       {% endfor %}</ul>
-      {% else %}<p class="muted">No targeted simulation was generated.</p>{% endif %}
+      {% else %}<p class="muted">No targeted scenarios are available for this advisor yet.</p>{% endif %}
     </section>
 
     {% if action %}
@@ -70,9 +70,29 @@
     </section>
     {% endif %}
 
+    <section class="panel" aria-labelledby="practice-results">
+      <h2 id="practice-results">Practice results for {{ advisor }}</h2>
+      {% if practice.attempts | length %}
+      <p class="muted">{{ practice.count }} practice {{ "call" if practice.count == 1 else "calls" }} · best {{ practice.best }}/100{% if practice.trend !== null %} · {{ "up" if practice.trend >= 0 else "down" }} {{ practice.trend | abs }} points from the first to the latest{% endif %}. Practice calls do not count in the advisor's quality averages.</p>
+      <ul class="deck-cards">{% for a in practice.attempts %}
+        <li class="scn">
+          <span class="case-id">{{ a.callId }}</span> <span class="muted small">{{ a.date }}</span>
+          <h3>{{ a.title }}</h3>
+          <p class="chips"><span class="chip">{{ a.overall }}/100</span>{% for c in a.changes %}{% if c.status != 'unchanged' %}<span class="chip">{{ c.criterion }} {{ c.before }} to {{ c.after }}</span>{% endif %}{% endfor %}</p>
+          <p class="coach">{{ a.advice }}</p>
+          <div class="actions">
+            {% if a.next == 'harder' %}<form method="post" action="/training/scenarios/{{ a.scenarioId | urlencode }}/mutate?advisor={{ advisor | urlencode }}"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="op" value="harder"><button type="submit" class="btn">Make it harder</button></form>
+            {% else %}<a class="btn" href="/advisor?scenario={{ a.scenarioId | urlencode }}&amp;start=1#live">Practise it again</a>{% endif %}
+          </div>
+        </li>
+      {% endfor %}</ul>
+      {% else %}<p class="muted">No practice yet. Open a scenario and play it in the console: when the call is sent to review, the result comes back here.</p>{% endif %}
+    </section>
+
     <section class="panel" aria-labelledby="scenario-history">
       <h2 id="scenario-history">Scenario history</h2>
       <p class="muted">Replay shows the same scenario again (same seed). What-if creates a harder copy and opens it.</p>
+      {% if not history | length %}<p class="muted">No other scenario yet: generate one below, or make a harder version of a targeted one.</p>{% endif %}
       <ul class="history-list">
         {% for s in history %}
         <li>
@@ -89,8 +109,8 @@
 
     <section class="panel builder" aria-labelledby="sb">
       <div>
-        <h2 id="sb">Scenario builder</h2>
-        <p class="muted">Combine a customer, a problem and a goal from the template library. Then replay it or change one parameter and compare.</p>
+        <h2 id="sb">Create one scenario for {{ advisor }}</h2>
+        <p class="muted">Create an additional custom scenario for this advisor. QA-targeted scenarios are generated automatically above.</p>
       </div>
       <form method="post" action="/training/generate" class="builder-actions">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="advisor" value="{{ advisor }}">
@@ -99,20 +119,4 @@
         <button type="submit" class="btn" id="generate">Generate scenario</button>
       </form>
     </section>
-
-    <ul class="deck-cards" id="scenarios">
-      {% for s in scenarios %}
-      {% set n = 3 if s.difficulty == 'Hard' else (2 if s.difficulty == 'Medium' else 1) %}
-      <li class="scn" data-id="{{ s.id }}" data-title="{{ s.title }}" data-profile="{{ s.profile }}" data-difficulty="{{ s.difficulty }}">
-        <div class="scn-top"><span class="case-id">{{ s.id }}</span>
-          <span class="diff" role="img" aria-label="Difficulty {{ s.difficulty }}">{% for k in [1, 2, 3] %}<i{% if k <= n %} class="on"{% endif %}></i>{% endfor %}</span></div>
-        <h3>{{ s.title }}</h3>
-        <p class="chips"><span class="chip">{{ s.profile }}</span><span class="chip">{{ s.difficulty }}</span></p>
-        <p class="origin muted small">{{ s.origin }}</p>
-        <div class="actions">
-          <a class="btn" href="/training/scenarios/{{ s.id | urlencode }}?advisor={{ advisor | urlencode }}">Open scenario</a>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
 {% endblock %}
